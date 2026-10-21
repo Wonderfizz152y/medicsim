@@ -3,3 +3,4 @@ Third-party components bundled in this folder (all free/open source):
 - Vosk model small-en-us-0.15 (Apache-2.0), models/vosk-model-small-en-us-0.15.tar.gz: https://alphacephei.com/vosk/models
 - transformers.js v3 (Apache-2.0) incl. onnxruntime-web (MIT), vendor/transformers/: https://github.com/huggingface/transformers.js
 - all-MiniLM-L6-v2 (Apache-2.0), quantized ONNX by Xenova, models/Xenova/all-MiniLM-L6-v2/: https://huggingface.co/Xenova/all-MiniLM-L6-v2
+- Moonshine base (MIT, Useful Sensors), ONNX export onnx-community/moonshine-base-ONNX @ b1e9b6aae3c3c7298f10c3798393fdf38e8fbbad: downloaded on first use from https://huggingface.co/onnx-community/moonshine-base-ONNX

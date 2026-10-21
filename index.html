@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.2-inspection d442d12d23">
+<meta name="medicsim-version" content="2.3-moonshine 7abb89b8ed">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -193,6 +193,21 @@ details summary{cursor:pointer;margin:6px 0}
 @keyframes lpulse{0%{box-shadow:0 0 0 0 #2bff88aa}70%{box-shadow:0 0 0 10px #2bff8800}100%{box-shadow:0 0 0 0 #2bff8800}}
 .msg.find .who{color:#7dd3fc}
 
+/* v2.3: quick-assess row, arrival card, heard-transcript notice, help */
+.assess-row{display:flex;gap:.35em;overflow-x:auto;padding:.35em .6em;align-items:center;scrollbar-width:none;border-top:1px solid var(--line);background:#0f1822}
+.assess-row .lbl{flex:none;font-size:.72em;font-weight:700;color:#7dd3fc;text-transform:uppercase;letter-spacing:.05em}
+.assess-row button{flex:none;font-size:.8em;padding:.4em .75em;background:#123024;border:1px solid #1d5c3a;color:#aef5cb;font-weight:600;border-radius:999px}
+.assess-row button.help{background:#13243a;border-color:#2c5a8f;color:#bcdcff}
+.msg.find.approach{border-color:#3ea6ff;background:#0c1a2a;color:#d6ecff;font-family:inherit;font-size:.9em}
+.msg.find.approach .who{color:#3ea6ff}
+.msg .skip{float:right;font-size:.75em;padding:.15em .6em;margin-left:.5em}
+.msg.heard{align-self:stretch;max-width:100%;background:#2a1f10;border:1px solid #8a6a2a;color:#ffe0a6;font-size:.82em}
+.msg.heard q{font-weight:700;color:#fff}
+#helpBody h4{margin:.8em 0 .2em;color:#7dd3fc}#helpBody ul{margin:.2em 0 .4em 1.1em;padding:0}#helpBody li{font-size:.9em;margin:.15em 0}
+.interim.pending{color:#ffd77a}
+
+.notice{margin:4px 8px;padding:6px 10px;border-radius:8px;background:#3a2a05;color:#ffd77a;font-size:.85em;border:1px solid #6b4e0a}
+
 </style>
 </head>
 <body>
@@ -267,7 +282,11 @@ details summary{cursor:pointer;margin:6px 0}
       <div class="col-right">
         <div class="transcript" id="transcript" aria-live="polite"></div>
         <div class="listen-bar off" id="listenBar" hidden><i class="dot"></i><span>🎤</span></div>
+        <div class="notice" id="notice" hidden></div>
         <div class="interim" id="interim"></div>
+        <div class="assess-row" id="assessRow" aria-label="Quick assess (tap = same as saying it)"><span class="lbl">Assess</span>
+          <button type="button" data-say="Checking radial pulse">Radial</button><button type="button" data-say="Checking carotid pulse">Carotid</button><button type="button" data-say="Checking skin signs">Skin</button><button type="button" data-say="Feeling the forehead">Forehead</button><button type="button" data-say="Checking pupils">Pupils</button><button type="button" data-say="Open your mouth, checking the airway">Mouth/airway</button><button type="button" data-say="Listening to lung sounds">Lung sounds</button><button type="button" data-say="Expose the patient">Expose</button><button type="button" data-say="Is the patient tracking me?">Tracking?</button><button type="button" data-say="What do I see?">What do I see?</button>
+          <button type="button" class="help" id="btnHelp">❓ What can I say?</button></div>
         <div class="composer">
           <button id="btnMic" class="mic" title="Hands-free: tap to mute/unmute. Push-to-talk mode: hold to talk.">🎤</button>
           <button id="btnHF" class="mic hf" title="Hands-free: just talk; the patient answers when you pause">✋</button>
@@ -304,17 +323,11 @@ details summary{cursor:pointer;margin:6px 0}
     <option value="handsfree">Always listening (hands-free): just talk; tap 🎤 to mute</option>
     <option value="ptt">Push-to-talk: hold 🎤 (or Space) while talking</option>
   </select></label>
-  <label>Speech engine <select id="setEngine">
-    <option value="auto">Auto: offline if downloaded, otherwise online</option>
-    <option value="vosk">Offline, on-device (Vosk): private, no internet</option>
-    <option value="web" id="optWeb">Online browser speech (Web Speech API): needs internet</option>
-  </select></label>
-  <label class="row"><input type="checkbox" id="setGrammar"> EMS vocabulary mode (offline engine). Restricts recognition to EMS/medical words. Try it if you mostly use standard phrasing.</label>
   <p class="fine">🎙 <b>Always listening</b> (default): the mic turns on when the call starts. Just talk; each thing you say is sent when you pause. The mic pauses itself while the patient or instructor is speaking. Tap 🎤 once to mute or unmute. The screen stays awake during a call. <b>Push-to-talk</b>: hold 🎤 (desktop: hold Space). Headphones work best so the mic doesn't pick up the phone speaker.</p>
   <div id="offlineSec">
     <h3>Offline downloads (one time, free)</h3>
     <p class="fine" id="offStatus"></p>
-    <div class="dl-row"><button class="tiny" id="btnDlVosk" type="button">⬇ Speech model (41 MB)</button><button class="ghost tiny" id="btnDelVosk" type="button">Delete</button></div>
+    <div class="dl-row"><button class="tiny" id="btnDlVosk" type="button">⬇ Speech recognizer (≈315 MB)</button><button class="ghost tiny" id="btnDelVosk" type="button">Delete</button></div>
     <label class="row"><input type="checkbox" id="setSemantic"> Smart understanding: an on-device AI model (MiniLM, ≈46 MB) that catches unusual phrasings the built-in rules miss.</label>
     <div class="dl-row"><button class="tiny" id="btnDlSem" type="button">⬇ Understanding model (46 MB)</button><button class="ghost tiny" id="btnDelSem" type="button">Delete</button></div>
     <progress id="dlProg" max="1" value="0" hidden></progress>
@@ -337,6 +350,7 @@ details summary{cursor:pointer;margin:6px 0}
   <select id="piSelect"></select>
   <div class="actions"><button class="ghost" id="btnEndNoPI">End without PI</button><button id="btnSavePI">Save impression</button></div>
 </div></div>
+<div class="modal" id="modalHelp"><div class="card"><h2>What can I say?</h2><p class="fine">Talk normally; these are examples, not exact commands. You can ask two things at once ("What year is it and where are we?"). If the patient says "Sorry, what?", the box under the chat shows exactly what the app heard.</p><div id="helpBody"></div><div class="actions"><button data-close>Close</button></div></div></div>
 <div class="modal" id="modalProto"><div class="card wide"><div id="protoBody"></div><div class="actions"><button data-close>Close</button></div></div></div>
 <div class="modal" id="modal12"><div class="card wide"><h2>12-lead ECG</h2><canvas id="cv12" width="1100" height="520"></canvas><p id="txt12" class="interp"></p><div class="actions"><button data-close>Close</button></div></div></div>
 
@@ -514,6 +528,31 @@ const PROVIDER_IMPRESSIONS = {
 const NLU = (() => {
   // ---------------- 1. normalization & STT repair ----------------
   const PHRASE_FIX = [
+    // ---- conversation mishears measured with Vosk small-en-us on synthetic + reported real speech (v2.3) ----
+    // ---- Moonshine-base (the shipped recognizer) confusions, tuned on the DEV speech set only ----
+    [/\b(herotted|gerated|corrated|corroded|corrupted|carrated|kerated|karated|garotted|carotted|kerotted)\b/g, "carotid"], [/\barrive (pulse|pulses)\b/g, "carotid $1"],
+    [/\b(rated all|rate of all|rated al|read all|riddle|riddles|radiums|radium|read)\b(?= (and |or )?(carotid|pulse|pulses)\b| ?$)(?<=(check|checking|feel|feeling|for|his|her|a|both|the) (rated all|rate of all|rated al|read all|riddle|riddles|radiums|radium|read))/g, (m) => /s$/.test(m) && !/all$/.test(m) ? "radials" : "radial"],
+    [/\b(checking|check) radiums\b/g, "$1 radials"], [/\bpulsive\b/g, "pulses"],
+    [/\b(feeling|feel|touching|touch|checking|check) (her|his|their|the|your) fore\s*$/g, "$1 $2 forehead"],
+    [/\b(with|what|was) fathering (you|ya)\b/g, "what's bothering you"],
+    [/^ ?(he|hey) was wrong\b/g, " hey what's wrong"], [/^ ?but brings\b/g, " what brings"], [/^ ?but (here|ear|year) is it\b/g, " what year is it"], [/\band but (here|year) is it\b/g, "and what year is it"],
+    [/^ ?why are we\s*$/g, " where are we"],
+    [/\b(healing|feelin|feeling|failing|filling|peeling) for (a |the )?/g, "feeling for $2"],
+    [/\b(what's|what is|whats|what|was|once|watts|one's|what's a|what a|so) (bother(ing|in|in'|ed|s)?|brother(ing|in|s)?|father(ing)?|bothering|other ring|brother in|bother in) (you|ya|ye|yeah|you're)\b/g, "what's bothering you"],
+    [/\b(what's|what) (bother|bothering|brother|father) (in|and|on) (you|ya)\b/g, "what's bothering you"],
+    [/(^ ?|\b(hey|okay|ok|so|sir|ma'am|and|alright|now) )(was|once|watts|what|one's|what's the) wrong\b/g, "$1what's wrong"],
+    [/\b(which|witch|what's|wet|white) brings (us|you|ya)\b/g, "what brings $2"], [/\bwhy'?d (you|ya|they|y'all) call\b/g, "why did $1 call"], [/\bwhy you call(ed)?\b/g, "why did you call"],
+    [/\bwhat (you're|your|ear|here|he or|hear|you are|yeah|yer|is the year|years|you|you'll|heal|he|he's|year's|yours|you or|ye are|ya are) (is it|it is|is this|is)\b/g, "what year is it"],
+    [/\bwhat (is|was) (the )?(year|here|ear|you're) (is )?(it|today|right now)\b/g, "what year is it"], [/\bwhat (here|ear|you're) (it|is) (it|is)\b/g, "what year is it"],
+    [/\b(where|wear|were|ware|we're|whare) (are|our|r|were|were are|re|or|a) (we|wee|wii|whee|week)\b(?! (going|gonna|taking|headed))/g, "where are we"], [/\bwhere we at\b/g, "where are we"],
+    [/\bwhat days (it|is it)\b/g, "what day is it"], [/\bwhat'?s today'?s date\b/g, "what's the date today"],
+    [/\b(radio|radios|radio's|ready ?all|ready alls|readable|radiol|rate eel|radical|ray deal|radiant|radian|real)\b(?= (and |or )?(carotid|carried|pulse|pulses|polls|calls|post|pole|pals|on|both|bilateral|is|are)\b| ?$)(?<!\b(the|a) real)/g, "radial"],
+    [/\b(check|checking|checks|feel|feeling|palpate|palpating|feel for|feeling for|got|get|find|found|his|her|their|the|a|both|left|right|strong|weak|have|has) (radio|radios|ready ?all|readable|radical|real|radiol)\b(?! (the|to|in|base|traffic|call|report|station|channel|show|music))/g, "$1 radial"],
+    [/\b(carried it|carried its|care it it|carrot it|carotte|karate|chariot|chariots|corrode it|carry it|the rotted|they rotted|the rotten|her rotted|his rotted|care rotted|car rotted|carotid's|carroted|ca rotted|ka rotted)\b(?= (pulse|pulses|polls|and|or|is|on|too|both|$)|\s*$)/g, "carotid"],
+    [/\b(check|checking|feel|feeling|palpate|his|her|a|the|and|both) (karate|chariot|carry it|carried it)\b/g, "$1 carotid"],
+    [/\b(radial|carotid|femoral|pedal|a|the|for|his|her|their|check|checking|feel|feeling|distal|any|no|weak|strong) (polls|poles|pole|post|posts|calls|pals|pause|pauses|puls|pulls|pols|paulson|coast|bowls|holes)\b/g, "$1 pulse"],
+    [/\b(checking|check|feeling|feel) (houses|paulson|pulses's|policies|pauses|polls|bowls|pals)\b/g, "$1 pulses"],
+    [/\b(learn|lane|lan|land|lon|lone|loan|alone) sounds?\b/g, "lung sounds"],
     // inspection / exposure mishearings
     [/\bleft (his|her|their|the|your|up (his|her|the)) (shirt|top|blouse|gown|sweater|t shirt|dress)/g, "lift $1 $3"], [/\blift is (shirt|top)/g, "lift his $1"], [/\b(lived|lifted|lift up) (his|her) (shirt|top)/g, "lift $2 $3"],
     [/\bopen (you're|you|yer|ur|your) (mouse|mouth|moth|mouths)\b/g, "open your mouth"], [/\bopen your mouse\b/g, "open your mouth"], [/\bsay (awe|aww|aah|ahh+|ah+)\b/g, "say ah"],
@@ -643,7 +682,7 @@ const NLU = (() => {
     ["greet", /\b(hi|hello|hey|good (morning|afternoon|evening))\b|^ ?morning\b|my name is|i'?m (\w+ )?(a |the |one of the |with |from )?(paramedics?|medics?|fire|emts?)\b|we'?re (the )?(paramedics|fire department|here to help)|\bwith the fire department/],
     ["name", /what'?s (your|his|her) (full |first |last )?name|your (full |first |last )?name|(his|her) name|who are you|call you|what should i call|first and last name/],
     ["age", /how old|your age|(his|her) age|(birthday|date of birth|dob)\b|when were you born|what year were you born/],
-    ["cc", /what'?s (going on|wrong|happening|the problem|up|the matter)|what is (wrong|the matter)|what happened(?! to you)|why (did|'d) (you|they|someone|you guys) call|made you call|what brings|chief complaint|how can (i|we) help|what can (i|we) do for you|what seems to be|tell me what('?s| is)? (going on|happened|wrong)|how are you (feeling|doing)(?! now)|how (do|are) you feel(?! (any )?better)|what'?s bothering|what'?s got you (feeling|down|worried)|are you (ok|okay|alright)\b|call (911|9 1 1|us)( today)?\b|^ ?what happened ?\??$/],
+    ["cc", /what'?s (going on|wrong|happening|the problem|up|the matter)|what is (wrong|the matter|going on|the problem|bothering)|(?<!(know|remember|recall|recollect) )what happened(?! to you)|why (did|'d) (you|they|someone|you guys|y'all) call|why (are|were) (we|you guys) (called|here)|what'?s (been )?bothering|what (brings|brought) (us|you|ya)|what (seems to be|is) the (problem|issue|trouble)|what'?s the (issue|trouble)|made you call|what brings|chief complaint|how can (i|we) help|what can (i|we) do for you|what seems to be|tell me what('?s| is)? (going on|happened|wrong)|how are you (feeling|doing)(?! now)|how (do|are) you feel(?! (any )?better)|what'?s bothering|what'?s got you (feeling|down|worried)|are you (ok|okay|alright)\b|call (911|9 1 1|us)( today)?\b|^ ?what happened ?\??$/],
     ["onset", /when did (it|this|the pain|that|the \w+|your \w+|symptoms|all (of )?this) (start|begin|began|happen|come on|kick in|kick off|kicked off)|how long ago|what time did|since when|\bsudden(ly)?\b|all at once|gradual(ly)?|come on|came on|\bonset\b|how long (has|have|did) (it|this|you|the|she|he) ?(been|had|felt|feeling|lasted)?|when did (it|this|all this) (start|begin)|start(ed)? (suddenly|gradually)|how long (have )?(you|ya)( have| been|'ve been)/],
     ["provocation", /(worse|better) (when|with|if)|what makes it (worse|better)|makes it (worse|better)|anything (make|makes|that makes) it|better or worse|worse or better|\bprovok|\bpalliat|when you (breath|move|press|walk|lie|lay|sit|cough)|when i (push|press|touch)|(push|press)(ing)? (here|on)|does it hurt (when|to|more)|hurt more when|change when|exertion|at rest|\brelieve/],
     ["quality", /describe (it|the pain|your pain|what)|what does (it|the pain) feel like|feel like\b(?! (throwing|you|i'?m))|\b(sharp|dull|crushing|stabbing|tearing|ripping|burning|aching|squeezing)\b(?! (when|with))|(a|of a|like a|more of a) pressure|pressure or|quality|kind of pain|type of pain/],
@@ -655,7 +694,7 @@ const NLU = (() => {
     ["history", /medical history|\bhistory\b(?! of (this|seizures))|past medical|health (problems|issues|conditions)|medical (problems|issues|conditions)|other (medical )?problems|\bconditions\b|\bdiagnos|(heart|lung|kidney|breathing) (problems|issues|disease)|any problems|(wrong|problems?|issues?) with your (heart|lungs|kidneys|liver|sugar)|\bsurger(y|ies)\b|been sick|see a doctor for|\b(have|got|had) (diabetes|high blood pressure|hypertension|asthma|copd|cancer|afib|a stroke|a heart attack)\b|\bare you (a )?diabetic\b|doctor for anything|\bticker\b/],
     ["lastoral", /last (oral|meal|ate|eat|drink|thing to eat)|\beat(en)?\b|\bate\b|\bfood\b|drink anything|anything to (eat|drink)|\bintake\b|\bbreakfast\b|\blunch\b|\bdinner\b/],
     ["events", /what were you doing|leading up|led up|before (this|it) (started|happened)|\bevents\b|how did (this|it) happen|what led|doing (right )?(when|before)|prior to|brought this on|what did you see|see (it )?happen|what happened before/],
-    ["orient", /where are (you|we)|where we are|what day|what'?s the date|what year is|what month|who'?s the president|what time is it|do you know where|what city|what happened to you|oriented\b(?! times)/],
+    ["orient", /where (are|were) (you|we)\b(?! (going|gonna|headed|taking|from))|where (you|we) are\b|what day|what'?s the date|(today'?s|the) date\b(?! of birth)|what year(?! (were|was|did) (you|he|she))|year (it is|is it)|what month|who'?s the president|what time is it|do you know where|what city|what (place|building|town) (is this|are we|we'?re)|what happened to you|(know|remember|recall|recollect) (what|why) (happened|you|we|this)|why (are|were) you here|oriented\b(?! times)/],
     ["consent", /can (we|i) help you|may (we|i) help|is it ok(ay)? if (we|i) (help|take a look|check|examine)|is (it|that) (ok|okay|alright|all right) (if|for)|can i (check|examine|take|listen|look|put|start|give|touch)|\bmay i\b|mind if|permission|consent|ok if i|okay if i|alright if i/],
     ["reassure", /you'?re going to be (ok|okay|alright|fine)|(we'?ll|we are going to|we'?re going to|gonna) take (good )?care|don'?t worry|we'?ve got you|we got you|try to (relax|stay calm|calm down)|stay calm|you'?re in good hands|it'?s going to be (ok|okay|alright)|^ ?(ok |okay |now |just )?take a (deep|slow) breath|hang in there|you'?re safe|we'?re here (for you|to help)/],
     ["pde5", /viagra|cialis|levitra|sildenafil|tadalafil|vardenafil|erectile|sexual(ly)? enhanc|\bed med|performance (med|pill)/],
@@ -693,14 +732,14 @@ const NLU = (() => {
     ["12lead", /\b12 ?lead/],
     ["bp", /blood pressure|\bbp\b|\bnibp\b|pressure cuff|\bcuff\b|\b(manual|get a|need a|take a|check a|grab a|another|repeat) pressure\b|pressure (in|on) both arms|both arms (pressure|bp)|what'?s (the|his|her|your) pressure|(his|her) pressure\b|(re ?check|recheck|check|repeat|retake) (the |his |her )?pressure\b/],
     ["spo2", /\bsats?\b|\bspo2\b|pulseox|oximet|o2 sat|oxygen sat|saturation|finger probe|satting/],
-    ["pulse", /\bpulses?\b(?! (check|ox))|heart rate|\bhr\b|\bradials?\b|\bcarotids?\b(?! (and|or) femoral)|\bfemorals?\b|\bpedal pulses?\b|dorsalis|pedis|posterior tibial|distal pulses?/],
+    ["pulse", /\bpulses?\b(?! (check|ox))|heart rate|\bfeel(ing)? for (a |his |her )?(radial|carotid)\b|\bhr\b|\bradials?\b|\bcarotids?\b(?! (and|or) femoral)|\bfemorals?\b|\bpedal pulses?\b|dorsalis|pedis|posterior tibial|distal pulses?/],
     ["rr", /resp(iratory)? rate|respirations|breathing rate|count (his|her|their|your|the) (breaths|respirations)|\brr\b|breaths per minute/],
     ["etco2", /etco2|end tidal|capnography|\bco2\b/],
     ["temp", /\btemp\b|temperature|thermometer/],
     ["bgl", /blood (sugar|glucose)|\bsugar\b|\bbgl\b|\bcbg\b|\bbg\b|glucometer|accu ?chek|finger ?stick|dextro ?stick|(a|the|her|his) glucose\b(?! (gel|paste|tab))|glucose (level|check)|check (a |her |his |the )?glucose/],
     ["gcs", /\bgcs\b|glasgow|mental status|level of consciousness|\bloc\b|(eye|verbal|motor) (score|response)|eye opening/],
     ["pupils", /pupil|penlight|\bperrl|reactive to light/],
-    ["skin", /\bskin\b(?! (rash|hives))|(feel|touch|check|palpate) (his|her|their|the|your) forehead|hand on (his|her|their) forehead|\bis (he|she|the patient) (clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)\b|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
+    ["skin", /\bskin\b(?! (rash|hives))|(feel|feeling|touch|touching|check|checking|palpate|palpating|hand on) (his|her|their|the|your) (forehead|skin)|\bforehead\b|hand on (his|her|their) forehead|\bis (he|she|the patient) (clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)\b|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
     ["caprefill", /\bcap(illary)? ?refill|capillary/],
     ["corneal", /\bcorneals?\b|\bcornea|blink reflex|(touch|touching|brush) (the|his|her|their) (eye|eyelashes|lashes)/],
     ["gag", /\bgag(ging)? ?(reflex)?\b(?!s)|\bgag\b/],
@@ -741,7 +780,8 @@ const NLU = (() => {
     ["patches", /\bpatch(es)?\b|transdermal|duragesic/],
     ["vitals", /vitals|vital signs|full set|set of vitals|(some|a set of|get|grab) numbers on/],
     ["pulsecheck", /pulse check|check (for )?(a )?pulse\b(?! ?ox)|is there a pulse|rhythm check/],
-    ["scene", /look around|\bscene\b|environment|surroundings|(the|this) room|what do i see|anything (around|nearby|on the (table|floor|counter|nightstand))/],
+    ["scene", /look around|what do (i|we) see around|\bscene\b|environment|surroundings|(the|this) room|anything (around|nearby|on the (table|floor|counter|nightstand))/],
+    ["look", /what (do|can|did) (i|we) see\b(?! (happen|around|in (the|this) room))|what am i (seeing|looking at)|what (are|do) we see|what (does|do) (it|that|they|this|he|she|his \w+|her \w+) look like|how (does|do) (it|that|they|this) look|(is there |do i see )?anything (there|on (it|him|her|them)|unusual|abnormal|notable)\b|do i see anything|what'?s there\b|what do i notice|what do (i|we) find/],
   ];
   const T = [
     ["bandage", /bandage|dressing|direct pressure|control (the )?bleed|gauze|hemorrhage control/],
@@ -985,7 +1025,7 @@ const NLU = (() => {
 
   function parseUtterance(text) {
     const t = normalize(text);
-    const out = { raw: text, norm: t, questions: [], assess: [], tx: [], toBystander: false, byCrew: false, followup: false, semantic: null };
+    const out = { raw: text, norm: t, questions: [], assess: [], tx: [], orientParts: [], pulseSites: [], toBystander: false, byCrew: false, followup: false, semantic: null };
     out.toBystander = /\b(ma'?am|sir)\b.*\b(is|was|does|did|has|when) (he|she|your|him|her)\b|\b(ma'?am|sir)\b,? (when|does|did|is|has) (he|she|you last)|\b(your|his|her) (wife|husband|son|daughter|mom|mother|dad|father|friend|roommate|partner|coworker)\b(?! (get|grab|take|check))|\bbystander|\bfamily\b|did (he|she) |does (he|she) |is (he|she) |has (he|she) |was (he|she) |(he|she) (take|takes|have|has|use|uses)|witness|who called|who found|when did you find (him|her)|what did you see|how long has (he|she)|how long was (he|she)|(see|saw|seen) (him|her) normal|that you know of/.test(t);
     out.byCrew = /\b(have|has|can|could|let|tell) (my |the |our )?(partner|engine|crew|captain|emts?|firefighters?|guys|engine guys|fire)\b|^\s*(partner|engine|captain)\b/.test(t);
     // clause split for multi-intent
@@ -1077,6 +1117,26 @@ const NLU = (() => {
     if (out.questions.includes("cough") && !/pain|hurt/.test(t)) out.questions = out.questions.filter(x => x !== "provocation");
     if (out.assess.includes("abdomen") && /push|press|touch/.test(t)) out.questions = out.questions.filter(x => x !== "provocation");
     if (out.assess.includes("edema")) out.questions = out.questions.filter(x => x !== "swelling");
+    // orientation sub-parts (so the patient answers exactly what was asked, all of it, in one turn)
+    if (out.questions.includes("orient")) {
+      const P = [];
+      if (/\byear\b/.test(t) && !/(were|was) (you|he|she) born|years? old|years ago|how many years/.test(t)) P.push("year");
+      if (/\bmonth\b/.test(t)) P.push("month");
+      if (/\bwhat day\b|\bday (is it|of the week|today)|what'?s today\b/.test(t)) P.push("day");
+      if (/\bdate\b(?! of birth)/.test(t)) P.push("date");
+      if (/what time is it/.test(t)) P.push("time");
+      if (/where (are|were) (you|we)|where (you|we) are|what (city|place|building|town)|do you know where/.test(t)) P.push("place");
+      if (/(know|remember|recall|recollect) (what|why) (happened|you|we|this)|what happened to you|why (are|were) you here/.test(t)) P.push("event");
+      if (/president/.test(t)) P.push("president");
+      out.orientParts = P;
+      if (P.includes("event") && !/what'?s (going on|wrong)|why (did|'d) you call|bothering/.test(t)) out.questions = out.questions.filter(x => x !== "cc");
+    }
+    // pulse sites named in the utterance (radial vs carotid comparison is done by the instructor)
+    if (out.assess.includes("pulse") || out.assess.includes("pulsecheck")) out.pulseSites = ["radial", "carotid", "femoral", "pedal"].filter(k => new RegExp("\\b" + k + "s?\\b").test(t) || (k === "pedal" && /dorsalis|pedis|posterior tibial/.test(t)));
+    // "what do I see" next to a real inspection in the same breath: the inspection describes itself
+    if (out.assess.includes("look") && out.assess.some(a => !["look", "tracking", "scene"].includes(a))) out.assess = out.assess.filter(a => a !== "look");
+    if (out.assess.includes("look") && out.assess.includes("tracking")) out.assess = out.assess.filter(a => a !== "look");
+    if (out.assess.includes("look")) { out.questions = out.questions.filter(x => x !== "quality"); out.assess = out.assess.filter(a => a !== "scene"); }
     // context follow-ups ("and the pain?", "anything else?", "what about him?")
     const nothing = !out.questions.length && !out.assess.length && !out.tx.length;
     if (nothing && ctx.lastQ && /^\s*(and|what about|how about|anything else|any others?|what else|others?|and (him|her)|more|go on|really|like what)\b/.test(t)) { out.questions.push(ctx.lastQ); out.followup = true; }
@@ -1194,7 +1254,21 @@ const SIM = (() => {
   function gcsStr() { const g = st.tg.gcs; return `${g[0] + g[1] + g[2]} (E${g[0]} V${g[1]} M${g[2]})`; }
   const GCS_E = ["", "no eye opening", "eyes open to pain", "eyes open to voice", "eyes open spontaneously"], GCS_V = ["", "no verbal response", "incomprehensible sounds", "inappropriate words", "confused conversation", "oriented"], GCS_M = ["", "no motor response", "extension to pain", "abnormal flexion", "withdraws from pain", "localizes pain", "obeys commands"];
   function gcsDetail() { const g = st.tg.gcs; return `E${g[0]} ${GCS_E[g[0]]}, V${g[1]} ${GCS_V[g[1]]}, M${g[2]} ${GCS_M[g[2]]}`; }
-  let lastText = "";
+  let lastText = "", lastSites = [], lastParsed = null;
+  // inspections that "what do I see?" can refer back to
+  const FOCUS_LABEL = { expchest: "Chest and abdomen, shirt lifted", expabd: "Abdomen", exparms: "Arms", explegs: "Legs", expall: "Whole body, exposed", patches: "Skin, looking for patches", back: "Back", airway: "Mouth and airway", pupils: "Pupils", skin: "Skin", hives: "Skin", edema: "Neck veins and legs", head: "Head, face and neck", tracks: "Arms", extrem: "Extremities", abdomen: "Abdomen", work: "Work of breathing", chestrise: "Chest rise", mucous: "Mouth", tongue: "Tongue", trauma: "Head to toe", pulse: "Pulses", lungs: "Lung sounds", caprefill: "Capillary refill", smell: "Smell", medbottles: "Medications on scene", medalert: "Medical ID", incont: "Clothing", preg: "Abdomen", pelvis: "Pelvis", gag: "Gag reflex", corneal: "Corneal reflex", neuro: "Neuro exam" };
+  // ---------- arrival: general impression + tracking (instructor reads it at call start) ----------
+  function trackingText() {
+    const a = sc.approach, m = mental();
+    if (a && a.track && m === st.x.m0 && st.t < 600) return "On approach: " + a.track.replace(/\.?$/, ".");
+    return EXAM.find("tracking", sc, st, lastText, m);
+  }
+  function approachLines(again) {
+    const a = sc.approach || {};
+    const see = a.see || `Scene: ${sc.scene}`;
+    return [(again ? "On arrival: " : "") + see, trackingText()];
+  }
+  function approach() { if (!st) return []; rec("a:tracking"); const lines = approachLines(false); log("find", "Arrival / general impression: " + lines.join(" ")); return [{ speaker: "find", approach: true, text: lines.join("\n") }]; }
   function strokeScreen() {
     const tg = st.tg, neuro = tg.neuro || "";
     if (/LAMS|mLAPSS/.test(neuro)) return neuro;
@@ -1217,7 +1291,7 @@ const SIM = (() => {
         out.push(`12-lead acquired (rate ${Math.round(st.v.hr)}): ${tg.twelve.text}`); break;
       case "bp": if (arrest || !st.v.sbp) { R("bp", "--/--"); out.push("NIBP: unable to obtain."); } else { R("bp", vitalStr().bp); out.push(`BP ${vitalStr().bp} mmHg.` + (tg.bpNote ? " " + tg.bpNote : "")); } break;
       case "spo2": st.rev.spo2 = { t: st.t }; out.push(st.v.spo2 == null ? "SpO2: no reliable waveform." : `SpO2 ${Math.round(st.v.spo2)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : "room air"}).`); break;
-      case "pulse": R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(X("pulse")); break;
+      case "pulse": R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(EXAM.pulses(sc, st, lastText, mental(), lastSites)); break;
       case "pulsecheck": out.push(tg.pulse === false || arrest ? `Pulse check: NO PULSE. Monitor shows ${tg.rhythmName}.` : `Pulse check: carotid pulse present, rate ~${Math.round(st.v.hr)}.`); rec("a:monitor"); st.rev.monitor = st.rev.monitor || { t: st.t }; break;
       case "rr": R("rr", Math.round(st.v.rr)); out.push(`Respiratory rate ${Math.round(st.v.rr)}/min${st.v.rr < 10 ? ", shallow" : st.v.rr > 24 ? ", labored" : ""}.`); break;
       case "etco2": st.rev.etco2 = { t: st.t }; out.push(`Capnography applied: EtCO2 ${Math.round(st.v.etco2)} mmHg${tg.capno === "shark" ? ", shark-fin waveform" : ""}.`); break;
@@ -1249,9 +1323,19 @@ const SIM = (() => {
       case "back": out.push(X("back") + " On inspection: " + INSPECT.backLook(sc, st, lastText, mental())); rec("a:exposed"); break;
       case "abdomen": out.push(X("abdomen")); break;
       case "scene": out.push(`Scene: ${sc.scene}${sc.sceneMore ? " " + sc.sceneMore : ""}`); break;
+      case "tracking": out.push(trackingText()); break;
+      case "look": {
+        // context-aware "what do I see?": re-describe the most recent inspection; at the start of the call, the arrival picture
+        const f = st.x.focus;
+        if (!f) { out.push(...approachLines(true)); rec("a:tracking"); break; }
+        st.x.inLook = true; const saveT = lastText, saveS = lastSites, saveP = st.x.preLines; lastText = f.text; lastSites = f.sites || []; st.x.preLines = [];
+        const again = assess(f.id).join(" ").replace(/^You lift the shirt\. /, "");
+        lastText = saveT; lastSites = saveS; st.x.preLines = saveP; st.x.inLook = false;
+        out.push(`(${FOCUS_LABEL[f.id] || f.id}) ${again}`); break; }
       case "vitals": ["pulse", "bp", "rr", "spo2", "skin"].forEach(k => out.push(...assess(k))); break;
       default: { const f = X(id); if (f) { out.push(f); const panel = { caprefill: "skin", mucous: "skin", hives: "skin", grip: "neuro", drift: "neuro", droop: "neuro", speech: "neuro", orient4: "gcs", avpu: "gcs" }[id]; if (panel === "neuro") R("neuro", f); } }
     }
+    if (FOCUS_LABEL[id] && !st.x.inLook) st.x.focus = { id, text: lastText, sites: lastSites.slice(), t: st.t };
     if (id !== "vitals") log("assess", `Assessed ${id.toUpperCase()}: ${out.join(" ")}`);
     return out;
   }
@@ -1434,7 +1518,7 @@ const SIM = (() => {
     if (!st || st.ended) return [];
     lastInteraction = st.t;
     const parsed = await NLU.parseAsync(text); parsed.tx.forEach(t => t.raw = parsed.norm);
-    lastText = parsed.norm;
+    lastText = parsed.norm; lastSites = parsed.pulseSites || []; lastParsed = parsed;
     if (parsed.questions.includes("reassure") && ["alert", "anxious", "confused", "aphasic"].includes(mental())) { st.x.calmT = st.t; st.x.calmN = (st.x.calmN || 0) + 1; }
     log("me", text);
     parsed.questions.forEach(q => rec("q:" + q));
@@ -1513,7 +1597,7 @@ const SIM = (() => {
   function setPI(code) { st.pi = code; st.piT = st.t; log("pi", `Provider Impression selected: ${code} – ${(PROVIDER_IMPRESSIONS[code] || [code])[0]}`); }
   function end() { st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() }; }
 
-  return { start, stop, handle, end, event, mental, setPI, flow, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
+  return { start, stop, handle, end, event, mental, setPI, flow, approach, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
 })();
 
 /* ===== exam.js ===== */
@@ -1713,6 +1797,24 @@ const EXAM = (() => {
     preg(x) { const p = x.sc.patient; if (p.sex !== "F") return "Not applicable; male patient."; if (p.age > 55 || p.age < 11) return "Not applicable given the patient's age; no gravid abdomen."; return "No visibly gravid abdomen and the fundus isn't palpable. Ask about LMP and possible pregnancy."; },
     temp(x) { return x.v.temp == null ? "Temperature unavailable." : `Temperature ${x.v.temp.toFixed(1)}°F.`; },
   };
+  // Radial + carotid together (what a medic does on first contact): presence, rate, quality, regularity and
+  // the radial-vs-carotid comparison, all from LIVE vitals so it stays consistent with the BP.
+  function pulseCombo(x, sites) {
+    const { v, tg, arrest, st } = x;
+    if (arrest) return st.flags.cpr ? "No spontaneous radial or carotid pulse. A carotid/femoral pulse is felt only with compressions." : "No radial pulse and no carotid pulse.";
+    const hr = Math.round(v.hr), reg = rhythmWord(tg), rate = hr > 100 ? "rapid" : hr < 60 ? "slow" : "normal rate";
+    const sbp = v.sbp || 0, out = [];
+    const wantR = !sites.length || sites.includes("radial"), wantC = !sites.length || sites.includes("carotid");
+    let rad = null;
+    if (wantR) rad = find("radial", x.sc, st, x.text, x.m);
+    if (wantC) {
+      const cq = sbp < 80 ? "present but weak" : sbp < 90 ? "present but soft" : "present and strong";
+      const ctext = `Carotid pulse is ${cq}, ${rate} at about ${hr}, ${reg}.`;
+      if (rad && /carotid/i.test(rad)) out.push(rad); else if (rad) out.push(rad, ctext); else out.push(ctext);
+      if (rad) out.push(sbp < 80 ? "Comparison: carotid present but radials absent, so perfusion is poor." : sbp < 90 ? "Comparison: radials are noticeably weaker than the carotid." : /unequal|weaker than|left .*weaker/i.test(rad) ? "Comparison: carotid strong; radials unequal side to side." : "Comparison: radial and carotid are both strong and match.");
+    } else if (rad) out.push(rad);
+    return out.join(" ");
+  }
   const KEYMAP = { pulse: "radial", radial: "radial", carotid: "carotid", femoral: "femoral", pedal: "pedal" };
 
   // site-specific pulse from the utterance
@@ -1729,7 +1831,14 @@ const EXAM = (() => {
     const fn = D[KEYMAP[key] || key];
     return fn ? end(fn(x)) : null;
   }
-  return { find, has: k => !!D[KEYMAP[k] || k] || ["radial", "carotid", "femoral", "pedal"].includes(k), D, EXAM_X };
+  function pulses(sc, st, text, mental, sites) {
+    const x = ctx(sc, st, text, mental); sites = (sites || []).filter(k => k === "radial" || k === "carotid");
+    const other = /femoral|pedal|dorsalis|pedis|posterior tibial|distal pulse|feet|foot/.test(x.text);
+    if (other && !sites.length) return find("pulse", sc, st, text, mental);
+    if (sites.length === 1) return find(sites[0], sc, st, text, mental);
+    return pulseCombo(x, sites);
+  }
+  return { find, pulses, has: k => !!D[KEYMAP[k] || k] || ["radial", "carotid", "femoral", "pedal"].includes(k), D, EXAM_X };
 })();
 
 /* ===== inspect.js ===== */
@@ -1820,6 +1929,7 @@ const INSPECT = (() => {
       if (hivesNow(st)) out.push("raised hives across the chest"); else if (hivesFading(st)) out.push("fading hives");
       if (/mottl/i.test(tgs) || (x.shock && st.v.sbp < 75 && !x.arrest)) out.push("mottling across the trunk");
       const wk = ex("work"); if (wk && !/unlabored|full sentences|no accessory|normal|improving|easier/i.test(wk) && !x.arrest) out.push(wk.replace(/\.$/, ""));
+      { const j = ex("jvd"); if (j && /jvd|jugular|neck vein/i.test(j) && !/^no jvd|flat/i.test(j) && !x.arrest) out.push(j.replace(/\.$/, "")); }
       if (x.arrest) out.push(st.rev.monitor ? "defib pads in place" : "chest bare and ready for pads and compressions");
     }
     if (region === "abdomen") {
@@ -4147,6 +4257,63 @@ addS(G(Object.assign({}, bradyBase, {
   expected: "Symptomatic bradycardia (HR ~38, SBP 86) from pacemaker failure to capture. Expose the chest (pacemaker under the left clavicle), monitor/12-lead, supine, IV. Atropine 1 mg is unlikely to help; proceed to TCP for HR ≤ 40 with poor perfusion, with Base contact. Consider sedation for TCP.",
 })));
 
+/* ===== scx_40_approach.js ===== */
+/* =====================================================================
+ * ARRIVAL / GENERAL IMPRESSION (instructor reads this at call start)
+ * For every scenario: what you see walking in (scene, hazards, position,
+ * apparent age/sex, distress, skin from the doorway, work of breathing,
+ * bleeding, bystanders, meds/paraphernalia) + whether the patient is
+ * TRACKING you on approach. Observations only: no impression is given away.
+ * sc.approach = { see, track }. "track" matches the starting mental status.
+ * ===================================================================== */
+const APPROACH = {
+  stemi: ["Scene is safe: a two-story home, and the wife meets you at the door. A man in his late 50s is sitting on the couch, hand pressed to the middle of his chest. He looks pale and sweaty from the doorway, breathing a little fast but talking. A bag of groceries is spilled on the stairs.", "Eyes open, and he tracks you as you walk in; he looks scared."],
+  chf: ["Scene is safe: a small third-floor apartment at night. An older woman is sitting bolt upright on the edge of the bed, leaning forward on her arms. She's working hard to breathe, and you can hear a wet, gurgling sound from the door. Her skin looks pale and sweaty and her lips look dusky. Pill bottles are on the nightstand and a home oxygen machine sits in the corner, switched off. Her granddaughter is with her.", "Eyes open and tracking you, wide and frightened; she can't say more than a word or two."],
+  anaph: ["Scene is safe: a busy restaurant. A woman in her 20s is sitting at a table, scratching her arms. Her face and neck look red and blotchy, and her lips look puffy. She's breathing fast and seems anxious. A half-eaten plate of food is in front of her, and her friend is panicking beside her.", "Eyes open, and she tracks you as you approach, looking scared."],
+  asthma: ["Scene is safe, but the air is hazy and smoky. A young man, about 20, is sitting on a park bench, leaning forward with his hands on his knees. You can see his neck muscles working with every breath and hear wheezing from several feet away. He looks pale and sweaty. A friend is holding an inhaler.", "Eyes open and tracking you; he looks at you but can only nod."],
+  hypo: ["Scene is safe: an office cubicle area. A man in his 50s is slumped in an office chair, mumbling. He's drenched in sweat and pale, and he's swatting at a coworker's hand. Breathing looks normal. There's an insulin pen and an unopened lunch bag on the desk.", "Eyes are open but he does NOT track you consistently: he looks past you and doesn't follow you as you walk up."],
+  opioid: ["Scene is secured by LAPD: a public restroom. A man in his 30s is lying on the floor, not moving. His lips look blue, and you can hear slow, snoring respirations from the doorway. There's a burnt piece of foil and a lighter on the floor. A friend is pacing and yelling for help.", "Eyes closed; he does NOT track you or react at all to your arrival."],
+  stroke: ["Scene is safe: a kitchen. An older woman, about 70, is sitting at the table, slumped to her right. A coffee cup is spilled. Her skin color looks normal and she's breathing comfortably. Her husband is beside her, very worried.", "Eyes open and she tracks you as you come in; she tries to say something to you but no clear words come out."],
+  seizure: ["Scene is safe: a living room. A young woman, mid-20s, is on the floor next to the couch, with rhythmic jerking of all four limbs. There's blood-tinged froth at her mouth, her lips look dusky, and her pants are wet. Furniture is close to her head. Her roommate is crying and says it has been going on for about six minutes.", "Not tracking: her eyes are open but deviated, and she doesn't react to you at all."],
+  vf: ["Scene is safe: a gym. A man in his 60s is lying on his back next to a treadmill. He's gray, not moving, and not breathing normally. A gym employee is doing compressions that look shallow and slow. An AED is still in its case on the floor.", "Not tracking: eyes closed, no movement, no response to your arrival."],
+  nstemi: ["Scene is safe: a home living room. A woman in her mid-60s is lying on the couch with a bucket beside her. She looks pale and tired but is breathing without difficulty. Her daughter is with her.", "Eyes open, and she tracks you as you walk in, though she looks washed out."],
+  dissection: ["Scene is safe: a warehouse floor; watch the forklift traffic. A man in his 50s is sitting on a pallet, rocking, holding his chest and reaching toward his upper back. He looks pale and sweaty and is in obvious severe pain. Coworkers are standing around him.", "Eyes open and tracking you; he's grimacing and calls out to you to hurry."],
+  stemi_brady: ["Scene is safe: a mobile home. A man in his 70s is sitting on the edge of the bed, gripping the headboard. His skin looks gray and sweaty. He's breathing without obvious difficulty. His wife is in the doorway.", "Eyes open and tracking you, but he looks unwell and moves slowly."],
+  chf_cp: ["Scene is safe: an assisted-living room. An elderly man is sitting upright in a recliner, breathing hard; you can hear wheezing from the door. His color looks dusky and he's sweaty. Inhalers, a home nebulizer and a pill organizer are on the side table. A caregiver is with him.", "Eyes open and tracking you; he raises a hand to you but is too short of breath to say much."],
+  chf_soft: ["Scene is safe: a kitchen. A woman in her late 60s is sitting at the table, leaning forward, breathing fast. She looks pale and a bit sweaty. Her husband is holding a handwritten list of her medications.", "Eyes open and tracking you as you approach."],
+  allergy_hives: ["Scene is safe: a pharmacy parking lot. A woman in her mid-40s is sitting in the driver's seat of her car with the door open, scratching red, raised welts on her arms and neck. She's breathing normally and talking. A pharmacy bag is on the passenger seat; a pharmacist is standing by.", "Eyes open, tracking you, and she waves you over."],
+  anaph_gi: ["Scene is safe: a restaurant restroom. A man in his 50s is lying on the floor. His face looks flushed but the rest of him looks pale, and he's clutching his stomach. There's vomit on the floor nearby. A friend is with him.", "Eyes open, and he tracks you as you come in, though he looks miserable."],
+  copd: ["Scene is safe: a bedroom. An older man is sitting forward on the edge of the bed, breathing through pursed lips with his shoulders working. His lips look a little blue. He's wearing a nasal cannula from a home oxygen concentrator. There's an ashtray on the nightstand. His wife is with him.", "Eyes open and tracking you; he nods at you but saves his breath."],
+  pe: ["Scene is safe: a hotel room. A woman around 30 is sitting on the bed, breathing fast and holding the right side of her chest. She looks pale and a little sweaty. A suitcase is still packed by the door. A coworker let you in.", "Eyes open and tracking you; she looks anxious."],
+  hypo_elder: ["Scene is safe: a small apartment bedroom. An elderly woman is on the floor next to the bed, mumbling. She looks pale and very sweaty. You notice she isn't moving her left arm as much as her right. A pill organizer is on the nightstand. Her caregiver is with her.", "Eyes are open but she does NOT track you reliably; she looks around the room and doesn't follow you."],
+  dka: ["Scene is safe: a messy dorm room. A young man in his 20s is lying in bed, pale, breathing deeply and fast. There are empty sports-drink bottles everywhere, and you notice a sweet, fruity smell in the room. A device with tubing is on the desk, disconnected. His roommate is there.", "Eyes open, and he tracks you, but he looks exhausted."],
+  etoh: ["Scene is safe; LAPD is present at a bus stop. A man in his 50s is slumped on the bench. He smells strongly of alcohol, and there's a small amount of dried blood over his left eyebrow. He's breathing on his own. An empty bottle in a paper bag is under the bench.", "As you approach he rouses, squints, and tracks you sluggishly."],
+  bb_od: ["Scene is safe: a living room at night. A woman in her mid-30s is lying on the couch, pale and sluggish. She's breathing without difficulty. Her husband is holding an empty pill bottle and looks frightened.", "Eyes open; she tracks you slowly as you come in."],
+  stroke_post: ["Scene is safe: an office conference room. A man in his late 50s is sitting on the floor against the wall, holding a trash can, pale and sweaty. He's breathing normally. A coworker is with him.", "His eyes are closed when you walk in; when you speak he opens them and tracks you briefly, then shuts them again, saying the room is spinning."],
+  tia: ["Scene is safe: a tidy living room. A man in his 80s is sitting in his armchair. His color looks normal and he's breathing comfortably. He seems a little embarrassed. His wife is with him.", "Eyes open, and he tracks you as you walk in."],
+  stroke_lams5: ["Scene is safe: a restaurant kitchen; watch the hot surfaces and the wet floor. A man in his 60s is on the floor, propped against a cabinet. His left arm lies limp, he's drooling, and his face looks uneven. Coworkers are standing around.", "His eyes are open but turned to his right; he does NOT track you when you approach from his left."],
+  postictal_etoh: ["Scene is safe: an apartment living room. A man in his 30s is lying on the floor, breathing noisily, with a wet stain on his pants. He's flushed and sweaty, and his hands look shaky. His girlfriend is with him; empty beer cans fill the recycling bin.", "Eyes half open, but he does NOT track you; he looks past you and doesn't follow you."],
+  focal_sz: ["Scene is safe: a living room. A woman in her mid-40s is sitting on the couch, staring. Her right arm and the right side of her face are twitching rhythmically. She's breathing on her own. Her husband is beside her.", "Not tracking: she stares straight ahead and does not respond to her name or follow you."],
+  pea_hyperk: ["Scene is safe: a living room. An elderly woman is slumped in a recliner. She's gray and not breathing. You notice a bulge on her left forearm. Her daughter is with her.", "Not tracking: eyes half closed, no movement, no response to your arrival."],
+  pvt_young: ["Scene is safe: a soccer field. A man around 40 is lying on the grass; a teammate is doing compressions. He looks gray, with an occasional gasp. Players are crowding around.", "Not tracking: eyes closed, no response to your arrival."],
+  chb: ["Scene is safe: a bedroom. A man in his late 70s is sitting on the edge of the bed holding his head. He looks pale and sweaty. He's breathing without difficulty. His wife says he nearly fell trying to stand.", "Eyes open, and he tracks you as you come in, but he looks very unwell."],
+  brady_med: ["Scene is safe: a home. A woman in her late 60s answered the door slowly and is now sitting on the couch. She looks pale but is breathing comfortably. A pharmacy bag is on the counter. A neighbor is with her.", "Eyes open, and she tracks you as you walk in."],
+  mobitz2: ["Scene is safe: a church aisle. An elderly woman is lying on the floor with her feet raised by ushers. She looks pale but is breathing comfortably, and she seems embarrassed. A rosary is still in her hand. Her granddaughter is with her.", "Eyes open, and she tracks you as you walk up the aisle."],
+  svt: ["Scene is safe: a coffee shop. A woman in her late 20s is sitting at a table with her hand on her chest. She looks pale and visibly anxious but is breathing without difficulty. An iced coffee is in front of her.", "Eyes open, and she tracks you the moment you walk in."],
+  afib_rvr: ["Scene is safe: a living room. A man in his 70s is sitting upright on the couch, breathing a little fast, with his hand on his chest. He looks pale. Several prescription bottles are on the coffee table. His son is with him.", "Eyes open, and he tracks you as you approach."],
+  vt_pulse: ["Scene is safe: a dining room. A man in his early 60s is slumped in a dining chair. He looks gray and sweaty. He's breathing fast. His wife is panicking beside him.", "Eyes open, but he tracks you slowly and inconsistently, and is slow to look up at you."],
+  vasovagal: ["Scene is safe: a blood-drive hall on campus. A young woman in her early 20s is lying on a donor cot with her legs raised. She looks pale and sweaty but is breathing comfortably. Blood-bank staff are with her.", "Eyes open, and she tracks you as you walk over."],
+  orthostatic: ["Scene is safe: a small bathroom; the floor is slippery. An elderly woman is sitting on the floor. She looks pale and frail but is breathing comfortably. There's evidence of diarrhea in the bathroom. A neighbor is with her.", "Eyes open, and she tracks you as you come in."],
+  syncope_lac: ["Scene is safe: a backyard party; music is loud and people are crowding. A man in his mid-30s is sitting in a lawn chair, holding a bloody towel to his forehead. The bleeding looks controlled. His color looks normal and he's breathing comfortably.", "Eyes open, and he tracks you as you walk over."],
+  urosepsis: ["Scene is safe: a skilled nursing facility room. An elderly woman is in bed, mumbling and picking at the sheets. Her face looks flushed. She's breathing fast. A urinary catheter bag with dark, cloudy urine hangs on the bed rail. A nurse is waiting with paperwork.", "Eyes open, but she does NOT track you; she looks past you at the ceiling."],
+  pna_sepsis: ["Scene is safe: a bedroom. A man in his early 60s is sitting on the edge of the bed, leaning forward, coughing and breathing fast. He looks flushed and sweaty. Used tissues with rust-colored sputum are on the nightstand. His daughter is with him.", "Eyes open and tracking you; he waves you in between coughs."],
+  fever_flu: ["Scene is safe: an apartment. A woman in her mid-30s is wrapped in blankets on the couch, flushed and shivering. She's breathing comfortably. Tissues and a thermometer are on the coffee table. Her partner let you in.", "Eyes open, and she tracks you as you come in."],
+  fent_patch: ["Scene is safe: a dim, very warm bedroom. An elderly woman is lying on her back in bed under a blanket. You hear snoring respirations, and her lips look dusky. An electric cord runs under her to the wall outlet, with the switch light on. A pill organizer is on the nightstand. Her daughter is with her.", "Eyes closed; she does NOT track you or react to your arrival."],
+  chf_nitropatch: ["Scene is safe: a living room early in the morning. An elderly man is sitting upright in a recliner, pale and sweaty, breathing fast. A pill organizer and a small brown bottle are on the side table. His wife is in her robe.", "Eyes open, and he tracks you as you come in, though he looks unwell."],
+  pacer_fail: ["Scene is safe: a living room. An elderly woman is sitting in an armchair, pale and clammy, eyes half closed. She's breathing without difficulty. A walker is beside the chair, and her husband is holding her hand.", "When you speak she opens her eyes and tracks you, but she's slow and tired."],
+};
+SCENARIOS.forEach(sc => { const a = APPROACH[sc.id]; if (a && !sc.approach) sc.approach = { see: a[0], track: a[1] }; });
+
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
 const META = {
@@ -4216,12 +4383,58 @@ const RuleBasedPatient = (() => {
     history: "No, I'm pretty healthy.", lastoral: "I ate a few hours ago.", name: "...", age: "...", cc: "I don't feel good.", onset: "A little while ago.",
   };
   const FALLBACK = {
-    alert: ["Sorry, what do you mean?", "I'm not sure I follow. Can you ask me that another way?", "Hmm, I don't know.", "What was that?"],
-    anxious: ["I... I don't know, can you just help me?", "Sorry, I can't think straight right now. What?", "What? I'm sorry, I'm scared."],
+    alert: ["Sorry, what?", "What was that?", "Sorry, I didn't catch that.", "Huh? Can you say that again?"],
+    anxious: ["Sorry... what? Can you say that again?", "What? I'm sorry, I'm scared... what did you say?", "Sorry, what?"],
     aphasic: ["...the... (struggles) ...no...", "(shakes head, frustrated)"],
   };
+  // Not understood: an alert/anxious patient asks "Sorry, what?" (an authored line is used only if it is itself a clarification request).
+  // Altered patients keep their in-character authored lines (mumbling, etc.).
+  function clarify(sc, mental, st) {
+    const generic = pick(FALLBACK[mental] || FALLBACK.alert);
+    if (mental !== "alert" && mental !== "anxious") return resolve(sc.fallback, st) || generic;
+    for (let i = 0; i < 6; i++) { const t = resolve(sc.fallback, st); if (t && /\b(what\?|what was that|again|repeat|catch|huh|pardon|say that)\b/i.test(t)) return t; if (!t) break; }
+    return generic;
+  }
   const CONFUSED = ["Wha...? ...I don't... know...", "...huh? Where... am I?", "(mumbles incoherently)", "...leave me... alone...", "...mmh... tired..."];
   const resolve = (v, st) => typeof v === "function" ? v(st) : Array.isArray(v) ? pick(v) : v;
+  // ---------- orientation (A&O): answer exactly the parts asked (year/day/date/month/time/place/event), all in one turn ----------
+  const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], MO = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const ord = n => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+  const hash = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+  function authoredOrient(sc, st) { const a = (sc.answers || {}).orient; try { return a == null ? "" : String(typeof a === "function" ? a(Object.assign({}, st, { sev: 0, x: Object.assign({}, st.x, { bgl: 100, post: 1 }) })) : Array.isArray(a) ? a[0] : a); } catch (e) { return ""; } }
+  function placeOf(sc, st) {
+    const src = authoredOrient(sc, st).replace(/\([^)]*\)/g, " ");
+    const segs = src.split(/\.\.\.|[.,;!?…]/).map(x => x.trim()).filter(Boolean)
+      .filter(x => !/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|morning|afternoon|evening|night|tonight|today|october|year|20\d\d|the \d+(st|nd|rd|th)|with it|pain|scared|whatever|no,|just)\b/i.test(x) && !/^(i'?m|it'?s|i know)$/i.test(x));
+    if (segs.length) { let p = segs.join(", ").replace(/^(home|work)\b/i, m => "At " + m.toLowerCase()); return p[0].toUpperCase() + p.slice(1) + "."; }
+    const sce = (sc.scene || "").toLowerCase();
+    return /restaurant/.test(sce) ? "At the restaurant." : /office|cubicle|work|warehouse/.test(sce) ? "At work." : /park|field/.test(sce) ? "At the park." : /gym/.test(sce) ? "At the gym." : /church/.test(sce) ? "At church." : /hotel/.test(sce) ? "In my hotel room." : /nursing|facility|assisted/.test(sce) ? "At the... the facility where I live." : /car\b|parking/.test(sce) ? "In the parking lot, by my car." : "At home.";
+  }
+  function weekday(sc, st) { const m = authoredOrient(sc, st).match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i); return m ? m[1][0].toUpperCase() + m[1].slice(1).toLowerCase() : WD[new Date().getDay()]; }
+  function partOfDay(sc) { const m = String(sc.dispatch || "").match(/time of call (\d\d)(\d\d)/i); const h = m ? +m[1] : new Date().getHours(); return h < 5 ? "the middle of the night" : h < 12 ? "morning" : h < 17 ? "afternoon" : h < 21 ? "evening" : "night"; }
+  function orientAnswer(parts, ctx) {
+    const { scenario: sc, state: st, mental } = ctx, d = new Date();
+    if (mental === "aphasic") return "(tries hard to answer, but only gets out) ...the... no... (shakes head, frustrated)";
+    if (mental === "confused") {
+      const h = hash(sc.id), wy = [1987, 1994, 2003, 1979, 2011][h % 5], wrongDay = WD[(d.getDay() + 3 + (h % 3)) % 7], wrongMo = MO[(d.getMonth() + 5 + (h % 4)) % 12];
+      const C = {
+        year: [`...It's... ${wy}?`, `Uh... nineteen... ${wy % 100}... something?`, `...${wy}. Right?`][h % 3],
+        month: `...${wrongMo}?`, day: `...${wrongDay}... I think?`, date: `...the... ${ord(1 + h % 28)}? Of ${wrongMo}?`, time: "...nighttime...? Is it morning?",
+        place: [`...my mom's house?`, `...at work... I gotta... get back to work...`, `...is this... the hospital?`, `...I'm... (looks around) ...I don't know this place.`][h % 4],
+        event: ["...nothing happened... I'm fine... why are you here?", "...I don't... what happened? Did I fall?", "...I was just... (trails off) ...I don't remember."][h % 3],
+        president: "...the president? ...uh... (stares) ...the old guy?",
+      };
+      return parts.map(p => C[p]).filter(Boolean).join(" ");
+    }
+    const A = {
+      year: pick([`It's ${d.getFullYear()}.`, `${d.getFullYear()}.`]), month: `${MO[d.getMonth()]}.`, day: `It's ${weekday(sc, st)}.`,
+      date: `${MO[d.getMonth()]} ${ord(d.getDate())}, I think.`, time: `It's ${partOfDay(sc)}.`, place: placeOf(sc, st),
+      event: (() => { const c = (sc.answers || {}).cc; const t = c == null ? "" : String(typeof c === "function" ? c(st) : Array.isArray(c) ? c[0] : c); return t ? "Yeah. " + t : "Yeah, I know what happened. I called because I don't feel right."; })(),
+      president: "(slightly offended) Yes, I know who the president is.",
+    };
+    return parts.map(p => A[p]).filter(Boolean).join(" ");
+  }
+
 
   function answerFor(q, ctx) {
     const { scenario: sc, state: st, mental, parsed } = ctx;
@@ -4236,6 +4449,9 @@ const RuleBasedPatient = (() => {
       return out;
     }
     const a = sc.answers && sc.answers[q];
+    if (q === "orient" && (parsed.orientParts || []).length) return [{ speaker: "patient", text: orientAnswer(parsed.orientParts, ctx) }];
+    if (q === "orient" && mental === "confused" && typeof a !== "function") return [{ speaker: "patient", text: orientAnswer(["place", "day"], ctx) }];
+    if (q === "name" && mental === "confused" && typeof a === "string" && !/^\.*$/.test(a)) return [{ speaker: "patient", text: "..." + a.replace(/^\.+/, "") }];
     if (mental === "confused" && (a == null || typeof a === "string")) return [{ speaker: "patient", text: pick(sc.confusedAnswers || CONFUSED) }];
     if (a != null) return [{ speaker: "patient", text: resolve(a, st) }];
     if (byAns[q] && ["lkw", "onset", "events"].includes(q)) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
@@ -4259,11 +4475,11 @@ const RuleBasedPatient = (() => {
       if (!out.some(o => o.speaker === "narrator" && o.text.includes("respon"))) out.unshift({ speaker: "narrator", text: desc });
     }
     if (!qs.length && !parsed.tx.length && !parsed.assess.length) {
-      if (talk) out.push({ speaker: "patient", text: mental === "confused" ? pick(sc.confusedAnswers || CONFUSED) : (resolve(sc.fallback, st) || pick(FALLBACK[mental] || FALLBACK.alert)) });
+      if (talk) out.push({ speaker: "patient", nu: true, text: mental === "confused" ? pick(sc.confusedAnswers || CONFUSED) : clarify(sc, mental, st) });
       else if (parsed.toBystander) out.push({ speaker: "bystander", text: "I... I don't know. Please just help him!".replace("him", sc.patient.sex === "F" ? "her" : "him") });
       else out.push({ speaker: "narrator", text: resolve(sc.fallback, st) || "No response." });
     } else if (qs.length && !answered && talk) {
-      out.push({ speaker: "patient", text: pick(FALLBACK[mental] || FALLBACK.alert) });
+      out.push({ speaker: "patient", nu: true, text: pick(FALLBACK[mental] || FALLBACK.alert) });
     } else if (!qs.length && talk && parsed.assess.length && !parsed.tx.length && !ctx.complied && Math.random() < 0.2 && mental !== "confused") {
       out.push({ speaker: "patient", text: pick(parsed.byCrew ? ["(watches your partner work)", "Okay..."] : ["Okay.", "Go ahead.", "Mm-hm.", "Is it bad?"]) });
     }
@@ -4532,11 +4748,14 @@ const Monitor = (() => {
 
 /* ===== speech.js ===== */
 /* =====================================================================
- * SPEECH INPUT: offline (Vosk WASM, on-device) + optional online
- * (browser Web Speech API). Push-to-talk, tap-to-toggle, and hands-free
- * with energy-based voice-activity detection (VAD).
- * The Vosk model (~40 MB) is downloaded once with progress and kept in
- * Cache Storage ("medicsim-models-v1"), so it works with no network.
+ * SPEECH INPUT, fully on-device and offline:
+ *  - Recognizer: Moonshine-base (fp32 ONNX, transformers.js, in a Web Worker). Each utterance
+ *    (cut by the VAD in hands-free, or the whole push-to-talk turn) is transcribed in one go.
+ *    Picked on the blind speech set as the most accurate model that is still real-time on a phone.
+ *  - Vosk small (WASM) runs alongside for live captions and the VAD, and is the silent fallback
+ *    if Moonshine can't load or run on the device (a short notice is shown).
+ *  - Optional online browser Web Speech API.
+ * Everything is downloaded once with progress into Cache Storage ("medicsim-models-v1").
  * ===================================================================== */
 // EMS vocabulary used for "EMS vocabulary mode" (Vosk runtime grammar) and as phrase hints.
 window.SPEECH_HINTS = (window.SPEECH_HINTS || []).concat([
@@ -4569,6 +4788,15 @@ const Speech = (() => {
   const MODEL_BYTES = 41184862;
   const VOSK_JS = "vendor/vosk.js";
   const CACHE = "medicsim-models-v1";
+  // ---- Moonshine-base (the recognizer). >100 MB files can't live on GitHub Pages, so they come from the
+  // Hugging Face CDN (pinned revision) on first download and are stored under same-origin keys for offline use.
+  const HQ_MODEL = "onnx-community/moonshine-base-ONNX", HQ_REV = "b1e9b6aae3c3c7298f10c3798393fdf38e8fbbad", HQ_DTYPE = "fp32";
+  const HQ_REMOTE = `https://huggingface.co/${HQ_MODEL}/resolve/${HQ_REV}/`;
+  const HQ_FILES = [["config.json", 922], ["generation_config.json", 147], ["preprocessor_config.json", 128], ["tokenizer.json", 3761754], ["tokenizer_config.json", 135735],
+    ["onnx/encoder_model.onnx", 80818781], ["onnx/decoder_model_merged.onnx", 166211345]];
+  const HQ_RUNTIME = [["vendor/transformers/transformers.min.js", 888173], ["vendor/transformers/ort-wasm-simd-threaded.jsep.mjs", 44484], ["vendor/transformers/ort-wasm-simd-threaded.jsep.wasm", 21596019]];
+  const HQ_BYTES = HQ_FILES.reduce((a, f) => a + f[1], 0) + HQ_RUNTIME.reduce((a, f) => a + f[1], 0);
+  const hqKey = f => absUrl("models/" + HQ_MODEL + "/" + f);
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   let cb = { onInterim() {}, onFinal() {}, onState() {}, onLevel() {}, isSpeaking: () => false };
   let opts = { engine: "auto", grammar: false, handsFree: false };
@@ -4591,7 +4819,85 @@ const Speech = (() => {
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
     return blob.size;
   }
-  async function deleteModel() { if ("caches" in window) await (await caches.open(CACHE)).delete(absUrl(MODEL_URL)); model = null; }
+  async function deleteModel() { if ("caches" in window) { const c = await caches.open(CACHE); await c.delete(absUrl(MODEL_URL)); for (const [f] of HQ_FILES) await c.delete(hqKey(f)); } model = null; hqReset(); }
+  async function hqCached() { try { const c = await caches.open(CACHE); for (const [f] of HQ_FILES) if (!(await c.match(hqKey(f)))) return false; for (const [f] of HQ_RUNTIME) if (!(await caches.match(absUrl(f)))) return false; return true; } catch (e) { return false; } }
+  async function allCached() { return (await modelCached()) && (await hqCached()); }
+  // One download for everything voice needs: Moonshine (+ its WASM runtime) and the small Vosk fallback.
+  async function downloadAll(onProgress) {
+    const total = MODEL_BYTES + HQ_BYTES; let done = 0;
+    const c = await caches.open(CACHE);
+    const pull = async (url, key, size) => {
+      if (await c.match(key)) { done += size; onProgress && onProgress(done, total); return; }
+      const res = await fetch(url, { cache: "no-store" }); if (!res.ok) throw new Error("download failed (" + res.status + ") for " + key.split("/").pop());
+      const rd = res.body.getReader(), parts = []; let got = 0;
+      for (;;) { const { done: d, value } = await rd.read(); if (d) break; parts.push(value); got += value.length; onProgress && onProgress(done + got, total); }
+      done += got; await c.put(key, new Response(new Blob(parts), { headers: { "content-type": res.headers.get("content-type") || "application/octet-stream" } }));
+    };
+    if (!(await modelCached())) { await downloadModel((g) => onProgress && onProgress(done + g, total)); } done += MODEL_BYTES;
+    for (const [f, size] of HQ_RUNTIME) await pull(f, absUrl(f), size);
+    for (const [f, size] of HQ_FILES) await pull(HQ_REMOTE + f, hqKey(f), size);
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    hqStart();
+  }
+
+  // ---------- Moonshine worker ----------
+  const hq = { w: null, ready: false, failed: false, loading: null, id: 0, waits: {}, busy: 0, chain: Promise.resolve(), loadMs: null, lastMs: null, err: null };
+  function hqReset() { if (hq.w) hq.w.terminate(); Object.assign(hq, { w: null, ready: false, failed: false, loading: null, busy: 0 }); }
+  function hqFail(why) {
+    if (hq.failed) return; hq.failed = true; hq.ready = false; hq.err = why; console.warn("Moonshine unavailable:", why);
+    if (hq.w) { try { hq.w.terminate(); } catch (e) {} hq.w = null; }
+    Object.values(hq.waits).forEach(f => f(null)); hq.waits = {};
+    cb.onNotice && cb.onNotice("High-accuracy speech couldn't run on this device, so the basic offline recognizer is being used.");
+  }
+  // Load in the background; until it's ready (or if it fails) the Vosk recognizer handles speech.
+  function hqStart() {
+    if (hq.ready || hq.loading || hq.failed || location.protocol === "file:" || typeof Worker === "undefined") return hq.loading || Promise.resolve(hq.ready);
+    hq.loading = (async () => {
+      if (!(await hqCached())) { hq.loading = null; return false; }
+      return new Promise(ok => {
+        let w; try { w = hq.w = new Worker(absUrl("asr-worker.js"), { type: "module" }); } catch (e) { hqFail(e.message); hq.loading = null; return ok(false); }
+        const to = setTimeout(() => { hqFail("model load timed out"); hq.loading = null; ok(false); }, 180000);
+        w.onerror = e => { clearTimeout(to); hqFail(e.message || "worker error"); hq.loading = null; ok(false); };
+        w.onmessage = e => {
+          const m = e.data;
+          if (m.type === "ready") { clearTimeout(to); hq.ready = true; hq.loadMs = m.ms; hq.loading = null; Speech.engineName = "moonshine"; ok(true); }
+          else if (m.type === "error") { clearTimeout(to); hqFail(m.message); hq.loading = null; ok(false); }
+          else if (m.type === "result") { const f = hq.waits[m.id]; delete hq.waits[m.id]; if (m.error) { hqFail(m.error); f && f(null); } else { hq.lastMs = m.ms; f && f(m.text); } }
+        };
+        w.postMessage({ type: "load", lib: absUrl("vendor/transformers/transformers.min.js"), wasm: absUrl("vendor/transformers/"), models: absUrl("models/"), cache: CACHE, model: HQ_MODEL, dtype: HQ_DTYPE });
+      });
+    })();
+    return hq.loading;
+  }
+  async function to16k(chunks, sr) {
+    let n = 0; for (const c of chunks) n += c.length; const all = new Float32Array(n); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+    if (sr === 16000) return all;
+    try {
+      const oc = new OfflineAudioContext(1, Math.max(1, Math.ceil(n * 16000 / sr)), 16000); const b = oc.createBuffer(1, n, sr); b.copyToChannel(all, 0);
+      const s = oc.createBufferSource(); s.buffer = b; s.connect(oc.destination); s.start(); return (await oc.startRendering()).getChannelData(0);
+    } catch (e) { const r = sr / 16000, out = new Float32Array(Math.floor(n / r)); for (let i = 0; i < out.length; i++) { const a = Math.floor(i * r), z = Math.min(n, Math.floor((i + 1) * r)); let t = 0; for (let j = a; j < z; j++) t += all[j]; out[i] = t / Math.max(1, z - a); } return out; }
+  }
+  function hqTranscribe(pcm16) {
+    return new Promise(ok => { if (!hq.w || !hq.ready) return ok(null); const id = ++hq.id; hq.waits[id] = ok; hq.w.postMessage({ type: "tx", id, pcm: pcm16 }, [pcm16.buffer]); });
+  }
+  // utterance capture (raw device-rate PCM) for Moonshine
+  let utt = [], uttSr = 48000, uttLen = 0;
+  const uttAdd = (d, sr) => { uttSr = sr; utt.push(new Float32Array(d)); uttLen += d.length; };
+  function uttDrop() { utt = []; uttLen = 0; }
+  // Finish the current utterance: transcribe with Moonshine and deliver as a final. Results stay in order.
+  function uttEnd() {
+    const chunks = utt, sr = uttSr, len = uttLen; uttDrop();
+    if (!hq.ready || len < sr * 0.25) return Promise.resolve();
+    hq.busy++;
+    const p = hq.chain.then(async () => {
+      const t0 = performance.now(); const text = await hqTranscribe(await to16k(chunks, sr));
+      Speech.lastHQ = { ms: Math.round(performance.now() - t0), sec: +(len / sr).toFixed(2), text };
+      const t = (text || "").replace(/\s+/g, " ").trim();
+      if (t && !/^[.?!, ]*$/.test(t)) { Speech.lastResultAt = performance.now(); cb.onInterim(""); cb.onFinal(t, "moonshine"); }
+    }).finally(() => { hq.busy--; });
+    hq.chain = p.catch(() => {});
+    return p;
+  }
   function loadScript(src) { return new Promise((ok, bad) => { if (window.Vosk) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => bad(new Error("Could not load " + src)); document.head.appendChild(s); }); }
   async function ensureModel() {
     if (model) return model;
@@ -4625,7 +4931,7 @@ const Speech = (() => {
     const r = opts.grammar ? new model.KaldiRecognizer(sr, JSON.stringify(grammarList())) : new model.KaldiRecognizer(sr);
     r.on("result", m => {
       const t = (m.result && m.result.text || "").replace(/\[unk\]/g, "").replace(/\s+/g, " ").trim(); partial = ""; cb.onInterim("");
-      if (discard) { discard = false; } else if (t) { Speech.lastResultAt = performance.now(); cb.onFinal(t, "vosk"); }
+      if (discard) { discard = false; } else if (t && !hq.ready) { Speech.lastResultAt = performance.now(); cb.onFinal(t, "vosk"); }
       if (stopWaiter) { const w = stopWaiter; stopWaiter = null; w(); }
     });
     r.on("partialresult", m => { const t = (m.result && m.result.partial || "").replace(/\[unk\]/g, "").trim(); if (t !== partial) { partial = t; cb.onInterim(t); } });
@@ -4646,15 +4952,18 @@ const Speech = (() => {
       const rms = Math.sqrt(sum / (d.length / 4)); cb.onLevel(rms);
       const now = performance.now(); lastProcAt = now;
       // never transcribe the patient's / instructor's own voice: gate while TTS is playing (and just after)
-      if (paused || cb.isSpeaking()) { if (inSpeech) { inSpeech = false; discard = true; try { recognizer.retrieveFinalResult(); } catch (err) {} } preroll = null; return; }
+      if (paused || cb.isSpeaking()) { if (inSpeech) { inSpeech = false; discard = true; try { recognizer.retrieveFinalResult(); } catch (err) {} } preroll = null; if (state === "handsfree") uttDrop(); return; }
       if (state === "handsfree") {
         // adaptive noise floor; speech when energy clearly above it. 700 ms hangover ends an utterance.
         if (!inSpeech) noise = noise * 0.97 + rms * 0.03;
         const thr = Math.max(0.012, noise * 3.2);
-        if (rms > thr) { lastVoice = now; if (!inSpeech) { inSpeech = true; if (preroll) { try { recognizer.acceptWaveformFloat(preroll, buf.sampleRate); } catch (err) {} } } }
-        if (inSpeech) { try { recognizer.acceptWaveform(buf); } catch (err) {} if (now - lastVoice > 700) { inSpeech = false; recognizer.retrieveFinalResult(); } }
+        if (rms > thr) { lastVoice = now; if (!inSpeech) { inSpeech = true; uttDrop(); if (preroll) { try { recognizer.acceptWaveformFloat(preroll, buf.sampleRate); } catch (err) {} uttAdd(preroll, buf.sampleRate); } } }
+        if (inSpeech) {
+          try { recognizer.acceptWaveform(buf); } catch (err) {} uttAdd(d, buf.sampleRate);
+          if (now - lastVoice > 900 || uttLen > buf.sampleRate * 25) { inSpeech = false; recognizer.retrieveFinalResult(); uttEnd(); }
+        }
         else preroll = new Float32Array(d); // ~90 ms pre-roll so word onsets aren't clipped
-      } else if (feeding) { try { recognizer.acceptWaveform(buf); } catch (err) {} }
+      } else if (feeding) { try { recognizer.acceptWaveform(buf); } catch (err) {} uttAdd(d, buf.sampleRate); }
     };
     src.connect(proc); proc.connect(ctx.destination);
     lastProcAt = performance.now();
@@ -4686,7 +4995,7 @@ const Speech = (() => {
     if (stream) stream.getTracks().forEach(t => t.stop());
     if (recognizer) { try { recognizer.remove(); } catch (e) {} }
     if (ctx) ctx.close().catch(() => {});
-    stream = ctx = proc = src = recognizer = null; feeding = false; inSpeech = false;
+    stream = ctx = proc = src = recognizer = null; feeding = false; inSpeech = false; uttDrop();
   }
 
   // ---------- engine choice ----------
@@ -4707,7 +5016,8 @@ const Speech = (() => {
     if (eng === "web") return startWeb(mode);
     if (!(await modelCached()) && location.protocol !== "file:") { const e = new Error("offline-model-missing"); e.code = "MODEL"; throw e; }
     set("loading");
-    try { await ensureModel(); await openMic(); }
+    hqStart();
+    try { await ensureModel(); uttDrop(); await openMic(); }
     catch (e) { set("idle"); closeMic(); throw e; }
     feeding = mode !== "handsfree"; pttHeld = mode === "ptt"; noise = 0.004; inSpeech = false; wantMode = mode;
     set(mode === "handsfree" ? "handsfree" : "listening");
@@ -4716,6 +5026,10 @@ const Speech = (() => {
   function stopVosk() {
     if (state === "idle") return Promise.resolve();
     const r = recognizer, wasFeeding = feeding || inSpeech; feeding = false; inSpeech = false; wantMode = null; set("idle");
+    if (hq.ready) { // Moonshine: transcribe the whole turn, then close the mic
+      const p = wasFeeding ? uttEnd() : Promise.resolve();
+      return p.then(() => { if (recognizer === r) closeMic(); });
+    }
     return new Promise(res => {
       const done = () => { clearTimeout(to); if (recognizer === r) closeMic(); res(); };
       const to = setTimeout(() => { stopWaiter = null; done(); }, 1500);
@@ -4779,11 +5093,14 @@ const Speech = (() => {
     setOptions(o) { Object.assign(opts, o); },
     get state() { return state; }, get options() { return opts; },
     webAvailable: !!SR, voskSupported: typeof WebAssembly === "object" && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-    modelCached, downloadModel, deleteModel, ensureModel, start, stop: stopAll, transcribePCM, MODEL_BYTES, MODEL_URL,
-    setPaused, get paused() { return paused; }, recoveries: 0, lastRecovery: null, lastMute: null,
+    modelCached, hqCached, allCached, downloadAll, downloadModel, deleteModel, ensureModel, start, stop: stopAll, transcribePCM, MODEL_BYTES, MODEL_URL, HQ_BYTES, TOTAL_BYTES: MODEL_BYTES + HQ_BYTES,
+    hqStart, get hqReady() { return hq.ready; }, get hqFailed() { return hq.failed; }, get hqInfo() { return { ready: hq.ready, failed: hq.failed, err: hq.err, loadMs: hq.loadMs, lastMs: hq.lastMs, busy: hq.busy }; },
+    async transcribeHQ(f32, sr) { if (!(await hqStart())) return null; const t0 = performance.now(); const text = await hqTranscribe(await to16k([f32], sr)); return { text, ms: Math.round(performance.now() - t0) }; },
+    _hqFail: why => hqFail(why || "test"),
+    setPaused, get paused() { return paused; }, get inSpeech() { return inSpeech || hq.busy > 0 || (Speech.active === "web" && !!partial); }, recoveries: 0, lastRecovery: null, lastMute: null,
     _debugKillTrack() { if (stream) stream.getAudioTracks().forEach(t => { t.stop(); t.onended && t.onended(); }); },
     _debugFreeze() { if (proc) proc.onaudioprocess = null; },
-    active: null, mode: null, lastLoadMs: null, lastResultAt: null, pickEngine, preload: ensureModel,
+    active: null, mode: null, engineName: "vosk", lastHQ: null, lastLoadMs: null, lastResultAt: null, pickEngine, preload: ensureModel,
   };
 })();
 
@@ -4919,17 +5236,20 @@ const Semantic = (() => {
     SIM.start(sc, uiApi);
     addMsg({ speaker: "system", text: (settings.micMode === "handsfree" ? "You're on scene. The mic is ON: just talk, and each thing you say is sent when you pause. Tap 🎤 to mute. " : "You're on scene. Hold 🎤 to talk, or type. ") + "Ask the patient questions, say what you assess (\"checking radials\", \"skin signs\", \"corneals\"), and the instructor will tell you the findings. Say what you do (\"give aspirin 325 chewed\"). Pick your Provider Impression (🩺) when you've decided." });
     render();
+    // instructor reads the arrival picture (scene, general impression, tracking) once; the start tap unlocks audio. Skippable.
+    say(SIM.approach());
     muted = false; hfBlocked = false; hfBtn().hidden = settings.micMode === "handsfree";
     if (settings.micMode === "handsfree") { autoListen(); keepAwake(true); }
   }
 
   // ---------------- transcript ----------------
   function addMsg(m) {
-    const cls = { me: "me", patient: "pt", bystander: "by", narrator: "sys", system: "sys", find: "find", warn: "warn", hint: "hint" }[m.speaker] || "sys";
+    const cls = ({ me: "me", patient: "pt", bystander: "by", narrator: "sys", system: "sys", find: "find", warn: "warn", hint: "hint", heard: "heard" }[m.speaker] || "sys") + (m.approach ? " approach" : "");
     const sc = SIM.scenario, st = SIM.state;
-    const who = m.speaker === "patient" ? sc.patient.name.split(" ")[0] + " (patient)" : m.speaker === "bystander" ? `${sc.bystander.name} (${sc.bystander.role})` : m.speaker === "me" ? "You" : m.speaker === "find" ? "Instructor" : "";
+    const who = m.speaker === "patient" ? sc.patient.name.split(" ")[0] + " (patient)" : m.speaker === "bystander" ? `${sc.bystander.name} (${sc.bystander.role})` : m.speaker === "me" ? (m.tap ? "You (tapped)" : "You") : m.speaker === "find" ? (m.approach ? "Instructor · on arrival" : "Instructor") : m.speaker === "heard" ? "Not understood" : "";
     const d = document.createElement("div"); d.className = "msg " + cls;
-    d.innerHTML = (who ? `<span class="who">${esc(who)}<span class="ts">${fmtT(st ? st.t : 0)}</span></span>` : "") + esc(m.text);
+    d.innerHTML = (who ? `<span class="who">${esc(who)}<span class="ts">${fmtT(st ? st.t : 0)}</span>${m.approach ? '<button type="button" class="tiny skip" data-skip>Skip ▶▶</button>' : ""}</span>` : "") + (m.html || esc(m.text));
+    if (m.approach) d.querySelector("[data-skip]").onclick = e => { e.stopPropagation(); skipSpeech(); e.target.remove(); };
     $("#transcript").appendChild(d); $("#transcript").scrollTop = 1e9;
   }
   function say(list) {
@@ -4941,12 +5261,30 @@ const Semantic = (() => {
     const speakable = list.filter(m => m.speaker === "patient" || m.speaker === "bystander" || (settings.instr && (m.speaker === "find" || (m.speaker === "narrator" && /no response|unresponsive|seizing|pulseless|✗/i.test(m.text)))));
     speakQueue(speakable);
   }
-  async function submit(text) {
+  async function submit(text, tap) {
     text = text.trim(); if (!text || !SIM.state || SIM.state.ended) return;
-    addMsg({ speaker: "me", text }); chatHistory.push({ role: "user", content: text });
+    addMsg({ speaker: "me", text, tap }); chatHistory.push({ role: "user", content: text });
     const out = await SIM.handle(text);
     say(out);
+    // the patient didn't understand: show exactly what the app heard, so a speech-recognition mishear is visible
+    if (out.some(o => o.nu)) {
+      const p = SIM.lastParsed || {}, ex = SUGGEST[Math.floor(Math.random() * SUGGEST.length)];
+      addMsg({ speaker: "heard", text: "", html: `🎙 The app heard: <q>${esc(text)}</q>${p.norm && p.norm.trim() !== text.toLowerCase().trim() ? ` <small>(read as “${esc(p.norm.trim())}”)</small>` : ""}<br>Nothing matched, so the patient didn't understand. Say it again or rephrase, e.g. “${esc(ex)}”, or use the Assess buttons. <a href="#" data-help>What can I say?</a>` });
+      const a = $("#transcript").lastElementChild.querySelector("[data-help]"); if (a) a.onclick = e => { e.preventDefault(); openHelp(); };
+    }
   }
+  const SUGGEST = ["What's bothering you today?", "What year is it, and where are we?", "Checking radial and carotid pulses", "Do you have any allergies?", "Lift his shirt, what do I see?"];
+  function skipSpeech() { if (window.speechSynthesis) speechSynthesis.cancel(); ttsPending = 0; ttsTailUntil = 0; }
+  const HELP = [
+    ["Arrival", ["Is the patient tracking me?", "What do I see? (describes your last inspection; at the start, the scene)"]],
+    ["Chief complaint", ["What's bothering you today?", "What's going on? / What happened?", "Why did you call 911 today?", "What brings us out here?"]],
+    ["A&O (orientation)", ["What's your name?", "What year is it? / What day is it? / What's the date?", "Where are we? / Do you know where you are?", "Do you remember what happened?", "Ask two at once: \"What year is it and where are we?\""]],
+    ["Pulses & skin", ["Checking radial pulse / Feeling for a radial", "Checking his carotid", "I'm checking his radial and carotid", "Feeling the forehead / Skin signs", "Cap refill"]],
+    ["Look / expose", ["Open your mouth, checking the airway", "Lift his shirt, what do I see?", "Check pupils", "Expose the patient / Look at his legs / Check his back"]],
+    ["History (SAMPLE / OPQRST)", ["Any allergies? Medications? Medical history?", "When did it start? What makes it worse?", "Does it go anywhere? Zero to ten?"]],
+    ["Partner / treatment", ["Get me a set of vitals / BP / sats", "Put him on the monitor, 12-lead", "Check a blood sugar", "Give aspirin 325 chewed / Start an IV"]],
+  ];
+  function openHelp() { $("#helpBody").innerHTML = HELP.map(([h, l]) => `<h4>${esc(h)}</h4><ul>${l.map(x => `<li>“${esc(x)}”</li>`).join("")}</ul>`).join(""); $("#modalHelp").classList.add("open"); }
 
   // ---------------- speech synthesis (offline: browser/OS voices) ----------------
   // Prefers on-device voices (voice.localService === true) so replies keep working with no network.
@@ -5052,9 +5390,23 @@ const Semantic = (() => {
   }
   function onFinal(t, eng) {
     t = t.trim(); if (!t) return;
-    if (micMode === "handsfree") { finalBuf = ""; $("#interim").textContent = ""; submit(t); return; }
+    if (micMode === "handsfree") { hfQueue(t); return; }
     finalBuf += t + " "; setInterim("");
     if (micMode === "toggle" && settings.autoSend) endTurn();
+  }
+  // Hands-free: the recognizer (and the VAD) end a result on a ~0.5-0.7 s pause, so "what year is it ... and where are we"
+  // used to arrive as two turns. Hold each result briefly and join it with whatever follows if the user keeps talking.
+  let hfBuf = "", hfTimer = 0, hfFirst = 0;
+  const HF_JOIN_MS = 1100;
+  function hfQueue(t) {
+    if (!hfBuf) hfFirst = Date.now();
+    hfBuf = (hfBuf + " " + t).trim(); clearTimeout(hfTimer);
+    const it = $("#interim"); it.textContent = "🎙 " + hfBuf + " …"; it.classList.add("pending");
+    const fire = () => {
+      if (Speech.inSpeech && Date.now() - hfFirst < 12000) { hfTimer = setTimeout(fire, 250); return; } // still talking: wait for the rest
+      const x = hfBuf; hfBuf = ""; it.textContent = ""; it.classList.remove("pending"); if (x) submit(x);
+    };
+    hfTimer = setTimeout(fire, HF_JOIN_MS);
   }
   async function endTurn() {
     const mode = micMode; micMode = null;
@@ -5077,7 +5429,7 @@ const Semantic = (() => {
   function offerModel() {
     if (!navigator.onLine) { $("#interim").textContent = "Offline speech isn't downloaded yet, and you're offline. Connect once to download it, or type."; return; }
     loadSettingsUI(); $("#modalSettings").classList.add("open"); $("#offlineSec").scrollIntoView({ block: "center" });
-    $("#dlNote").textContent = "Download the offline speech model once (≈41 MB). After that, voice works with no internet.";
+    $("#dlNote").textContent = `Download the on-device speech recognizer once (≈${Math.round(Speech.TOTAL_BYTES / 1e6)} MB). After that, voice works with no internet.`;
   }
   let muted = false, wakeLock = null, hfBlocked = false, lastAuto = 0;
   // Always-listening (default): start hands-free on scenario start; one tap on the mic mutes/unmutes.
@@ -5091,8 +5443,8 @@ const Semantic = (() => {
     startMic("handsfree");
   }
   function showModelNeeded() {
-    $("#interim").innerHTML = navigator.onLine ? `Hands-free voice needs the offline speech model (41 MB, one time). <button class="tiny" id="bnDl2">Download</button>` : "Offline voice isn't downloaded yet. Connect once to download it, or type.";
-    const b = $("#bnDl2"); hfBlocked = true; if (b) b.onclick = async () => { $("#interim").textContent = "Downloading speech model…"; try { await Speech.downloadModel((g, t) => { $("#interim").textContent = `Downloading speech model… ${Math.round(100 * g / t)}%`; }); $("#interim").textContent = ""; refreshStatus(); hfBlocked = false; autoListen(); } catch (e) { $("#interim").textContent = "Download failed: " + e.message; } };
+    $("#interim").innerHTML = navigator.onLine ? `Hands-free voice needs the on-device speech recognizer (≈${Math.round(Speech.TOTAL_BYTES / 1e6)} MB, one time). <button class="tiny" id="bnDl2">Download</button>` : "Offline voice isn't downloaded yet. Connect once to download it, or type.";
+    const b = $("#bnDl2"); hfBlocked = true; if (b) b.onclick = async () => { $("#interim").textContent = "Downloading speech recognizer…"; try { await Speech.downloadAll((g, t) => { $("#interim").textContent = `Downloading speech recognizer… ${Math.round(100 * g / t)}% (${MB(g)} / ${MB(t)})`; }); $("#interim").textContent = ""; refreshStatus(); hfBlocked = false; autoListen(); } catch (e) { $("#interim").textContent = "Download failed: " + e.message; refreshStatus(); if (await Speech.modelCached()) { hfBlocked = false; autoListen(); } } };
   }
   async function keepAwake(on) {
     try {
@@ -5146,11 +5498,15 @@ const Semantic = (() => {
     document.addEventListener("keyup", e => { if (e.code === "Space" && micMode === "ptt") { e.preventDefault(); endTurn(); } });
   }
   function initSpeech() {
-    Speech.init({ onRecover: why => console.info("mic recovered:", why), onInterim: setInterim, onFinal, onState: onSpeechState, onLevel: r => micBtn().style.setProperty("--lvl", Math.min(1, r * 12).toFixed(2)), isSpeaking: speaking }, { engine: settings.engine, grammar: settings.grammar });
+    settings.engine = "auto"; settings.grammar = false; // one recognizer, no accuracy options
+    Speech.init({ onNotice: showNotice, onRecover: why => console.info("mic recovered:", why), onInterim: setInterim, onFinal, onState: onSpeechState, onLevel: r => micBtn().style.setProperty("--lvl", Math.min(1, r * 12).toFixed(2)), isSpeaking: speaking }, { engine: settings.engine, grammar: settings.grammar });
     if (!Speech.voskSupported && !Speech.webAvailable) { micBtn().disabled = true; hfBtn().disabled = true; micBtn().title = "No microphone/speech support here (needs HTTPS or localhost)."; }
     refreshStatus();
+    if (location.protocol !== "file:") Speech.hqStart(); // warm up the recognizer in the background so it's ready when a call starts
     if (settings.semantic) Semantic.cached().then(ok => ok && Semantic.enable().catch(e => console.warn("semantic", e)));
   }
+  let noticeTimer = 0;
+  function showNotice(msg) { const n = $("#notice"); if (!n) return; n.textContent = "⚠️ " + msg; n.hidden = false; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { n.hidden = true; }, 8000); refreshStatus(); }
   window.addEventListener("online", () => refreshStatus()); window.addEventListener("offline", () => refreshStatus());
 
   // ---------------- offline / install status ----------------
@@ -5161,25 +5517,26 @@ const Semantic = (() => {
     const banner = $("#speechSupport"); if (!banner) return;
     const isFile = location.protocol === "file:";
     const swOk = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
-    const vosk = await Speech.modelCached(), sem = window.Semantic ? await Semantic.cached() : false;
+    const vosk = await Speech.modelCached(), hqOk = await Speech.hqCached(), sem = window.Semantic ? await Semantic.cached() : false;
     const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
     const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const items = [];
     if (isFile) items.push(`📄 Opened as a local file: typing and spoken replies work. <b>Voice input and offline install need the hosted/localhost version</b> (see README).`);
     else items.push(swOk ? "✅ <b>App saved for offline use</b> (all 41 scenarios)." : "⏳ Saving app for offline use… (reload once if this persists)");
-    if (!isFile) items.push(vosk ? "🎤 <b>Offline voice input ready</b> (on-device, nothing leaves your phone)." : `🎤 Offline voice input: <button class="tiny" id="bnDl">Download speech model (${MB(Speech.MODEL_BYTES)})</button>${Speech.webAvailable && navigator.onLine ? " <span class='fine'>(until then, online browser speech is used)</span>" : ""}`);
+    if (!isFile) items.push(vosk && hqOk ? (Speech.hqFailed ? "🎤 <b>Offline voice input ready</b> (basic recognizer: the main one couldn't run on this device)." : "🎤 <b>Offline voice input ready</b> (on-device, nothing leaves your phone).")
+      : `🎤 Offline voice input: <button class="tiny" id="bnDl">Download speech recognizer (${MB(Speech.TOTAL_BYTES)}, one time)</button>${vosk ? " <span class='fine'>(the basic recognizer is used until then)</span>" : Speech.webAvailable && navigator.onLine ? " <span class='fine'>(until then, online browser speech is used)</span>" : ""}`);
     if (!navigator.onLine) items.push("📴 You're offline. Everything here runs on-device.");
     if (!standalone && !isFile) items.push(installEvt ? `📲 <button class="tiny" id="bnInstall">Install app</button>` : ios ? "📲 To install: Safari <b>Share → Add to Home Screen</b>." : "📲 Install: browser menu → <b>Install app / Add to Home screen</b>.");
-    banner.className = "banner " + (isFile || (vosk && swOk) ? "ok" : "");
+    banner.className = "banner " + (isFile || (vosk && hqOk && swOk) ? "ok" : "");
     banner.innerHTML = items.join("<br>");
     const d = $("#bnDl"); if (d) d.onclick = () => { loadSettingsUI(); $("#modalSettings").classList.add("open"); startVoskDownload(); };
     const i = $("#bnInstall"); if (i) i.onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; refreshStatus(); };
-    const os = $("#offStatus"); if (os) os.innerHTML = `Speech model: <b>${vosk ? "downloaded ✓" : "not downloaded"}</b> (${MB(Speech.MODEL_BYTES)}) · Smart understanding model: <b>${sem ? (Semantic.ready ? "on ✓" : "downloaded ✓") : "not downloaded"}</b> (${MB(Semantic.BYTES)})`;
+    const os = $("#offStatus"); if (os) os.innerHTML = `Speech recognizer (Moonshine, with a small backup): <b>${vosk && hqOk ? (Speech.hqReady ? "ready ✓" : Speech.hqFailed ? "downloaded ✓ (using backup on this device)" : "downloaded ✓") : "not downloaded"}</b> (${MB(Speech.TOTAL_BYTES)}) · Smart understanding model: <b>${sem ? (Semantic.ready ? "on ✓" : "downloaded ✓") : "not downloaded"}</b> (${MB(Semantic.BYTES)})`;
   }
   let dlBusy = false;
   async function startVoskDownload() {
     if (dlBusy) return; dlBusy = true; const pg = $("#dlProg"), note = $("#dlNote"); pg.hidden = false;
-    try { await Speech.downloadModel((g, t) => { pg.value = g / t; note.textContent = `Downloading speech model… ${MB(g)} / ${MB(t)}`; }); note.textContent = "✓ Offline speech model saved. Voice input now works with no internet."; Speech.preload().catch(() => {}); }
+    try { await Speech.downloadAll((g, t) => { pg.value = g / t; note.textContent = `Downloading speech recognizer… ${MB(g)} / ${MB(t)}`; }); note.textContent = "✓ Speech recognizer saved. Voice input now works with no internet."; Speech.preload().catch(() => {}); }
     catch (e) { note.textContent = "Download failed: " + e.message + " (check your connection and try again)"; }
     dlBusy = false; pg.hidden = true; refreshStatus();
   }
@@ -5322,13 +5679,13 @@ const Semantic = (() => {
   function loadSettingsUI() {
     $("#setVoice").checked = settings.voice; $("#setAutoSend").checked = settings.autoSend; $("#setHints").checked = settings.hints; $("#setRate").value = settings.rate;
     $("#setMicMode").value = settings.micMode; $("#setInstr").checked = settings.instr;
-    $("#setEngine").value = settings.engine; $("#setGrammar").checked = settings.grammar; $("#setSemantic").checked = settings.semantic;
+    $("#setSemantic").checked = settings.semantic;
     $("#setKey").value = settings.key || ""; $("#setEndpoint").value = settings.endpoint; $("#setModel").value = settings.model; $("#setRemember").checked = settings.remember;
-    $("#optWeb").disabled = !Speech.webAvailable; updateVoiceInfo(); refreshStatus();
+    updateVoiceInfo(); refreshStatus();
   }
   function persistSettings() { const persist = { ...settings }; if (!settings.remember) persist.key = ""; localStorage.setItem("medicsim.settings", JSON.stringify(persist)); }
   function saveSettings() {
-    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: $("#setEngine").value, grammar: $("#setGrammar").checked, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
+    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: "auto", grammar: false, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
     persistSettings();
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Speech.setOptions({ engine: settings.engine, grammar: settings.grammar });
@@ -5339,7 +5696,7 @@ const Semantic = (() => {
   }
 
   const uiApi = { render, say, history: () => chatHistory, hints: () => settings.hints };
-  window.MedicSimUI = { _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
+  window.MedicSimUI = { _hfQueue: t => hfQueue(t), _skip: () => skipSpeech(), openHelp: () => openHelp(), _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
 
   // ---------------- wire up ----------------
   document.addEventListener("DOMContentLoaded", () => {
@@ -5372,6 +5729,9 @@ const Semantic = (() => {
     const quick = ["Hi, I'm a paramedic. What's going on today?", "Any allergies?", "What medications do you take?", "Any medical history?", "Full set of vitals", "Put the patient on the monitor", "12-lead", "Check a blood sugar", "Listen to lung sounds", "Check GCS and pupils", "Skin signs", "Stroke exam mLAPSS", "Start an IV", "Contact base"];
     $("#quick").innerHTML = quick.map(q => `<button type="button">${esc(q)}</button>`).join("");
     $("#quick").onclick = e => { if (e.target.tagName === "BUTTON") submit(e.target.textContent); };
+    // quick-assess row: a tap goes through exactly the same path as saying the phrase (logged + assessment flow)
+    $("#assessRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
+    $("#btnHelp").onclick = openHelp;
   });
 })();
 

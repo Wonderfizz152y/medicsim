@@ -1,11 +1,11 @@
 /* MedicSim LA service worker: makes the app fully usable offline.
  * - App shell (HTML with all scenarios, icons, manifest, Vosk speech engine) is precached on install.
- * - Downloaded models (Vosk speech model, optional MiniLM) live in "medicsim-models-v1" and survive app updates.
+ * - Downloaded models (Moonshine speech recognizer + Vosk backup, optional MiniLM) live in "medicsim-models-v1" and survive app updates.
  * - Cache-first for everything same-origin; network results are added to the app cache. */
-const VERSION = "d442d12d23";
+const VERSION = "7abb89b8ed";
 const APP_CACHE = "medicsim-app-" + VERSION;
 const MODEL_CACHE = "medicsim-models-v1";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png", "vendor/vosk.js"];
+const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png", "vendor/vosk.js", "asr-worker.js"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(APP_CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));

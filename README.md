@@ -12,13 +12,13 @@ This folder is the complete, ready-to-host app. It's static files only: no serve
    git remote add origin https://github.com/<you>/medicsim.git
    git push -u origin main
    ```
-   (The largest file, the 41 MB speech model, is under GitHub's 100 MB per-file limit; no Git LFS needed.)
+   (Every file in this folder is under GitHub's 100 MB per-file limit; no Git LFS needed. The speech recognizer's two big model files, 81 MB and 166 MB, are fetched once from the Hugging Face CDN at a pinned revision and then kept on the phone.)
 3. In the repo, go to **Settings → Pages → Build and deployment → Source: "Deploy from a branch" → Branch: `main` / `/ (root)` → Save**.
 4. After about 1 minute the app is live at `https://<you>.github.io/medicsim/` (HTTPS, which the microphone requires).
 
 ## First run on a phone (one time, needs internet)
 1. Open the URL. The app saves itself for offline use automatically.
-2. Tap **Download speech model (41 MB)** on the start screen. This is offline voice input.
+2. Tap **Download speech recognizer (≈315 MB, one time)** on the start screen. This is offline voice input: Moonshine-base (on-device, in a background worker) with the small Vosk model kept as an automatic backup.
 3. Optional: in Settings, turn on **Smart understanding** (46 MB).
 4. Install it:
    - **iPhone/iPad (Safari):** Share → Add to Home Screen.
