@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
+<meta name="medicsim-version" content="2.1-instructor-handsfree 9b69eb305e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -182,6 +183,16 @@ progress#dlProg{width:100%;height:12px}
 details summary{cursor:pointer;margin:6px 0}
 .banner button.tiny{margin-left:4px}
 
+/* ---- always-listening indicator ---- */
+.listen-bar{display:flex;align-items:center;gap:.5em;padding:.35em .8em;font-size:.9em;font-weight:600;border-top:1px solid var(--line);background:#17212c;color:#9fb3c8}
+.listen-bar .dot{width:12px;height:12px;border-radius:50%;background:#556;flex:none}
+.listen-bar.on{background:#0f2a1c;color:#7dffb3}.listen-bar.on .dot{background:#2bff88;box-shadow:0 0 0 0 #2bff88aa;animation:lpulse 1.4s infinite}
+.listen-bar.pause{background:#2a2410;color:#ffd77a}.listen-bar.pause .dot{background:#ffc940}
+.listen-bar.muted{background:#2a1418;color:#ff9aa5}.listen-bar.muted .dot{background:#ff4d5e}
+.listen-bar.wait .dot{background:#6aa9ff;animation:pulse 1s infinite}
+@keyframes lpulse{0%{box-shadow:0 0 0 0 #2bff88aa}70%{box-shadow:0 0 0 10px #2bff8800}100%{box-shadow:0 0 0 0 #2bff8800}}
+.msg.find .who{color:#7dd3fc}
+
 </style>
 </head>
 <body>
@@ -255,9 +266,10 @@ details summary{cursor:pointer;margin:6px 0}
       </div>
       <div class="col-right">
         <div class="transcript" id="transcript" aria-live="polite"></div>
+        <div class="listen-bar off" id="listenBar" hidden><i class="dot"></i><span>🎤</span></div>
         <div class="interim" id="interim"></div>
         <div class="composer">
-          <button id="btnMic" class="mic" title="Tap to talk (stops automatically), or hold to talk. Desktop: hold Space.">🎤</button>
+          <button id="btnMic" class="mic" title="Hands-free: tap to mute/unmute. Push-to-talk mode: hold to talk.">🎤</button>
           <button id="btnHF" class="mic hf" title="Hands-free: just talk; the patient answers when you pause">✋</button>
           <form id="form"><input id="txt" autocomplete="off" placeholder="Talk or type: 'Hi, I'm a paramedic. What's going on today?'"><button type="submit" class="send">➤</button></form>
         </div>
@@ -280,18 +292,25 @@ details summary{cursor:pointer;margin:6px 0}
   <label class="row"><input type="checkbox" id="setVoice" checked> Speak patient replies aloud</label>
   <label class="row"><input type="checkbox" id="setAutoSend" checked> Send speech automatically when I stop talking</label>
   <label class="row"><input type="checkbox" id="setHints"> Show instructor hints during the scenario</label>
-  <label>Patient speech rate <input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="1"></label>
+  <label class="row"><input type="checkbox" id="setInstr" checked> Instructor speaks findings aloud (pulses, skin, pupils, lung sounds…)</label>
+  <label>Instructor voice <select id="setInstrVoice"><option value="auto">Auto</option></select></label>
+  <label>Patient voice <select id="setPtVoice"><option value="auto">Auto (matches the patient's sex and age)</option></select></label>
+  <label>Speech rate <input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="1"></label>
   <p class="fine" id="voiceInfo"></p>
-  <button class="ghost tiny" id="btnTestVoice" type="button">▶ Test voice</button>
+  <div class="dl-row"><button class="ghost tiny" id="btnTestPt" type="button">▶ Test patient voice</button><button class="ghost tiny" id="btnTestInstr" type="button">▶ Test instructor voice</button></div>
   <hr>
   <h3>Voice input</h3>
+  <label>Microphone <select id="setMicMode">
+    <option value="handsfree">Always listening (hands-free): just talk; tap 🎤 to mute</option>
+    <option value="ptt">Push-to-talk: hold 🎤 (or Space) while talking</option>
+  </select></label>
   <label>Speech engine <select id="setEngine">
     <option value="auto">Auto: offline if downloaded, otherwise online</option>
     <option value="vosk">Offline, on-device (Vosk): private, no internet</option>
     <option value="web" id="optWeb">Online browser speech (Web Speech API): needs internet</option>
   </select></label>
   <label class="row"><input type="checkbox" id="setGrammar"> EMS vocabulary mode (offline engine). Restricts recognition to EMS/medical words. Try it if you mostly use standard phrasing.</label>
-  <p class="fine">🎤 <b>Tap</b> the mic to say one thing (sends when you pause) · <b>hold</b> it for push-to-talk · <b>✋</b> = hands-free (talk naturally; the mic ignores the patient's own voice) · desktop: <b>hold Space</b>.</p>
+  <p class="fine">🎙 <b>Always listening</b> (default): the mic turns on when the call starts. Just talk; each thing you say is sent when you pause. The mic pauses itself while the patient or instructor is speaking. Tap 🎤 once to mute or unmute. The screen stays awake during a call. <b>Push-to-talk</b>: hold 🎤 (desktop: hold Space). Headphones work best so the mic doesn't pick up the phone speaker.</p>
   <div id="offlineSec">
     <h3>Offline downloads (one time, free)</h3>
     <p class="fine" id="offStatus"></p>
@@ -524,6 +543,12 @@ const NLU = (() => {
     [/\b(zafer an|zafer|saffron|suffer an|soften|software|so fran|zofrin)\b(?=.*\b(milligrams?|mg|iv|i v)\b|$)/g, "zofran"],
     [/\b(oil|or|oral) glucose\b/g, "oral glucose"], [/\b(nitrate|night true|night show|macro)\b(?=\s*($|sublingual|point|spray))/g, "nitro"],
     [/\b(nasas|naws?ious|nor less|noshes)\b/g, "nauseous"],
+    // exam-term mishearings
+    [/\bradio'?s\b|\bradio is\b(?! (the|to|base))|\bradials?'?s\b|\bray? ?deals?\b|\bradiols?\b|\bradio pulses?\b/g, "radials"], [/\bcorn(y|ie|ey)? ?(deals?|eels?|eals?|ills?|neals?|nails)\b|\bcorneal'?s\b|\bcorny ?als?\b|\bcorny alls?\b|\bcorner? ?reflex\b/g, "corneals"],
+    [/\bcap(ital|itol|illary)? (re ?fill|three fill|refills?|we fill)\b|\bcat refill\b|\bcapital refill\b/g, "cap refill"], [/\bpupil'?s\b|\bpeoples? (with|equal)\b/g, "pupils$1"],
+    [/\bpen ?lights?\b|\bpenn light\b/g, "penlight"], [/\bc m s\b|\bsee (ems|em ess|m s)\b|\bc ms\b/g, "cms"], [/\ba ?v ?p ?u\b/g, "avpu"], [/\bd ?cap ?b ?t ?l ?s\b|\bdee cap\b/g, "dcap btls"],
+    [/\b(jay|j) ?v ?d\b/g, "jvd"], [/\bpronate?or drift\b|\bpro nator drift\b/g, "pronator drift"], [/\bgag reflects\b/g, "gag reflex"], [/\bstern ?(al|el|um)? (rub|rob)\b/g, "sternal rub"],
+    [/\bfemoral'?s\b|\bfemur all?s\b/g, "femorals"], [/\bcarotid'?s\b|\bcarrot ?(id|ids|it)s?\b/g, "carotids"], [/\bmucus\b/g, "mucous"], [/\btruck marks\b|\btract marks\b/g, "track marks"],
     [/\bsink (cardio\w*|cardiovert)/g, "synchronized $1"], [/\bsync\b/g, "synchronized"], [/\bsat(t)?ing\b/g, "sats"],
   ];
   const NUM = { zero: 0, oh: 0, one: 1, won: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
@@ -662,23 +687,48 @@ const NLU = (() => {
     ["12lead", /\b12 ?lead/],
     ["bp", /blood pressure|\bbp\b|\bnibp\b|pressure cuff|\bcuff\b|\b(manual|get a|need a|take a|check a|grab a|another|repeat) pressure\b|pressure (in|on) both arms|both arms (pressure|bp)|what'?s (the|his|her|your) pressure|(his|her) pressure\b/],
     ["spo2", /\bsats?\b|\bspo2\b|pulseox|oximet|o2 sat|oxygen sat|saturation|finger probe|satting/],
-    ["pulse", /\bpulse\b(?! (check|ox))|heart rate|\bhr\b|radial|carotid pulse/],
+    ["pulse", /\bpulses?\b(?! (check|ox))|heart rate|\bhr\b|\bradials?\b|\bcarotids?\b(?! (and|or) femoral)|\bfemorals?\b|\bpedal pulses?\b|dorsalis|pedis|posterior tibial|distal pulses?/],
     ["rr", /resp(iratory)? rate|respirations|breathing rate|count (his|her|their|your|the) (breaths|respirations)|\brr\b|breaths per minute/],
     ["etco2", /etco2|end tidal|capnography|\bco2\b/],
     ["temp", /\btemp\b|temperature|thermometer/],
     ["bgl", /blood (sugar|glucose)|\bsugar\b|\bbgl\b|\bcbg\b|\bbg\b|glucometer|accu ?chek|finger ?stick|dextro ?stick|(a|the|her|his) glucose\b(?! (gel|paste|tab))|glucose (level|check)|check (a |her |his |the )?glucose/],
-    ["gcs", /\bgcs\b|glasgow|mental status|\baox?\d\b|a and o|alert and oriented|level of consciousness|\bloc\b|\bavpu\b|oriented times/],
-    ["pupils", /pupil|penlight/],
-    ["skin", /\bskin\b|cap(illary)? refill|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolor\b/],
+    ["gcs", /\bgcs\b|glasgow|mental status|level of consciousness|\bloc\b|(eye|verbal|motor) (score|response)|eye opening/],
+    ["pupils", /pupil|penlight|\bperrl|reactive to light/],
+    ["skin", /\bskin\b(?! (rash|hives))|\bis (he|she|the patient) (clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)\b|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
+    ["caprefill", /\bcap(illary)? ?refill|capillary/],
+    ["corneal", /\bcorneals?\b|\bcornea|blink reflex|(touch|touching|brush) (the|his|her|their) (eye|eyelashes|lashes)/],
+    ["gag", /\bgag(ging)? ?(reflex)?\b(?!s)|\bgag\b/],
+    ["mucous", /mucous|mucosa|is (his|her|the) mouth (dry|moist)|oral membranes/],
+    ["work", /work of breathing|breathing effort|respiratory effort|accessory (muscles?|muscle use)|retractions?|\btripod|nasal flaring|(is|are) (he|she|they) (breathing )?(labored|working hard)|how'?s (he|she) breathing|how is (he|she) breathing|kussmaul|pursed lip|belly breathing|see-?saw/],
+    ["chestrise", /chest (rise|rising|rises|expansion|movement)|rise and fall|equal rise|paradoxical/],
+    ["heart", /heart (sounds?|tones)|listen to (his|her|the|their) heart|auscultate (the |his |her )?heart|murmur|gallop|\bs3\b|muffled heart/],
+    ["trachea", /trache(a|al)|tracheal deviation/],
+    ["pelvis", /\bpelvi[sc]|pelvic|(check|palpate|rock) (the |his |her )?(hips|pelvis)|hips? (stable|exam)/],
+    ["extrem", /extremit(y|ies)|long bones?|(arms|legs) for (deformit|injur|swelling)|deformit(y|ies) (in|to|of) (his|her|the) (arms|legs)/],
+    ["cms", /\bcms\b|\bpms\b|\bpmsx?4|pulse,? motor,? (and )?sens|circulation,? motor|motor and sens|sensory and motor|neurovascular|sensation in (all|his|her|both)|can (he|she) feel (me|this) (touch|on)|distal (cms|pms|circulation)/],
+    ["back", /\bspine\b|spinal|step ?offs?|(check|palpate|look at|feel) (his|her|the|their) back|log ?roll|c ?spine|midline (neck )?tenderness|sacral/],
+    ["head", /head,? face,? (and )?neck|dcap|btls|battle'?s|raccoon|(check|look at|palpate|examine|assess) (his|her|the|their) (head|face|neck|scalp)|head to neck|head exam/],
+    ["speech", /slurred speech(?!.*\byou)|^ ?(assess|check|evaluate) speech\b|(assess|check|how'?s|how is|evaluate|listen to) (his|her|the|their) speech|speech (clear|slurred|normal|okay|ok)|is (he|she) (slurring|aphasic)|\baphasi|dysarthri|repeat (a|this|after me)|you can'?t teach an old dog/],
+    ["orient4", /oriented (times|x|by) ?(one|two|three|four|[1-4])|\ba ?(and|n|&) ?o( times| x| by)?\b|\baox ?\d|\baox?\b|orientation|is (he|she|the patient) oriented|alert and oriented/],
+    ["avpu", /\bavpu\b/],
+    ["painresp", /sternal rub|trap(ezius)? (squeeze|pinch)|pain(ful)? (stimulus|stimuli|response)|respond(s|ing)? to pain|nail ?bed (pressure|pinch)|supra ?orbital/],
+    ["smell", /\bsmell|\bodou?r|on (his|her|their) breath|\bfruity\b|acetone|ketones? (on|breath)/],
+    ["incont", /incontinen|wet (himself|herself|themselves|his pants|her pants)|(urinated|peed|soiled) (on )?(himself|herself|themselves)|bowel or bladder|loss of bladder/],
+    ["tongue", /tongue (bite|biting|lac|laceration|bitten|trauma)|bit (his|her|your|their) tongue|bite (his|her|your|their) tongue|(check|look at) (his|her|the) tongue/],
+    ["medalert", /medic(al)? ?alert|medical (bracelet|necklace|jewelry|id)|alert (bracelet|tag)|\bbracelet|dog tags?/],
+    ["medbottles", /(pill|medication|meds?|prescription|medicine) (bottles?|bag|containers?|box|organizer)|\bpill ?box|meds on scene|(look|check) for (his|her|any) (meds|medications|pills)|what (meds|medications|pills) (are|do you see) (on|around)/],
+    ["tracks", /track ?marks?|needle marks|injection sites?|(check|look at) (his|her) arms for/],
+    ["hives", /(check|look|examine) (for|at) (a |any )?(rash|rashes|hives|urticaria|petechiae|welts)|urticaria|petechia|(any|is there a) (rash|hives) (on|anywhere)|skin (rash|hives)|check (his|her) skin for/],
+    ["preg", /(check|assess|palpate|look) (for )?(a )?(pregnancy|pregnant|gravid|fundal|fundus)|fundal height|\bgravid|pregnancy test|is she (visibly )?pregnant\b(?!\?)|crowning/],
     ["lungs", /\blung sounds|lungs? sound|(check|assess|listen to|auscultate) (the |his |her |your )?lungs|breath sounds|auscultat|listen to (his|her|your|their|the) (chest|lungs|back)|stethoscope|\bwheez|crackles|rales|rhonchi/],
-    ["neuro", /mlapss|\blapss\b|\blams\b|stroke (scale|exam|assessment|screen)|cincinnati|be ?fast|\bfast exam|smile for me|facial droop|arm drift|squeeze (my|both) (hands|fingers)|squeeze both (of )?my|grip strength|hold (your|both) arms|neuro (exam|check|assessment)|pronator/],
+    ["neuro", /mlapss|hold (your|her|his|their|both) arms (out|up)|grip strength|\bgrips?\b|pronator|\bdrift\b|facial (droop|symmetry|asymmetry)|\bdroop|smile for me|\blapss\b|\blams\b|stroke (scale|exam|assessment|screen)|cincinnati|be ?fast|\bfast exam|smile for me|facial droop|arm drift|squeeze (my|both) (hands|fingers)|squeeze both (of )?my|grip strength|hold (your|both) arms|neuro (exam|check|assessment)|pronator/],
     ["trauma", /trauma|head to toe|secondary (survey|assessment)|physical exam|\bdcap|check (him|her|them) for injur|any injur|rapid (trauma|assessment)|hit (his|her|your) head|look for injur/],
     ["edema", /edema|\bjvd\b|jugular|neck veins|ankles|pitting|swollen (legs|feet|ankles)|swelling in (his|her|your|the) (legs|feet|ankles|lower extremities)/],
-    ["abdomen", /\babdom|\babd\b|\bbelly\b|\btumm(y|ies)\b|stomach (sore|hurt|tender)|stomach (soft|tender|exam)|palpate (the |his |her )?(abd|belly|stomach)|is (his|her) stomach/],
+    ["abdomen", /\babdom|\babd\b|\bbelly\b|\b[rl][ul]q\b|quadrants?|\brebound|\bguarding\b|distended|distension|rigid(ity)?\b|\btumm(y|ies)\b|stomach (sore|hurt|tender)|stomach (soft|tender|exam)|palpate (the |his |her )?(abd|belly|stomach)|is (his|her) stomach/],
     ["airway", /check (the|his|her) airway|airway (patent|clear|open)|look in (his|her) mouth|head tilt|jaw thrust|open (the|his|her) airway/],
     ["vitals", /vitals|vital signs|full set|set of vitals|(some|a set of|get|grab) numbers on/],
     ["pulsecheck", /pulse check|check (for )?(a )?pulse\b(?! ?ox)|is there a pulse|rhythm check/],
-    ["scene", /look around|\bscene\b|environment|surroundings|(the|this) room|what do i see|anything (around|nearby|on the (table|floor|counter|nightstand))|pill bottles|medication bottles/],
+    ["scene", /look around|\bscene\b|environment|surroundings|(the|this) room|what do i see|anything (around|nearby|on the (table|floor|counter|nightstand))/],
   ];
   const T = [
     ["bandage", /bandage|dressing|direct pressure|control (the )?bleed|gauze|hemorrhage control/],
@@ -875,6 +925,16 @@ const NLU = (() => {
     "a:trauma": ["check for injuries", "head to toe", "secondary survey", "any deformities"],
     "a:edema": ["check for pitting edema", "look at the ankles", "check for jvd"],
     "a:abdomen": ["palpate the abdomen", "feel the belly", "is the stomach tender"],
+    "a:caprefill": ["check cap refill", "capillary refill time"],
+    "a:corneal": ["check corneal reflex", "touch the cornea"],
+    "a:gag": ["does he have a gag reflex", "check gag"],
+    "a:work": ["how hard is he working to breathe", "any accessory muscle use", "work of breathing"],
+    "a:heart": ["listen to heart sounds", "any murmur"],
+    "a:cms": ["check circulation motor sensation", "pulse motor sensory in all four"],
+    "a:back": ["check his back and spine", "any spinal tenderness"],
+    "a:head": ["check head face and neck for injuries", "dcap btls"],
+    "a:smell": ["what does his breath smell like", "any odor"],
+    "a:medbottles": ["look for medication bottles", "any pill bottles around"],
     "a:airway": ["check the airway", "is the airway patent", "look in the mouth"],
   };
   const STOP = new Set("the a an and or to of in on at for with is are was were be been do does did you your yours he she his her it its this that me my i we us our can could would please okay ok so just any some there here".split(" "));
@@ -942,6 +1002,30 @@ const NLU = (() => {
     if (out.questions.includes("history") && out.questions.includes("drugs") && !/drug|alcohol|use|smoke/.test(t)) out.questions = out.questions.filter(x => x !== "drugs");
     if (out.questions.includes("allergies") && /reaction|can'?t take|cannot take/.test(t)) out.questions = out.questions.filter(x => x !== "meds" && x !== "drugs");
     if (out.questions.includes("dizzy")) out.assess = out.assess.filter(a => a !== "scene");
+    { const A2 = out.assess, has = k => A2.includes(k), drop = (...k) => { out.assess = out.assess.filter(a => !k.includes(a)); };
+      if (has("caprefill") && !/\bskin\b/.test(t)) drop("skin");
+      if (has("hives")) { drop("skin"); out.questions = out.questions.filter(x => x !== "rash" && (x !== "swelling" || /throat|tongue|lips/.test(t))); }
+      if (has("head")) drop("trauma");
+      if (has("head") && /neck veins?|jvd|jugular/.test(t) && !/head|face|dcap|btls/.test(t)) drop("head");
+      if (has("cms")) { drop("neuro"); if (!/pulse/.test(t.replace(/pulse,? motor/, ""))) drop("pulse"); }
+      if (has("tongue")) out.questions = out.questions.filter(x => x !== "swelling");
+      if (has("speech")) out.questions = out.questions.filter(x => x !== "weakness" && x !== "orient");
+      if (has("orient4")) out.questions = out.questions.filter(x => x !== "orient");
+      if (has("smell")) out.questions = out.questions.filter(x => x !== "drugs" && x !== "lastoral");
+      if (has("incont")) out.questions = out.questions.filter(x => x !== "urinary");
+      if (has("medbottles")) { out.questions = out.questions.filter(x => x !== "meds"); drop("scene"); }
+      if (has("pulse")) out.questions = out.questions.filter(x => x !== "quality");
+      if (has("skin")) { out.questions = out.questions.filter(x => x !== "sweaty" && x !== "weakness"); if (/color|moisture/.test(t)) drop("temp"); }
+      if (has("cms")) drop("extrem", "pulsecheck");
+      if (has("preg")) out.questions = out.questions.filter(x => x !== "pregnant");
+      if (has("painresp")) out.questions = out.questions.filter(x => x !== "chestpain" && x !== "severity");
+      if (has("work")) { out.questions = out.questions.filter(x => x !== "sob"); drop("rr"); }
+      if (has("heart") && !/lung|breath sounds/.test(t)) drop("lungs");
+      if (has("corneal") || has("gag")) out.questions = out.questions.filter(x => x !== "understand");
+      if (has("back")) out.questions = out.questions.filter(x => x !== "radiation");
+      if (has("trachea")) drop("airway");
+      if (has("pulse") && /pedal pulse|distal pulse/.test(t)) drop("edema");
+    }
     if (out.questions.includes("history") && /high blood pressure|hypertension/.test(t) && !/check|take|get|what'?s (his|her|the)/.test(t)) out.assess = out.assess.filter(a => a !== "bp");
     if (out.questions.includes("palpitations")) out.questions = out.questions.filter(x => x !== "quality");
     if (out.questions.includes("cough") && !/pain|hurt/.test(t)) out.questions = out.questions.filter(x => x !== "provocation");
@@ -1076,6 +1160,7 @@ const SIM = (() => {
     const tg = st.tg, out = [], arrest = mental() === "arrest";
     rec("a:" + id); if (st.x.rosc) rec("a:" + id + "@rosc");
     const R = (k, val) => { st.rev[k] = { t: st.t, val }; };
+    const X = key => EXAM.find(key, sc, st, lastText, mental());
     switch (id) {
       case "monitor": if (!st.rev.monitor) out.push(`Monitor applied. Rhythm: ${tg.rhythmName}.`); else out.push(`Rhythm: ${tg.rhythmName}.`); st.rev.monitor = { t: st.t }; R("ecg", tg.rhythmName); break;
       case "12lead":
@@ -1085,23 +1170,28 @@ const SIM = (() => {
         out.push(`12-lead acquired (rate ${Math.round(st.v.hr)}): ${tg.twelve.text}`); break;
       case "bp": if (arrest || !st.v.sbp) { R("bp", "--/--"); out.push("NIBP: unable to obtain."); } else { R("bp", vitalStr().bp); out.push(`BP ${vitalStr().bp} mmHg.` + (tg.bpNote ? " " + tg.bpNote : "")); } break;
       case "spo2": st.rev.spo2 = { t: st.t }; out.push(st.v.spo2 == null ? "SpO2: no reliable waveform." : `SpO2 ${Math.round(st.v.spo2)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : "room air"}).`); break;
-      case "pulse": if (arrest || !st.v.hr || tg.pulse === false) { R("pulse", 0); out.push("No palpable pulse (carotid)."); } else { R("pulse", Math.round(st.v.hr)); out.push(`Radial pulse ${Math.round(st.v.hr)}, ${tg.rhythm === "afib" ? "irregularly irregular" : "regular"}, ${st.v.sbp < 90 ? "weak and thready" : "strong"}.`); } break;
+      case "pulse": R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(X("pulse")); break;
       case "pulsecheck": out.push(tg.pulse === false || arrest ? `Pulse check: NO PULSE. Monitor shows ${tg.rhythmName}.` : `Pulse check: carotid pulse present, rate ~${Math.round(st.v.hr)}.`); rec("a:monitor"); st.rev.monitor = st.rev.monitor || { t: st.t }; break;
       case "rr": R("rr", Math.round(st.v.rr)); out.push(`Respiratory rate ${Math.round(st.v.rr)}/min${st.v.rr < 10 ? ", shallow" : st.v.rr > 24 ? ", labored" : ""}.`); break;
       case "etco2": st.rev.etco2 = { t: st.t }; out.push(`Capnography applied: EtCO2 ${Math.round(st.v.etco2)} mmHg${tg.capno === "shark" ? ", shark-fin waveform" : ""}.`); break;
       case "temp": R("temp", st.v.temp.toFixed(1) + "°F"); out.push(`Temp ${st.v.temp.toFixed(1)}°F.`); break;
       case "bgl": { const bt = tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); R("bgl", bt); out.push(`Blood glucose ${bt}.`); } break;
       case "gcs": R("gcs", gcsStr()); out.push(`GCS ${gcsStr()}: ${gcsDetail()}. Mental status: ${mental()}.`); break;
-      case "pupils": R("pupils", tg.pupils); out.push(`Pupils: ${tg.pupils}.`); break;
-      case "skin": R("skin", tg.skin); out.push(`Skin: ${tg.skin}.`); break;
-      case "lungs": R("lungs", tg.lungs); out.push(`Lung sounds: ${tg.lungs}.`); break;
-      case "neuro": { const nt = /lams|mlapss|lapss|stroke|droop|drift|grip/.test(lastText) ? strokeScreen() : tg.neuro; R("neuro", nt); out.push(`Neuro: ${nt}`); break; }
+      case "pupils": R("pupils", tg.pupils); out.push(X("pupils")); break;
+      case "skin": R("skin", tg.skin); out.push(X("skin")); break;
+      case "lungs": R("lungs", tg.lungs); out.push(X("lungs")); break;
+      case "neuro": {
+        const t = lastText, full = /lams|mlapss|lapss|stroke|cincinnati|be ?fast|neuro|fast exam/.test(t);
+        const parts = full ? [] : [/grip|squeeze/.test(t) && "grip", /drift|pronator|hold (your|both) arms|arms out/.test(t) && "drift", /droop|smile|facial|face/.test(t) && "droop"].filter(Boolean);
+        if (parts.length) { parts.forEach(k => out.push(X(k))); R("neuro", out.join(" ")); break; }
+        const nt = /lams|mlapss|lapss|stroke|droop|drift|grip/.test(t) ? strokeScreen() : tg.neuro; R("neuro", nt); out.push(`Neuro: ${nt}`); break; }
       case "trauma": out.push(`Trauma assessment: ${tg.trauma}.`); break;
-      case "edema": out.push(`JVD/edema: ${tg.edema}.`); R("skin", (st.rev.skin ? st.rev.skin.val + "; " : "") + tg.edema); break;
-      case "airway": out.push(`Airway: ${tg.airway}.`); break;
-      case "abdomen": out.push(`Abdomen: ${tg.abdomen || sc.abdomen || "Soft, non-tender, non-distended; no guarding or pulsatile mass"}.`); break;
+      case "edema": out.push(X("edema")); break;
+      case "airway": out.push(X("airway")); break;
+      case "abdomen": out.push(X("abdomen")); break;
       case "scene": out.push(`Scene: ${sc.scene}${sc.sceneMore ? " " + sc.sceneMore : ""}`); break;
       case "vitals": ["pulse", "bp", "rr", "spo2", "skin"].forEach(k => out.push(...assess(k))); break;
+      default: { const f = X(id); if (f) { out.push(f); const panel = { caprefill: "skin", mucous: "skin", hives: "skin", grip: "neuro", drift: "neuro", droop: "neuro", speech: "neuro", orient4: "gcs", avpu: "gcs" }[id]; if (panel === "neuro") R("neuro", f); } }
     }
     if (id !== "vitals") log("assess", `Assessed ${id.toUpperCase()}: ${out.join(" ")}`);
     return out;
@@ -1307,6 +1397,212 @@ const SIM = (() => {
   function end() { st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() }; }
 
   return { start, stop, handle, end, event, mental, setPI, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
+})();
+
+/* ===== exam.js ===== */
+/* =====================================================================
+ * PHYSICAL EXAM ENGINE: the instructor's findings for every assessment.
+ * Order of precedence for each finding:
+ *   1. scenario-authored text (sc.exam[key], string or fn(st))
+ *   2. per-scenario overrides below (EXAM_X[sc.id][key])
+ *   3. condition-aware defaults computed from the LIVE vitals/targets,
+ *      so findings change as the patient deteriorates or improves
+ *      (e.g. radials disappear when SBP < 80; skin follows severity).
+ * ===================================================================== */
+const EXAM = (() => {
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+  const end = s => { s = String(s).trim(); return /[.!?)]$/.test(s) ? s : s + "."; };
+  const DRUGS = "aspirin|nitroglycerin|nitro|lasix|furosemide|metoprolol|carvedilol|eliquis|apixaban|xarelto|rivaroxaban|warfarin|coumadin|lisinopril|losartan|amlodipine|atorvastatin|simvastatin|metformin|glipizide|insulin|lantus|humalog|albuterol|advair|symbicort|spiriva|prednisone|levothyroxine|synthroid|sertraline|zoloft|fluoxetine|propranolol|diltiazem|digoxin|keppra|levetiracetam|lamotrigine|dilantin|phenytoin|depakote|birth control|oxycodone|norco|hydrocodone|tramadol|gabapentin|omeprazole|plavix|clopidogrel|brilinta|amiodarone|hydrochlorothiazide|hctz|spironolactone|potassium|tamsulosin|flomax|donepezil|aricept|epipen|benadryl|cetirizine|zyrtec|amoxicillin|cipro|ciprofloxacin|bactrim|antibiotic|sildenafil|viagra|cialis|tadalafil|home oxygen|nebulizer|inhaler";
+  const DRUG_RE = new RegExp("\\b(" + DRUGS + ")\\b", "ig");
+  const val = (x, st) => typeof x === "function" ? x(st) : x;
+
+  // ---- per-scenario overrides (only where the condition default would be wrong or too generic) ----
+  const EXAM_X = {
+    stemi: { smell: "No unusual odors.", heart: "Regular and slightly fast; S1 and S2 normal, no murmur or rub." },
+    chf: { heart: "Irregularly irregular and rapid; an S3 gallop is audible.", back: "No spinal tenderness. Sacral edema present.", mucous: "Lips and mucous membranes dusky.", work: st => st.v.rr >= 26 || st.v.spo2 < 90 ? "Severe distress: tripod position, accessory muscle use, speaking 1–2 words, audible gurgling." : "Breathing easier: mild accessory muscle use, speaking short sentences." },
+    chf_cp: { heart: "Irregularly irregular; an S3 is audible.", back: "Mild sacral edema; no spinal tenderness." },
+    chf_soft: { heart: "Tachycardic and regular; S3 gallop.", back: "Sacral edema present; no spinal tenderness." },
+    copd: { chestrise: "Barrel chest, hyperinflated; equal, shallow rise.", work: st => st.v.spo2 < 88 ? "Pursed-lip breathing, accessory muscle use, tripod position; speaks in short phrases." : "Pursed-lip breathing, mild accessory muscle use.", smell: "Smells of cigarette smoke.", extrem: "Digital clubbing; trace ankle edema; no deformity." },
+    asthma: { smell: "Smells of smoke from the brush fire.", work: st => st.v.spo2 < 92 || st.v.rr >= 28 ? "Tripod position, severe accessory muscle use with suprasternal and intercostal retractions; speaks 1–2 words." : "Mild accessory muscle use; speaking short sentences." },
+    anaph: { mucous: "Lips and tongue swollen; mucous membranes pink.", hives: st => st.tg.skin, airway: st => "Airway: " + st.tg.airway },
+    allergy_hives: { hives: "Raised urticarial wheals on the arms, neck and trunk. No angioedema." },
+    anaph_gi: { hives: "Scattered hives on the trunk under the shirt; flushed chest and face.", abdomen: "Diffusely tender with active cramping; no rigidity or guarding." },
+    dissection: { radial: st => st.v.sbp < 80 ? "Radial pulses absent bilaterally; carotid present but weak." : `Radial pulses are present but UNEQUAL: the left radial is noticeably weaker than the right. Rate about ${Math.round(st.v.hr)}, regular.`, pedal: "Pedal pulses weaker on the left than the right.", heart: "Faint diastolic murmur at the left sternal border.", femoral: "Femoral pulses present; left weaker than right.", back: "Exquisite pain between the shoulder blades on palpation of the upper back; no step-off." },
+    pe: { extrem: "LEFT calf swollen, warm and tender compared with the right. No deformity.", heart: "Tachycardic, regular, no murmur.", preg: "Not visibly pregnant; she says she takes birth control pills." },
+    hypo: { medalert: "MedicAlert bracelet on the left wrist: 'Diabetic, insulin dependent'.", medbottles: "An insulin pen is on the desk next to his keyboard.", smell: "No odor of alcohol or ketones." },
+    hypo_elder: { medbottles: "Pill organizer and bottles: glipizide, metformin, furosemide. Yesterday's compartment is empty.", pelvis: "Pelvis stable to gentle compression. Bruise over the right hip; legs equal length, no shortening or rotation.", back: "No midline tenderness or step-off." },
+    dka: { smell: "Fruity, acetone (ketone) odor on the breath.", medalert: "No bracelet. An insulin pump is on the desk, disconnected.", medbottles: "An insulin pump, disconnected, and a glucometer are on the desk. Empty sports-drink bottles everywhere.", work: "Deep, rapid, regular breathing (Kussmaul respirations)." },
+    etoh: { smell: "Strong odor of alcohol (ETOH) on the breath.", head: st => st.tg.trauma, medbottles: "An empty liquor bottle in a paper bag; no medication bottles." },
+    postictal_etoh: { smell: "Odor of stale alcohol; the girlfriend says he stopped drinking 2 days ago.", incont: "Urinary incontinence: wet stain on his pants.", tongue: "Lateral tongue bite on the right side." },
+    opioid: { tracks: "No fresh track marks on the arms. Burnt foil and a lighter are next to him, consistent with smoking.", smell: "Faint burnt smell from the foil; no alcohol odor.", work: st => st.v.rr < 10 ? `Slow, shallow, snoring respirations about ${Math.round(st.v.rr)} per minute with minimal chest movement.` : "Respirations improving; no accessory muscle use.", medbottles: "No pill bottles; foil, a lighter and a straw on the floor.", head: "Small abrasion to the forehead; no deformity, no Battle's sign or raccoon eyes." },
+    seizure: { incont: "Urinary incontinence present.", tongue: "Lateral tongue laceration with blood-tinged froth.", medalert: "Medical ID necklace: 'Epilepsy – Keppra'.", medbottles: "Levetiracetam (Keppra) bottle in her purse." },
+    focal_sz: { head: "Healed craniotomy scar on the left scalp; no acute injury.", medalert: "Medical ID bracelet: 'Seizure disorder'." },
+    syncope_lac: { head: st => st.tg.trauma, tongue: "No tongue bite.", incont: "No incontinence." },
+    stroke: { speech: "Expressive aphasia with dysarthria: she understands you but can't get the words out." },
+    stroke_lams5: { head: "Small contusion to the right occiput from the fall. No other DCAP-BTLS." },
+    stroke_post: { speech: "Dysarthric, slurred speech." },
+    bb_od: { medbottles: "An empty propranolol 40 mg bottle (about 25 tablets missing)." },
+    urosepsis: { smell: "Strong odor of urine.", incont: "Indwelling urinary catheter with cloudy, dark urine.", mucous: "Dry, tacky mucous membranes." },
+    pna_sepsis: { mucous: "Dry mucous membranes." },
+    fever_flu: { hives: "No rash, no petechiae.", mucous: "Slightly dry mucous membranes." },
+    orthostatic: { smell: "Odor of diarrhea in the bathroom." },
+    mobitz2: { head: st => st.tg.trauma },
+    vf: { tracks: "No track marks." },
+    pea_hyperk: { extrem: "Dialysis AV fistula in the left forearm with a palpable thrill... no thrill felt now. No deformity." },
+  };
+
+  const clauses = s => String(s || "").replace(/mLAPSS (POSITIVE|NEGATIVE|currently NEGATIVE)[^:]*:/i, "").replace(/\bBut:/, "").split(/[;,.]|→/).map(x => x.trim()).filter(Boolean);
+  const pick = (s, re) => clauses(s).filter(c => re.test(c));
+  function rhythmWord(tg) { return tg.rhythm === "afib" ? "irregularly irregular" : "regular"; }
+  function cond(sc) { return sc.base || sc.id; }
+
+  function ctx(sc, st, text, mental) {
+    const tg = st.tg, v = st.v, g = tg.gcs || [4, 5, 6];
+    return { sc, st, tg, v, text: text || "", m: mental, g, gs: g[0] + g[1] + g[2], c: cond(sc), arrest: mental === "arrest" || tg.pulse === false || !v.hr, shock: v.sbp != null && v.sbp < 90, cool: /cool|cold|ashen|gray/i.test(tg.skin || "") };
+  }
+
+  // ---------------- default generators (condition + live vitals) ----------------
+  const D = {
+    radial(x) {
+      const { v, tg, arrest } = x;
+      if (arrest) return x.st.flags.cpr ? "No spontaneous radial pulse. A femoral pulse is palpable only with compressions." : "No radial or carotid pulse.";
+      const hr = Math.round(v.hr), rate = hr > 100 ? "rapid" : hr < 60 ? "slow" : "normal-rate";
+      if (v.sbp < 80) return `Radial pulses are absent bilaterally. Carotid pulse is present, weak, about ${hr}, ${rhythmWord(tg)}.`;
+      const q = v.sbp < 90 ? "weak and thready" : "strong";
+      return `Radial pulses are present bilaterally, ${q}, ${rate} at about ${hr}, ${rhythmWord(tg)}, and equal.`;
+    },
+    carotid(x) { const { v, tg, arrest } = x; if (arrest) return x.st.flags.cpr ? "No spontaneous carotid pulse; pulse felt with compressions only." : "No carotid pulse."; return `Carotid pulse is present, ${v.sbp < 80 ? "weak" : "strong"}, about ${Math.round(v.hr)}, ${rhythmWord(tg)}.`; },
+    femoral(x) { const { v, arrest } = x; if (arrest) return x.st.flags.cpr ? "Femoral pulse palpable with compressions only." : "No femoral pulse."; return `Femoral pulses are present bilaterally, ${v.sbp < 80 ? "weak" : "strong"}, about ${Math.round(v.hr)}.`; },
+    pedal(x) { const { v, arrest, tg } = x; if (arrest) return "No pedal pulses."; if (v.sbp < 90 || (x.cool && v.sbp < 100)) return "Pedal pulses are absent bilaterally; feet are cool."; if (/[23]\+ pitting/.test(tg.edema || "")) return "Pedal pulses are faint, hard to palpate through the edema, equal bilaterally."; return "Pedal pulses are present and equal bilaterally."; },
+    caprefill(x) { const { v, arrest } = x; if (arrest) return "Capillary refill absent; nail beds cyanotic."; const s = v.sbp < 80 ? "greater than 4 seconds" : v.sbp < 90 || x.cool ? "delayed, about 3 to 4 seconds" : "less than 2 seconds"; return `Capillary refill is ${s}.`; },
+    corneal(x) {
+      const { arrest, gs, m, g } = x;
+      if (arrest) return "Corneal reflex is absent bilaterally.";
+      if (m === "seizing") return "Blinks to corneal touch bilaterally; eyes deviated during the seizure.";
+      if (gs <= 8 || m === "unresponsive") return g[2] <= 2 ? "Corneal reflex is sluggish but present bilaterally." : "Corneal reflex is present bilaterally.";
+      return "Corneal reflex is intact. The patient blinks and pulls away; it isn't routinely tested in a responsive patient.";
+    },
+    gag(x) {
+      const { arrest, gs, m } = x;
+      if (arrest) return "No gag reflex.";
+      if (m === "seizing") return "Unable to assess; jaw clenched.";
+      if (gs <= 6) return "Gag reflex is absent; the patient would tolerate an OPA.";
+      if (gs <= 8 || m === "unresponsive") return "Gag reflex is present. An OPA would not be tolerated; consider an NPA.";
+      return ["alert", "anxious"].includes(m) ? "Gag reflex is intact. The patient is talking and swallowing secretions." : "Gag reflex is intact; the patient is swallowing secretions.";
+    },
+    pupils(x) { const p = x.tg.pupils || "PERRL, 4 mm"; return "Pupils: " + p.replace(/\bPERRL\b/, "equal, round and reactive to light (PERRL)") + "."; },
+    skin(x) { return "Skin: " + cap(x.tg.skin || (x.shock ? "pale, cool and diaphoretic" : "pink, warm and dry")) + "."; },
+    mucous(x) {
+      const { v, c, tg } = x;
+      if (/dry mucous/i.test(tg.skin || "")) return "Mucous membranes are dry and tacky.";
+      if (v.spo2 != null && v.spo2 < 85) return "Lips and mucous membranes are dusky and cyanotic.";
+      if (["dka", "seps", "fevr"].includes(c) || /very dry|poor skin turgor/.test(tg.skin || "")) return "Mucous membranes are dry.";
+      return "Mucous membranes are pink and moist.";
+    },
+    airway(x) { return "Airway: " + end(x.tg.airway || "Patent"); },
+    work(x) {
+      const { v, c, arrest, m } = x;
+      if (arrest) return x.st.flags.o2 === "bvm" || x.st.flags.sga ? "No spontaneous breathing; being ventilated." : "Apneic with occasional agonal gasps.";
+      if (v.rr < 10) return `Slow, shallow respirations about ${Math.round(v.rr)} per minute, minimal effort.`;
+      if (c === "dka") return "Deep, rapid Kussmaul respirations.";
+      if (["asthma", "copd", "chf", "anaph", "pe", "seps"].includes(c) && (v.rr >= 26 || v.spo2 < 90)) return "Labored breathing: accessory muscle use, tripod positioning, speaks in short phrases.";
+      if (v.rr > 22) return `Tachypneic at ${Math.round(v.rr)}, mildly labored, no accessory muscle use.`;
+      return m === "unresponsive" ? "Regular, unlabored respirations." : "Breathing is unlabored; the patient speaks in full sentences.";
+    },
+    chestrise(x) { const { v, arrest, st } = x; if (st.flags.o2 === "bvm" || st.flags.sga) return "Good, equal chest rise with each ventilation."; if (arrest) return "No chest rise apart from agonal gasps."; if (v.rr < 10) return "Shallow but equal chest rise."; return "Chest rise is equal and symmetric bilaterally."; },
+    lungs(x) {
+      const l = x.tg.lungs || "Clear and equal bilaterally"; const t = x.text;
+      if (/^clear/i.test(l) && /apex|apices|upper/.test(t)) return "Lung sounds are clear in both apices.";
+      if (/^clear/i.test(l) && /base|lower/.test(t)) return "Lung sounds are clear in both bases.";
+      return "Lung sounds: " + end(l);
+    },
+    heart(x) { const { v, tg, arrest } = x; if (arrest) return "No heart sounds."; const r = v.hr > 100 ? "tachycardic" : v.hr < 60 ? "bradycardic" : "normal rate"; return `Heart sounds: ${r}, ${rhythmWord(tg)}; S1 and S2 present, no murmurs, rubs or gallops.`; },
+    jvd(x) { const e = pick(x.tg.edema, /jvd|jugular|neck vein/i); if (e.length) return cap(e.join(", ")) + "."; if (x.shock && ["seps", "anaph", "dka", "sync", "allergy"].includes(x.c)) return "Neck veins are flat."; return "No JVD."; },
+    trachea() { return "Trachea is midline."; },
+    pedalEdema(x) { const e = pick(x.tg.edema, /pitting|ankle|leg|calf|pedal|feet|shin|knee/i); return e.length ? cap(e.join(", ")) + "." : "No pedal edema."; },
+    edema(x) { const t = x.text; if (/jvd|jugular|neck vein/.test(t) && !/edema|ankle|leg|feet|swell/.test(t)) return D.jvd(x); if (!/jvd|jugular|neck vein/.test(t)) return D.pedalEdema(x); const e = x.tg.edema; return !e || e === "None" ? "No JVD and no pedal edema." : end(e); },
+    abdomen(x) {
+      const a = x.tg.abdomen || x.sc.abdomen; const t = x.text, q = (t.match(/\b(right|left) (upper|lower)\b|\b[rl][ul]q\b/) || [])[0];
+      if (a) return "Abdomen: " + end(a);
+      return q ? `${cap(q.toUpperCase())}: soft and non-tender. The whole abdomen is soft and non-distended, with no rigidity or guarding.` : "Abdomen is soft and non-tender in all four quadrants, non-distended, with no rigidity, guarding or pulsatile mass.";
+    },
+    pelvis() { return "Pelvis is stable to gentle compression, with no tenderness or crepitus."; },
+    extrem(x) { const e = pick(x.tg.edema, /pitting|ankle|leg|calf|pedal|feet|shin|knee/i); return "Extremities: no deformity, swelling or tenderness" + (e.length ? "; " + e.join(", ") : "") + "."; },
+    cms(x) {
+      const { m, arrest, v, tg, g } = x;
+      if (arrest) return "No distal pulses; no motor or sensory response.";
+      const pul = v.sbp < 90 ? "distal pulses weak or absent" : "distal pulses present";
+      if (["unresponsive", "seizing"].includes(m)) return `CMS: ${pul} in all four. Motor and sensory can't be tested on command; ${g[2] >= 5 ? "localizes to pain" : g[2] >= 4 ? "withdraws all four extremities to pain" : "minimal response to pain"}.`;
+      const neuro = tg.neuro || ""; const side = (neuro.match(/\b(right|left)\b (facial|arm|grip|side|-sided)/i) || [])[1];
+      if (side && /POSITIVE|weak|drift|limp|no (left|right) grip/i.test(neuro)) return `CMS: ${pul} in all four. Motor and sensation are DECREASED on the ${side.toLowerCase()} arm and leg; normal on the other side.`;
+      return x.shock ? `CMS: distal pulses weak or absent in all four; motor and sensation intact.` : `CMS intact in all four extremities: ${pul}, moves fingers and toes on command, sensation intact.`;
+    },
+    back() { return "Back and spine: no deformity, step-off or midline tenderness."; },
+    head(x) { const tr = x.tg.trauma || ""; const hit = pick(tr, /head|face|forehead|occiput|scalp|eyebrow|chin|laceration|abrasion|contusion|battle|raccoon|bump/i); return "Head, face and neck: " + (hit.length ? hit.join(", ") : "no DCAP-BTLS") + ". No Battle's sign or raccoon eyes; trachea midline; no drainage from the ears or nose."; },
+    _neuroPart(x, re, normal, unable) {
+      const { m, gs } = x;
+      if (x.arrest || m === "unresponsive" || m === "seizing" || gs <= 8) return unable;
+      const hit = pick(x.tg.neuro, re).filter(c => !/^no focal deficits$/i.test(c));
+      return hit.length ? cap(hit.join(", ")).replace(/\s*\(\d\)/g, "") + "." : normal;
+    },
+    grip(x) { return D._neuroPart(x, /grip/i, x.m === "confused" ? "Grips are equal bilaterally, though the patient follows commands inconsistently." : "Grip strength is strong and equal bilaterally.", "Unable to assess grip strength; the patient doesn't follow commands."); },
+    drift(x) { return D._neuroPart(x, /drift|arm falls|arm weak|limp|neglect/i, "No pronator drift; both arms held steady.", "Unable to assess pronator drift; the patient doesn't follow commands."); },
+    droop(x) { return D._neuroPart(x, /droop|smile|facial|face/i, "Smile is symmetric; no facial droop.", "Unable to assess smile on command; the face appears symmetric at rest."); },
+    speech(x) {
+      const { m, v, c } = x;
+      if (x.arrest || m === "unresponsive") return "No speech; the patient is unresponsive.";
+      if (m === "seizing") return "No speech during the seizure.";
+      const hit = pick(x.tg.neuro, /speech|aphasi|dysarthri|slurr|words/i);
+      if (hit.length) return cap(hit.join(", ")) + ".";
+      if (m === "aphasic") return "Aphasic; unable to produce clear words.";
+      if (m === "confused") return "Speech is slow and confused, with inappropriate words at times.";
+      if (v.rr >= 26 || (v.spo2 != null && v.spo2 < 90)) return "Speech is clear but limited to 2–3 words between breaths.";
+      return "Speech is clear and fluent.";
+    },
+    orient4(x) {
+      const { m, gs } = x;
+      if (x.arrest || m === "unresponsive") return `Not oriented: unresponsive, GCS ${gs}.`;
+      if (m === "seizing") return "Not assessable; actively seizing.";
+      if (m === "aphasic") return "Unable to assess orientation verbally because of aphasia; follows simple commands.";
+      if (m === "confused") return x.g[1] >= 4 ? "Alert and oriented times one: knows their name but not the place, time or event." : "Disoriented times four.";
+      return "Alert and oriented times four: person, place, time and event.";
+    },
+    avpu(x) { const { m, g } = x; if (x.arrest) return "AVPU: U, unresponsive."; if (m === "seizing") return "AVPU: U, actively seizing."; if (m === "unresponsive") return g[2] >= 4 ? "AVPU: P, responds to pain." : g[2] >= 2 ? "AVPU: P, abnormal posturing to pain." : "AVPU: U, unresponsive."; if (m === "confused") return g[0] >= 4 ? "AVPU: A, but confused." : "AVPU: V, responds to verbal stimuli."; return "AVPU: A, alert."; },
+    painresp(x) { const { m, g } = x; if (x.arrest) return "No response to painful stimulus."; if (m === "unresponsive" || m === "seizing") return [, "No response to painful stimulus.", "Extension posturing to pain.", "Abnormal flexion to pain.", "Withdraws from pain.", "Localizes to pain.", "Localizes to pain."][g[2]] || "Withdraws from pain."; if (m === "confused") return "Localizes and pushes your hand away."; return "The patient is alert and objects appropriately to the stimulus. A painful stimulus isn't indicated."; },
+    smell(x) { const s = x.tg.skin || ""; if (/fruity|acetone/.test(s)) return "Fruity, acetone odor on the breath."; if (/alcohol/i.test(x.sc.scene || "")) return "Odor of alcohol on the breath."; return "No unusual odors: no alcohol, ketones or smoke."; },
+    incont(x) { return /incontinent|wet stain/i.test(x.sc.scene || "") ? "Urinary incontinence present." : "No urinary or fecal incontinence."; },
+    tongue(x) { const tr = pick(x.tg.trauma, /tongue/i); return tr.length ? cap(tr.join(", ")) + "." : "No tongue bite."; },
+    medalert() { return "No medical alert bracelet or necklace found."; },
+    medbottles(x) {
+      const sc = x.sc, st = x.st;
+      const src = [val((sc.bystanderAnswers || {}).meds, st), val((sc.answers || {}).meds, st), val((sc.answers || {}).drugs, st)].filter(s => typeof s === "string").join(" ");
+      const names = [...new Set((src.match(DRUG_RE) || []).map(s => s.toLowerCase()))].filter(n => !/^(nitro|inhaler|antibiotic)$/.test(n) || !src.match(new RegExp("no " + n, "i")));
+      const onScene = /bottle|pill|pharmacy|medication|insulin|inhaler|nebulizer|concentrator/i.test((sc.scene || "") + " " + (sc.sceneMore || ""));
+      if (names.length) return `${onScene ? "Medications found on scene" : "Medications (from the patient and family)"}: ${names.map(cap).join(", ")}.`;
+      return onScene ? "There are medication bottles on scene; read the labels or ask the family." : "No medication bottles found on scene.";
+    },
+    tracks() { return "No track marks or injection sites."; },
+    hives(x) { const s = x.tg.skin || ""; const h = pick(s, /hive|urtic|wheal|rash|welt|petech/i); return h.length ? cap(h.join(", ")) + "." : "No rash, hives or petechiae."; },
+    preg(x) { const p = x.sc.patient; if (p.sex !== "F") return "Not applicable; male patient."; if (p.age > 55 || p.age < 11) return "Not applicable given the patient's age; no gravid abdomen."; return "No visibly gravid abdomen and the fundus isn't palpable. Ask about LMP and possible pregnancy."; },
+    temp(x) { return x.v.temp == null ? "Temperature unavailable." : `Temperature ${x.v.temp.toFixed(1)}°F.`; },
+  };
+  const KEYMAP = { pulse: "radial", radial: "radial", carotid: "carotid", femoral: "femoral", pedal: "pedal" };
+
+  // site-specific pulse from the utterance
+  function pulseSite(text) {
+    if (/carotid/.test(text)) return "carotid"; if (/femoral/.test(text)) return "femoral";
+    if (/pedal pulse|pedal pulses|dorsalis|pedis|posterior tibial|distal pulse|feet|foot/.test(text)) return "pedal";
+    return "radial";
+  }
+  function find(key, sc, st, text, mental) {
+    const x = ctx(sc, st, text, mental);
+    if (key === "pulse") key = pulseSite(x.text);
+    const authored = sc.exam && sc.exam[key] != null ? sc.exam[key] : (EXAM_X[sc.id] || {})[key];
+    if (authored != null) { const s = val(authored, st); if (s) return end(s); }
+    const fn = D[KEYMAP[key] || key];
+    return fn ? end(fn(x)) : null;
+  }
+  return { find, has: k => !!D[KEYMAP[k] || k] || ["radial", "carotid", "femoral", "pedal"].includes(k), D, EXAM_X };
 })();
 
 /* ===== sc0_base.js ===== */
@@ -3440,7 +3736,7 @@ const RuleBasedPatient = (() => {
       else out.push({ speaker: "narrator", text: resolve(sc.fallback, st) || "No response." });
     } else if (qs.length && !answered && talk) {
       out.push({ speaker: "patient", text: pick(FALLBACK[mental] || FALLBACK.alert) });
-    } else if (!qs.length && talk && parsed.assess.length && !parsed.tx.length && Math.random() < 0.35 && mental !== "confused") {
+    } else if (!qs.length && talk && parsed.assess.length && !parsed.tx.length && Math.random() < 0.2 && mental !== "confused") {
       out.push({ speaker: "patient", text: pick(parsed.byCrew ? ["(watches your partner work)", "Okay..."] : ["Okay.", "Go ahead.", "Mm-hm.", "Is it bad?"]) });
     }
     // breathless speech: short broken phrases when tachypneic / hypoxic
@@ -3751,7 +4047,7 @@ const Speech = (() => {
   let model = null, modelLoading = null, recognizer = null, ctx = null, stream = null, proc = null, src = null;
   let state = "idle"; // idle | listening | handsfree | loading
   let feeding = false, pttHeld = false, lastVoice = 0, noise = 0.004, inSpeech = false, partial = "";
-  let webRec = null, webBuf = "", preroll = null;
+  let webRec = null, webBuf = "", preroll = null, paused = false, discard = false, lastProcAt = 0, watchdog = null, wantMode = null, recovering = false;
   const set = s => { state = s; cb.onState(s); };
 
   // ---------- model cache ----------
@@ -3801,7 +4097,7 @@ const Speech = (() => {
     const r = opts.grammar ? new model.KaldiRecognizer(sr, JSON.stringify(grammarList())) : new model.KaldiRecognizer(sr);
     r.on("result", m => {
       const t = (m.result && m.result.text || "").replace(/\[unk\]/g, "").replace(/\s+/g, " ").trim(); partial = ""; cb.onInterim("");
-      if (t) { Speech.lastResultAt = performance.now(); cb.onFinal(t, "vosk"); }
+      if (discard) { discard = false; } else if (t) { Speech.lastResultAt = performance.now(); cb.onFinal(t, "vosk"); }
       if (stopWaiter) { const w = stopWaiter; stopWaiter = null; w(); }
     });
     r.on("partialresult", m => { const t = (m.result && m.result.partial || "").replace(/\[unk\]/g, "").trim(); if (t !== partial) { partial = t; cb.onInterim(t); } });
@@ -3820,8 +4116,9 @@ const Speech = (() => {
     proc.onaudioprocess = e => {
       const buf = e.inputBuffer, d = buf.getChannelData(0); let sum = 0; for (let i = 0; i < d.length; i += 4) sum += d[i] * d[i];
       const rms = Math.sqrt(sum / (d.length / 4)); cb.onLevel(rms);
-      const now = performance.now();
-      if (cb.isSpeaking()) { inSpeech = false; return; } // don't transcribe the patient's own voice
+      const now = performance.now(); lastProcAt = now;
+      // never transcribe the patient's / instructor's own voice: gate while TTS is playing (and just after)
+      if (paused || cb.isSpeaking()) { if (inSpeech) { inSpeech = false; discard = true; try { recognizer.retrieveFinalResult(); } catch (err) {} } preroll = null; return; }
       if (state === "handsfree") {
         // adaptive noise floor; speech when energy clearly above it. 700 ms hangover ends an utterance.
         if (!inSpeech) noise = noise * 0.97 + rms * 0.03;
@@ -3832,8 +4129,31 @@ const Speech = (() => {
       } else if (feeding) { try { recognizer.acceptWaveform(buf); } catch (err) {} }
     };
     src.connect(proc); proc.connect(ctx.destination);
+    lastProcAt = performance.now();
+    stream.getAudioTracks().forEach(tr => { tr.onended = () => recover("track ended"); tr.onmute = () => { Speech.lastMute = Date.now(); }; });
+    ctx.onstatechange = () => { if (ctx && ctx.state !== "running" && !document.hidden) ctx.resume().catch(() => {}); };
+    startWatchdog();
   }
-  function closeMic() {
+  // ---------- auto-recovery: restarts the mic if the audio stream stops (Android tab/backgrounding, device change, etc.) ----------
+  function startWatchdog() {
+    clearInterval(watchdog);
+    watchdog = setInterval(() => {
+      if (!wantMode || recovering || document.hidden) return;
+      if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+      const dead = !stream || stream.getAudioTracks().every(t => t.readyState === "ended") || performance.now() - lastProcAt > 3000;
+      if (dead) recover("no audio for 3 s");
+    }, 1000);
+  }
+  async function recover(why) {
+    if (!wantMode || recovering || Speech.active === "web") return;
+    recovering = true; Speech.recoveries = (Speech.recoveries || 0) + 1; Speech.lastRecovery = why;
+    const mode = wantMode;
+    try { closeMic(true); await new Promise(r => setTimeout(r, 300)); await openMic(); feeding = mode !== "handsfree"; set(mode === "handsfree" ? "handsfree" : "listening"); cb.onRecover && cb.onRecover(why); }
+    catch (e) { set("idle"); wantMode = null; cb.onInterim("Microphone stopped: " + e.message + ". Tap the mic to restart."); }
+    recovering = false;
+  }
+  function closeMic(keepWant) {
+    if (!keepWant) { wantMode = null; clearInterval(watchdog); }
     try { proc && proc.disconnect(); src && src.disconnect(); } catch (e) {}
     if (stream) stream.getTracks().forEach(t => t.stop());
     if (recognizer) { try { recognizer.remove(); } catch (e) {} }
@@ -3861,13 +4181,13 @@ const Speech = (() => {
     set("loading");
     try { await ensureModel(); await openMic(); }
     catch (e) { set("idle"); closeMic(); throw e; }
-    feeding = mode !== "handsfree"; pttHeld = mode === "ptt"; noise = 0.004; inSpeech = false;
+    feeding = mode !== "handsfree"; pttHeld = mode === "ptt"; noise = 0.004; inSpeech = false; wantMode = mode;
     set(mode === "handsfree" ? "handsfree" : "listening");
   }
   // Stop listening. Resolves after the last final transcript has been delivered (so PTT/toggle can submit the whole turn).
   function stopVosk() {
     if (state === "idle") return Promise.resolve();
-    const r = recognizer, wasFeeding = feeding || inSpeech; feeding = false; inSpeech = false; set("idle");
+    const r = recognizer, wasFeeding = feeding || inSpeech; feeding = false; inSpeech = false; wantMode = null; set("idle");
     return new Promise(res => {
       const done = () => { clearTimeout(to); if (recognizer === r) closeMic(); res(); };
       const to = setTimeout(() => { stopWaiter = null; done(); }, 1500);
@@ -3896,9 +4216,17 @@ const Speech = (() => {
     };
     rec.start(); set(mode === "handsfree" ? "handsfree" : "listening");
   }
+  // pause/resume input while TTS plays. Vosk: gate audio. Web Speech: abort and restart (Android otherwise hears the TTS).
+  function setPaused(p) {
+    if (p === paused) return; paused = p;
+    if (Speech.active === "web" && state === "handsfree") {
+      if (p && webRec) { const r = webRec; r.onend = () => {}; try { r.abort(); } catch (e) {} webRec = null; }
+      else if (!p && !webRec) { try { startWeb("handsfree"); } catch (e) {} }
+    }
+  }
   function stopAll() {
     if (Speech.active === "web") {
-      if (!webRec) return Promise.resolve();
+      if (!webRec) { if (state !== "idle") set("idle"); return Promise.resolve(); }
       const r = webRec; set("stopping");
       return new Promise(res => { webWaiters.push(res); try { r.stop(); } catch (e) { res(); } setTimeout(res, 2500); });
     }
@@ -3924,6 +4252,9 @@ const Speech = (() => {
     get state() { return state; }, get options() { return opts; },
     webAvailable: !!SR, voskSupported: typeof WebAssembly === "object" && !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
     modelCached, downloadModel, deleteModel, ensureModel, start, stop: stopAll, transcribePCM, MODEL_BYTES, MODEL_URL,
+    setPaused, get paused() { return paused; }, recoveries: 0, lastRecovery: null, lastMute: null,
+    _debugKillTrack() { if (stream) stream.getAudioTracks().forEach(t => { t.stop(); t.onended && t.onended(); }); },
+    _debugFreeze() { if (proc) proc.onaudioprocess = null; },
     active: null, mode: null, lastLoadMs: null, lastResultAt: null, pickEngine, preload: ensureModel,
   };
 })();
@@ -4005,7 +4336,7 @@ const Semantic = (() => {
 (() => {
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const settings = Object.assign({ voice: true, autoSend: true, hints: false, rate: 1, engine: "auto", grammar: false, semantic: false, key: "", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", remember: false }, JSON.parse(localStorage.getItem("medicsim.settings") || "{}"));
+  const settings = Object.assign({ voice: true, autoSend: true, hints: false, rate: 1, engine: "auto", grammar: false, semantic: false, micMode: "handsfree", instr: true, instrVoice: "auto", ptVoice: "auto", key: "", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", remember: false }, JSON.parse(localStorage.getItem("medicsim.settings") || "{}"));
   let chatHistory = [], currentDebrief = null;
 
   // ---------------- screens ----------------
@@ -4058,15 +4389,17 @@ const Semantic = (() => {
     $("#piBtnLabel").textContent = "Impression";
     show("sim");
     SIM.start(sc, uiApi);
-    addMsg({ speaker: "system", text: "You're on scene. Talk to the patient (mic or type). Say what you assess and what you do, e.g. \"I'm going to take a blood pressure\", \"put her on the monitor\", \"give aspirin 325 mg chewed\". Pick your Provider Impression (🩺) when you've decided." });
+    addMsg({ speaker: "system", text: (settings.micMode === "handsfree" ? "You're on scene. The mic is ON: just talk, and each thing you say is sent when you pause. Tap 🎤 to mute. " : "You're on scene. Hold 🎤 to talk, or type. ") + "Ask the patient questions, say what you assess (\"checking radials\", \"skin signs\", \"corneals\"), and the instructor will tell you the findings. Say what you do (\"give aspirin 325 chewed\"). Pick your Provider Impression (🩺) when you've decided." });
     render();
+    muted = false; hfBlocked = false; hfBtn().hidden = settings.micMode === "handsfree";
+    if (settings.micMode === "handsfree") { autoListen(); keepAwake(true); }
   }
 
   // ---------------- transcript ----------------
   function addMsg(m) {
     const cls = { me: "me", patient: "pt", bystander: "by", narrator: "sys", system: "sys", find: "find", warn: "warn", hint: "hint" }[m.speaker] || "sys";
     const sc = SIM.scenario, st = SIM.state;
-    const who = m.speaker === "patient" ? sc.patient.name.split(" ")[0] + " (patient)" : m.speaker === "bystander" ? `${sc.bystander.name} (${sc.bystander.role})` : m.speaker === "me" ? "You" : m.speaker === "find" ? "Findings" : "";
+    const who = m.speaker === "patient" ? sc.patient.name.split(" ")[0] + " (patient)" : m.speaker === "bystander" ? `${sc.bystander.name} (${sc.bystander.role})` : m.speaker === "me" ? "You" : m.speaker === "find" ? "Instructor" : "";
     const d = document.createElement("div"); d.className = "msg " + cls;
     d.innerHTML = (who ? `<span class="who">${esc(who)}<span class="ts">${fmtT(st ? st.t : 0)}</span></span>` : "") + esc(m.text);
     $("#transcript").appendChild(d); $("#transcript").scrollTop = 1e9;
@@ -4077,7 +4410,7 @@ const Semantic = (() => {
       if (m.speaker === "patient") chatHistory.push({ role: "assistant", content: m.text });
       if (m.speaker === "bystander") chatHistory.push({ role: "assistant", content: "BYSTANDER: " + m.text });
     });
-    const speakable = list.filter(m => m.speaker === "patient" || m.speaker === "bystander");
+    const speakable = list.filter(m => m.speaker === "patient" || m.speaker === "bystander" || (settings.instr && (m.speaker === "find" || (m.speaker === "narrator" && /no response|unresponsive|seizing|pulseless|✗/i.test(m.text)))));
     speakQueue(speakable);
   }
   async function submit(text) {
@@ -4111,28 +4444,60 @@ const Semantic = (() => {
     for (const pool of [local, base]) { const sx = pool.filter(sex === "F" ? isF : isM); if (sx.length) return rank(sx); }
     return local.length ? rank(local) : base.length ? rank(base) : null;
   }
-  let ttsPending = 0;
-  function speaking() { return ttsPending > 0 || (window.speechSynthesis && speechSynthesis.speaking); }
+  let ttsPending = 0, ttsTailUntil = 0;
+  function speaking() { return ttsPending > 0 || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil; }
+  const byName = n => voices.find(v => v.name === n) || null;
+  function patientVoice() { const sc = SIM.scenario; return (settings.ptVoice !== "auto" && byName(settings.ptVoice)) || pickVoice(sc.patient.sex, null, sc.patient.age); }
+  // Instructor: a DIFFERENT voice from the patient (and bystander) when one exists; otherwise the same voice with a strongly different pitch/rate.
+  function instructorVoice(pv, bv) {
+    if (settings.instrVoice !== "auto") { const v = byName(settings.instrVoice); if (v) return { voice: v, same: v === pv }; }
+    if (!voices.length) loadVoices();
+    const others = voices.filter(v => v !== pv && v !== bv);
+    const offline = !navigator.onLine; const pool = others.filter(v => !offline || v.localService);
+    const ptSex = SIM.scenario ? SIM.scenario.patient.sex : "F";
+    const isF = v => FEMALE.test(v.name) && !/\bmale\b/i.test(v.name.replace(/female/i, "")), isM = v => MALE.test(v.name) && !/female/i.test(v.name);
+    const opp = pool.filter(ptSex === "F" ? isM : isF);
+    const v = opp.find(v => v.localService && /en-(GB|AU|IE|IN)/i.test(v.lang)) || opp.find(v => v.localService) || opp[0] || pool.find(v => v.localService) || pool[0] || null;
+    return { voice: v || pv || null, same: !v };
+  }
+  // Read numbers/abbreviations the way a proctor would say them.
+  function spokenFinding(t) {
+    return t.replace(/\bBP (\d+)\/(\d+) ?mmHg/g, "Blood pressure $1 over $2").replace(/(\d+)\/(\d+)/g, "$1 over $2")
+      .replace(/\bSpO2\b/g, "Sat").replace(/\bEtCO2\b/g, "End-tidal C O 2").replace(/\bmmHg\b/g, "").replace(/(\d)%/g, "$1 percent").replace(/°F/g, " degrees").replace(/ ?mg\/dL/g, "")
+      .replace(/\/min\b/g, " per minute").replace(/\bGCS (\d+) \(E(\d) V(\d) M(\d)\)/g, "GCS $1: eyes $2, verbal $3, motor $4").replace(/\bE(\d) /g, "eyes $1, ").replace(/\bV(\d) /g, "verbal $1, ").replace(/\bM(\d) /g, "motor $1, ")
+      .replace(/\bmLAPSS\b/g, "M LAPSS").replace(/\bLAMS\b/g, "LAMS").replace(/\bJVD\b/g, "J V D").replace(/\bCMS\b/g, "C M S").replace(/\bAVPU\b/g, "A V P U").replace(/\bPERRL\b/g, "").replace(/\bRVR\b/g, "R V R").replace(/\bDCAP-BTLS\b/g, "D-cap B-T-L-S")
+      .replace(/→/g, ", ").replace(/×\s?(\d)/g, "times $1").replace(/(\d)–(\d)/g, "$1 to $2").replace(/~/g, "about ").replace(/[✓✗]/g, "").replace(/\((\d)\)/g, "").replace(/\s*\n\s*/g, ". ").replace(/\s+/g, " ").trim();
+  }
+  function utter(text, voice, pitch, rate, volume) {
+    const u = new SpeechSynthesisUtterance(text); if (voice) { u.voice = voice; u.lang = voice.lang; }
+    u.pitch = clamp(pitch, 0.1, 2); u.rate = clamp(rate, 0.5, 1.8); u.volume = volume == null ? 1 : volume;
+    ttsPending++; const done = () => { ttsPending = Math.max(0, ttsPending - 1); ttsTailUntil = Date.now() + 450; };
+    u.onend = done; u.onerror = done; speechSynthesis.speak(u); return u;
+  }
+  // speechSynthesis plays utterances strictly in order, so instructor and patient never talk over each other.
   function speakQueue(list) {
-    if (!settings.voice || !window.speechSynthesis || !list.length) return;
+    if (!window.speechSynthesis || !list.length) return;
     const sc = SIM.scenario, st = SIM.state;
-    const pv = pickVoice(sc.patient.sex, null, sc.patient.age), bv = sc.bystander ? pickVoice(sc.bystander.sex, pv, 45) : null;
+    const pv = patientVoice(), bv = sc.bystander ? pickVoice(sc.bystander.sex, pv, 45) : null;
+    const iv = instructorVoice(pv, bv);
     const ment = SIM.mental();
     list.forEach(m => {
+      if (m.speaker === "find" || m.speaker === "narrator") {
+        if (!settings.instr) return;
+        const ptPitch = sc.patient.sex === "F" ? 1.1 : 0.9;
+        const pitch = iv.same ? (ptPitch > 1 ? 0.55 : 1.45) : 1.0, rate = settings.rate * (iv.same ? 1.18 : 1.08);
+        (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, iv.voice, pitch, rate, 1));
+        return;
+      }
+      if (!settings.voice) return;
       const isP = m.speaker === "patient", age = isP ? sc.patient.age : 45, sex = isP ? sc.patient.sex : (sc.bystander || {}).sex;
-      // Break on "..." / gasps so breathless and confused speech has real pauses (separate utterances).
       const chunks = m.text.replace(/\*[^*]*\*/g, " ").split(/\.\.\.|…|\((?:gasp|gasps|coughs|cough|wheeze|pause)\)/i)
         .map(c => c.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim()).filter(c => c && !/^[,.\s]*$/.test(c));
       const sob = isP && (st.v.rr >= 26 || st.v.spo2 < 90);
       chunks.forEach(t => {
-        const u = new SpeechSynthesisUtterance(t);
-        u.voice = isP ? pv : bv; if (u.voice) u.lang = u.voice.lang;
-        u.pitch = clamp((sex === "F" ? 1.1 : 0.9) - (age > 65 ? 0.12 : 0) + (age < 25 ? 0.08 : 0), 0.5, 1.6);
         let rate = settings.rate * (age > 70 ? 0.88 : age > 60 ? 0.94 : 1);
         if (isP && ["confused", "aphasic"].includes(ment)) rate *= 0.78; else if (isP && sob) rate *= 0.92; else if (isP && st.sev > 0.5 && sc.base !== "hypo") rate *= 0.9; else if (isP && ment === "anxious") rate *= 1.08;
-        u.rate = clamp(rate, 0.5, 1.6); u.volume = isP && (ment === "confused" || sob) ? 0.85 : 1;
-        ttsPending++; u.onend = u.onerror = () => { ttsPending = Math.max(0, ttsPending - 1); };
-        speechSynthesis.speak(u);
+        utter(t, isP ? pv : bv, (sex === "F" ? 1.1 : 0.9) - (age > 65 ? 0.12 : 0) + (age < 25 ? 0.08 : 0), rate, isP && (ment === "confused" || sob) ? 0.85 : 1);
       });
     });
   }
@@ -4142,6 +4507,8 @@ const Semantic = (() => {
     if (!voices.length) loadVoices();
     const loc = voices.filter(v => v.localService);
     const f = pickVoice("F", null, 40), m = pickVoice("M", null, 40);
+    const fill = (sel, cur) => { const e = $(sel); if (!e) return; e.innerHTML = `<option value="auto">Auto</option>` + voices.map(v => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})${v.localService ? " · offline" : " · online"}</option>`).join(""); e.value = voices.some(v => v.name === cur) ? cur : "auto"; };
+    fill("#setInstrVoice", settings.instrVoice); fill("#setPtVoice", settings.ptVoice);
     el.innerHTML = voices.length ? `${voices.length} English voices, <b>${loc.length} on-device</b> (these work offline).<br>Female patients: <b>${esc(f ? f.name : "default")}</b>${f && f.localService ? " · offline ✓" : " · needs network"}<br>Male patients: <b>${esc(m ? m.name : "default")}</b>${m && m.localService ? " · offline ✓" : " · needs network"}` : "No voices reported yet (some browsers load them late).";
   }
 
@@ -4172,9 +4539,9 @@ const Semantic = (() => {
     if (window.speechSynthesis && mode !== "handsfree") speechSynthesis.cancel();
     micMode = mode; finalBuf = "";
     Speech.setOptions({ engine: settings.engine, grammar: settings.grammar });
-    try { await Speech.start(mode); $("#interim").textContent = mode === "handsfree" ? "🎙 Hands-free: just talk. Tap ✋ to stop." : ""; }
+    try { await Speech.start(mode); $("#interim").textContent = mode === "handsfree" ? "" : ""; }
     catch (e) {
-      micMode = null;
+      micMode = null; if (mode === "handsfree") hfBlocked = true;
       if (e.code === "MODEL") { $("#interim").textContent = ""; offerModel(); }
       else $("#interim").textContent = /NotAllowed|Permission/i.test(e.name + e.message) ? "Microphone permission denied. Allow mic access, or type instead." : /secure|getUserMedia|undefined/i.test(e.message) ? "Voice needs HTTPS or localhost (opened as a file, you can still type)." : "Speech error: " + e.message;
     }
@@ -4184,25 +4551,74 @@ const Semantic = (() => {
     loadSettingsUI(); $("#modalSettings").classList.add("open"); $("#offlineSec").scrollIntoView({ block: "center" });
     $("#dlNote").textContent = "Download the offline speech model once (≈41 MB). After that, voice works with no internet.";
   }
+  let muted = false, wakeLock = null, hfBlocked = false, lastAuto = 0;
+  // Always-listening (default): start hands-free on scenario start; one tap on the mic mutes/unmutes.
+  async function autoListen() {
+    lastAuto = Date.now();
+    if (muted || hfBlocked || !SIM.state || SIM.state.ended || !$("#sim").classList.contains("active")) return;
+    if (Speech.state !== "idle") return;
+    if (!Speech.voskSupported && !Speech.webAvailable) return;
+    const eng = await Speech.pickEngine().catch(() => null);
+    if (eng === "vosk" && !(await Speech.modelCached()) && location.protocol !== "file:") { showModelNeeded(); return; }
+    startMic("handsfree");
+  }
+  function showModelNeeded() {
+    $("#interim").innerHTML = navigator.onLine ? `Hands-free voice needs the offline speech model (41 MB, one time). <button class="tiny" id="bnDl2">Download</button>` : "Offline voice isn't downloaded yet. Connect once to download it, or type.";
+    const b = $("#bnDl2"); hfBlocked = true; if (b) b.onclick = async () => { $("#interim").textContent = "Downloading speech model…"; try { await Speech.downloadModel((g, t) => { $("#interim").textContent = `Downloading speech model… ${Math.round(100 * g / t)}%`; }); $("#interim").textContent = ""; refreshStatus(); hfBlocked = false; autoListen(); } catch (e) { $("#interim").textContent = "Download failed: " + e.message; } };
+  }
+  async function keepAwake(on) {
+    try {
+      if (on && "wakeLock" in navigator && !wakeLock && document.visibilityState === "visible") { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); }
+      if (!on && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+    } catch (e) { console.warn("wake lock", e); }
+  }
+  document.addEventListener("visibilitychange", () => {
+    const inCall = SIM.state && !SIM.state.ended && $("#sim").classList.contains("active");
+    if (document.visibilityState === "visible" && inCall && settings.micMode === "handsfree") { keepAwake(true); if (!muted && Speech.state === "idle") setTimeout(autoListen, 300); }
+  });
+  function stopAllInput() { micMode = null; Speech.stop(); keepAwake(false); }
+  // Listening indicator + TTS gating (pause the mic whenever the patient/instructor is talking).
+  setInterval(() => {
+    const bar = $("#listenBar"); if (!bar) return;
+    const inSim = $("#sim").classList.contains("active") && SIM.state && !SIM.state.ended;
+    const talk = speaking(); Speech.setPaused(!!talk);
+    let cls = "off", txt = "";
+    if (!inSim) { bar.hidden = true; return; } bar.hidden = false;
+    const s = Speech.state;
+    // safety net: if the mic dropped to idle mid-call (engine ended, error), bring hands-free back
+    if (s === "idle" && settings.micMode === "handsfree" && !muted && !hfBlocked && !talk && Date.now() - lastAuto > 3000) autoListen();
+    if (s === "loading") { cls = "wait"; txt = "⏳ Starting microphone…"; }
+    else if ((s === "handsfree" || s === "listening") && talk) { cls = "pause"; txt = "🔊 Mic paused while the patient or instructor speaks"; }
+    else if (s === "handsfree") { cls = "on"; txt = `🎙 Listening: just talk${Speech.active === "web" ? " (online speech)" : ""}`; }
+    else if (s === "listening") { cls = "on"; txt = "🎙 Listening (push-to-talk)"; }
+    else if (settings.micMode === "handsfree" && muted) { cls = "muted"; txt = "🔇 Muted: tap 🎤 to listen"; }
+    else if (settings.micMode === "handsfree") { cls = "off"; txt = "🎤 Mic off: tap 🎤 to start listening"; }
+    else { cls = "off"; txt = "🎤 Hold the mic (or Space) to talk"; }
+    bar.className = "listen-bar " + cls; bar.querySelector("span").textContent = txt;
+  }, 200);
   function bindMic() {
     const b = micBtn();
     b.addEventListener("pointerdown", e => {
       e.preventDefault(); if (b.disabled) return;
+      if (settings.micMode === "handsfree") {
+        if (Speech.state === "handsfree" || Speech.state === "loading") { muted = true; micMode = null; Speech.stop(); }
+        else { muted = false; hfBlocked = false; if (window.speechSynthesis) speechSynthesis.cancel(); autoListen(); }
+        return;
+      }
       if (Speech.state === "handsfree") { Speech.stop(); micMode = null; downAt = 0; return; }
       if (Speech.state === "listening") { downAt = 0; endTurn(); return; }
       if (Speech.state !== "idle") return;
       downAt = Date.now(); startMic("toggle");
     });
-    const up = () => { if (downAt && Date.now() - downAt > 450 && micMode) { micMode = "ptt"; endTurn(); } downAt = 0; };
+    const up = () => { if (settings.micMode !== "handsfree" && downAt && Date.now() - downAt > 450 && micMode) { micMode = "ptt"; endTurn(); } downAt = 0; };
     b.addEventListener("pointerup", up); b.addEventListener("pointerleave", up); b.addEventListener("pointercancel", up);
     b.addEventListener("contextmenu", e => e.preventDefault());
     hfBtn().addEventListener("click", () => { if (Speech.state === "handsfree") { micMode = null; Speech.stop(); } else if (Speech.state === "idle") startMic("handsfree"); });
-    // keyboard push-to-talk: hold Space when the text box is empty/unfocused
-    document.addEventListener("keydown", e => { if (e.code === "Space" && !e.repeat && document.activeElement !== $("#txt") && $("#sim").classList.contains("active") && !$(".modal.open") && Speech.state === "idle") { e.preventDefault(); downAt = Date.now() - 1000; startMic("ptt"); } });
+    document.addEventListener("keydown", e => { if (settings.micMode !== "handsfree" && e.code === "Space" && !e.repeat && document.activeElement !== $("#txt") && $("#sim").classList.contains("active") && !$(".modal.open") && Speech.state === "idle") { e.preventDefault(); downAt = Date.now() - 1000; startMic("ptt"); } });
     document.addEventListener("keyup", e => { if (e.code === "Space" && micMode === "ptt") { e.preventDefault(); endTurn(); } });
   }
   function initSpeech() {
-    Speech.init({ onInterim: setInterim, onFinal, onState: onSpeechState, onLevel: r => micBtn().style.setProperty("--lvl", Math.min(1, r * 12).toFixed(2)), isSpeaking: speaking }, { engine: settings.engine, grammar: settings.grammar });
+    Speech.init({ onRecover: why => console.info("mic recovered:", why), onInterim: setInterim, onFinal, onState: onSpeechState, onLevel: r => micBtn().style.setProperty("--lvl", Math.min(1, r * 12).toFixed(2)), isSpeaking: speaking }, { engine: settings.engine, grammar: settings.grammar });
     if (!Speech.voskSupported && !Speech.webAvailable) { micBtn().disabled = true; hfBtn().disabled = true; micBtn().title = "No microphone/speech support here (needs HTTPS or localhost)."; }
     refreshStatus();
     if (settings.semantic) Semantic.cached().then(ok => ok && Semantic.enable().catch(e => console.warn("semantic", e)));
@@ -4308,7 +4724,7 @@ const Semantic = (() => {
   function endScenario(force) {
     if (!SIM.state) return;
     if (!SIM.state.pi && !force) { $("#piEndNote").hidden = false; openPI(); return; }
-    if (window.speechSynthesis) speechSynthesis.cancel(); micMode = null; Speech.stop();
+    if (window.speechSynthesis) speechSynthesis.cancel(); stopAllInput();
     const r = SIM.end(); currentDebrief = r; renderDebrief(r); show("debrief");
   }
   function piGrade(sc, st) {
@@ -4369,22 +4785,25 @@ const Semantic = (() => {
   // ---------------- settings ----------------
   function loadSettingsUI() {
     $("#setVoice").checked = settings.voice; $("#setAutoSend").checked = settings.autoSend; $("#setHints").checked = settings.hints; $("#setRate").value = settings.rate;
+    $("#setMicMode").value = settings.micMode; $("#setInstr").checked = settings.instr;
     $("#setEngine").value = settings.engine; $("#setGrammar").checked = settings.grammar; $("#setSemantic").checked = settings.semantic;
     $("#setKey").value = settings.key || ""; $("#setEndpoint").value = settings.endpoint; $("#setModel").value = settings.model; $("#setRemember").checked = settings.remember;
     $("#optWeb").disabled = !Speech.webAvailable; updateVoiceInfo(); refreshStatus();
   }
   function persistSettings() { const persist = { ...settings }; if (!settings.remember) persist.key = ""; localStorage.setItem("medicsim.settings", JSON.stringify(persist)); }
   function saveSettings() {
-    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, engine: $("#setEngine").value, grammar: $("#setGrammar").checked, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
+    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: $("#setEngine").value, grammar: $("#setGrammar").checked, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
     persistSettings();
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Speech.setOptions({ engine: settings.engine, grammar: settings.grammar });
     if (settings.semantic) Semantic.cached().then(ok => ok ? Semantic.enable().catch(() => {}) : startSemDownload()); else Semantic.disable();
     $("#modalSettings").classList.remove("open");
+    hfBtn().hidden = settings.micMode === "handsfree";
+    if (SIM.state && !SIM.state.ended && $("#sim").classList.contains("active")) { if (settings.micMode === "handsfree") { muted = false; keepAwake(true); autoListen(); } else if (Speech.state === "handsfree") { Speech.stop(); keepAwake(false); } }
   }
 
   const uiApi = { render, say, history: () => chatHistory, hints: () => settings.hints };
-  window.MedicSimUI = { refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
+  window.MedicSimUI = { _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
 
   // ---------------- wire up ----------------
   document.addEventListener("DOMContentLoaded", () => {
@@ -4392,12 +4811,16 @@ const Semantic = (() => {
     buildMenu(); initSpeech(); bindMic(); loadSettingsUI();
     $("#btnDlVosk").onclick = startVoskDownload; $("#btnDelVosk").onclick = async () => { await Speech.deleteModel(); refreshStatus(); };
     $("#btnDlSem").onclick = startSemDownload; $("#btnDelSem").onclick = async () => { await Semantic.remove(); settings.semantic = false; persistSettings(); $("#setSemantic").checked = false; refreshStatus(); };
-    $("#btnTestVoice").onclick = () => { const was = settings.voice; settings.voice = true; speechSynthesis.cancel(); const v = pickVoice("F", null, 40); const u = new SpeechSynthesisUtterance("This is how your patient will sound."); if (v) u.voice = v; speechSynthesis.speak(u); settings.voice = was; };
+    const testSay = who => { if (!window.speechSynthesis) return; speechSynthesis.cancel(); loadVoices(); const sel = who === "i" ? $("#setInstrVoice").value : $("#setPtVoice").value; const sc = SIM.scenario || { patient: { sex: "F", age: 60 } };
+      const pv = (sel !== "auto" && who === "p" && byName(sel)) || pickVoice(sc.patient.sex, null, sc.patient.age);
+      if (who === "p") utter("Oh, thank goodness you're here. My chest hurts.", pv, sc.patient.sex === "F" ? 1.1 : 0.9, +$("#setRate").value, 1);
+      else { const prev = settings.instrVoice; settings.instrVoice = sel; const iv = instructorVoice(pv, null); settings.instrVoice = prev; utter("Radial pulses are present, weak and rapid, bilaterally. Skin is pale, cool and diaphoretic.", iv.voice, iv.same ? 0.55 : 1, +$("#setRate").value * (iv.same ? 1.18 : 1.08), 1); } };
+    $("#btnTestPt").onclick = () => testSay("p"); $("#btnTestInstr").onclick = () => testSay("i");
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Monitor.init(monState);
     $("#form").addEventListener("submit", e => { e.preventDefault(); const t = $("#txt").value; $("#txt").value = ""; submit(t); });
     $("#btnEnd").onclick = () => endScenario(false);
-    $("#btnMenu").onclick = () => { if (confirm("Leave this scenario? Progress will be lost.")) { SIM.stop(); micMode = null; Speech.stop(); if (window.speechSynthesis) speechSynthesis.cancel(); show("menu"); } };
+    $("#btnMenu").onclick = () => { if (confirm("Leave this scenario? Progress will be lost.")) { SIM.stop(); stopAllInput(); if (window.speechSynthesis) speechSynthesis.cancel(); show("menu"); } };
     $("#btnAgain").onclick = () => show("menu");
     $("#btnProto").onclick = openProto;
     $("#btnPI").onclick = () => { $("#piEndNote").hidden = true; openPI(); };
