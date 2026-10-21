@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.3-moonshine 7abb89b8ed">
+<meta name="medicsim-version" content="2.4-partner 89e5f4a4af">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -208,6 +208,12 @@ details summary{cursor:pointer;margin:6px 0}
 
 .notice{margin:4px 8px;padding:6px 10px;border-radius:8px;background:#3a2a05;color:#ffd77a;font-size:.85em;border:1px solid #6b4e0a}
 
+.partner-row button{background:#2a1f0d;border-color:#7a5a1c;color:#ffd99a}
+.partner-row .lbl{color:#ffb347}
+.partner-sheet{background:#1d1608}.partner-sheet button{background:#3a2a0b;border-color:#a57a25;color:#ffe2a8}.partner-sheet button.x{background:transparent;border-color:#555;color:#aaa}
+.msg.partner{align-self:flex-start;background:#2a1f0d;border:1px solid #7a5a1c;color:#ffe2a8;border-radius:12px;padding:.5em .75em;max-width:88%}
+.msg.partner .who{color:#ffb347}
+
 </style>
 </head>
 <body>
@@ -287,6 +293,9 @@ details summary{cursor:pointer;margin:6px 0}
         <div class="assess-row" id="assessRow" aria-label="Quick assess (tap = same as saying it)"><span class="lbl">Assess</span>
           <button type="button" data-say="Checking radial pulse">Radial</button><button type="button" data-say="Checking carotid pulse">Carotid</button><button type="button" data-say="Checking skin signs">Skin</button><button type="button" data-say="Feeling the forehead">Forehead</button><button type="button" data-say="Checking pupils">Pupils</button><button type="button" data-say="Open your mouth, checking the airway">Mouth/airway</button><button type="button" data-say="Listening to lung sounds">Lung sounds</button><button type="button" data-say="Expose the patient">Expose</button><button type="button" data-say="Is the patient tracking me?">Tracking?</button><button type="button" data-say="What do I see?">What do I see?</button>
           <button type="button" class="help" id="btnHelp">❓ What can I say?</button></div>
+        <div class="assess-row partner-row" id="partnerRow" aria-label="Partner (EMT) quick orders (tap = same as saying it)"><span class="lbl">Partner</span>
+          <button type="button" data-say="Partner, get me a set of vitals">Vitals</button><button type="button" data-say="Partner, count respirations">RR</button><button type="button" data-sheet="o2">O₂ ▾</button><button type="button" data-say="Partner, bag him with the BVM and put capno on">BVM + capno</button><button type="button" data-say="Partner, suction the airway">Suction</button><button type="button" data-sheet="oa">OPA/NPA ▾</button><button type="button" data-say="Partner, get a glucometer reading">Glucose</button><button type="button" data-say="Partner, get me a 12-lead">12-lead</button><button type="button" data-sheet="mon">Monitor/pads ▾</button><button type="button" data-say="Partner, recheck vitals every 5 minutes">Recheck q5</button></div>
+        <div class="assess-row partner-sheet" id="partnerSheet" hidden></div>
         <div class="composer">
           <button id="btnMic" class="mic" title="Hands-free: tap to mute/unmute. Push-to-talk mode: hold to talk.">🎤</button>
           <button id="btnHF" class="mic hf" title="Hands-free: just talk; the patient answers when you pause">✋</button>
@@ -528,7 +537,67 @@ const PROVIDER_IMPRESSIONS = {
 const NLU = (() => {
   // ---------------- 1. normalization & STT repair ----------------
   const PHRASE_FIX = [
+    // more partner-order mishears (generic equipment words; seen on blind partner audio, so blind2 is the honest check)
+    [/\bsection (the |near |his |her |out )?(airway|mouth|him|her|it)\b/, " suction the airway "],
+    [/\b(c|sea|see) ?colou?r\b|\bseaguller\b/, " c collar "],
+    [/\b12 ?league\b/, " 12 lead "],
+    [/\bone of (epic|ebay|eppy|appet|a pie|that deep)\b/, " one of epi "],
+    [/\b(twin aka|torn a k|two and a k|turn a k|tune a kit)\b/, " tourniquet "],
+    [/\bstarts? epr\b/, " start cpr "],
+    [/\b(kept|kip|cap) ?nog\w*|\bkipnag\w*/, " capnography "],
+    [/\b(batting|babbing|biting|begging|bagin|backing) (him|her)\b/, " bagging $2 "],
+    [/\bchick for (a )?pulse\b/, " check for a pulse "],
+    [/\bpulse (axe|ax|acts|eggs)\b/, " pulse ox "],
+    [/\bwhat'?s the (crasher|precious|pressure)\b/, " what's the pressure "],
+    [/\bspiritual rate\b/, " respiratory rate "],
+    [/\bblood (shooter|sugar|shuga)\b/, " blood sugar "],
+    [/^ ?partner set (her|him) up ?$/, " partner sit $1 up"],
+    [/\bnormal breather\b/, " nonrebreather "],
+    [/\bhigh (faux|flo|foe)\b/, " high flow "],
+    [/\boil (alley|airway)\b/, " oral airway "],
+    [/\bair we\b/, " airway "],
+    [/\bstart (align|to line|a lie|a line)\b/, " start a line "],
+    [/\b10 ?pitcher\b/, " temperature "],
+    [/\bsitter up\b/, " sit her up "],
+    [/\bget (his|her) (sets|sex|shots|sets)\b/, " get $1 sats "],
+    [/\b(and|in) (2|two|to) ?(bait|bate|bay) ?(him|hen|tim)\b|\b(in|and) tube (ate|at) (him|her)\b|\band tubeatim\b/, " intubate him "],
+    [/\bsection please\b/, " suction please "],
+    [/\b(the )?wreck pressure\b/, " direct pressure "],
+    // partner-order mishears (Moonshine on synthetic dev audio)
+    [/\bwhat'?s (his|her|is|he) (set|said|sad|sap)\b/, " what's his sat "],
+    [/\b(insert|put in|place|pop in) (an|and|a|in) (opv|opioid|o p v|opie)\b/, " $1 an opa "],
+    [/\b(an|a|and) (npk|npea|np ea|mp h|n p k|mph|npe)\b/, " an npa "],
+    [/\bfinal motion restriction/, " spinal motion restriction"],
+    [/\bturnip (get|kit|cat)\b/, " tourniquet "],
+    [/\bstart (and|in|on) (roman )?(4|four|iv)\b|\bstart (and|in|an) roman (4|four)\b/, " start an iv "],
+    [/\broman (4|four)\b/, " iv "],
+    [/\bnon red breather|\b(an|a) on rebreather|\b(an )?honou?r(ably)? ?(breather|there)\b/, " a nonrebreather"],
+    [/\bget (a |an )?(10|ten|cam|tamp|tempt|tend|attended) ?$/, " get a temp"],
+    [/\brespirate\b|\b(rest|arrest) (break|great|grate)\b/, " resp rate "],
+    [/\bset ?up (a )?(cp|c p|sea pap|see pap) ?$/, " set up cpap"],
+    [/\bfitals\b/, " vitals "],
+    [/\b(boot|good|blue|glue|gluco)? ?c[ou]m[ae]t[eo]r\b|\bbuccamer\b/, " glucometer "],
+    [/\bbee ?vee ?(hem|em|m)\b/, " bvm "],
+    [/\bbagged (him|her)\b/, " bag $1 "],
+    [/\bfold compressions?\b/, " hold compressions "],
     // ---- conversation mishears measured with Vosk small-en-us on synthetic + reported real speech (v2.3) ----
+    // ---- EMT partner: wake word "partner" (+ common mishears) at the start of an utterance ----
+    [/^ ?(hey |okay |ok |yo |so |alright |a |k |uh |um )?(partners?|parton|pardner|part ner|par ner|parker|farther|party|potter|partna|partner's|pardner's|carter|par tner|harder|pod ner|parter|hartner|hardner|hardener|hartner's|partnr)\b,?/, " partner"],
+    // ---- partner orders: equipment words (initial list; tuned further on the partner DEV speech set) ----
+    [/\b(b ?v ?m|bvn|bbm|dvm|be v m|bee v m|b vn|b b m|bvms|bm)\b(?= (with|and|on|at|bag|capno|capnography|$)|\s*$)/g, "bvm"], [/\b(b ?v ?m|bvn|bbm|dvm|be v m|bee v m)\b/g, "bvm"],
+    [/\b(with|and|on|the|inline|in line|get|put|add|hook up|apply) (cap ?no|cap know|cap now|cap nose|capital|cap noah|kept no|cap new|captain o|catch no|cap note|capnog\w*)\b/g, "$1 capnography"],
+    [/\b(o p a|opal|oprah|o pa|oh pa|opie)\b/g, "opa"], [/\b(n p a|in pa|n pa|en pa)\b/g, "npa"],
+    [/\b(glucose meter|blue commuter|glue commuter|glucometers|glue cometer|glucometer's|gluco meter|glucose motor)\b/g, "glucometer"],
+    [/\b(turn a kit|tournament|turn akit|turnicate|tourney kit|tourniquette|turn kit|turning kit|tourniquets|turning a kit|turn of kit)\b/g, "tourniquet"],
+    [/\b(the|a|that) (journey|gurnee|girney|gurnie|gurny|gernie|kearney|courtney|gurney's|gurneys|gourney|journeys)\b/g, "$1 gurney"],
+    [/\b(rest|wrest|rasp|resp|res|rescue|ress|wrist) rate\b/g, "respiratory rate"], [/\bcount (his |her |their |the )?(rest|resps?|reps|wrist|press|respirations?|restorations|aspirations|respiration's)\b/g, "count $1respirations"],
+    [/\b(non re ?reader|none rebreather|nano ?rebreather|non breather|non reader|nonrebreathers|non re breathers|non rebreathe|non re ?breed her|no rebreather)\b/g, "nonrebreather"],
+    [/\bnasal (can you la|canola|canula|can ula|cannon|cannula's|can yula|kanula|canyon)\b/g, "nasal cannula"],
+    [/\b(apply|put on|place|throw on|slap on|get) (the )?(pats|pods|pad's|pets|paths)\b/g, "$1 $2pads"],
+    [/\b(vittles|vidals|vitas|vitels|vital's)\b(?=\s*($|every|again|on|q))/g, "vitals"], [/\bset (a|of|up) (vittles|vidals|vitas|bottles|vitals)\b/g, "set of vitals"],
+    [/\b(section|suck shun|suck shin|sucks in)\b(?= (him|her|them|the airway|it|his|her|out)|\s*$)/g, "suction"],
+    [/\b(re check|we check|three check|recheck's|recheck it)\b(?= (the |his |her )?(vitals|vital|bp|pressure|sat))/g, "recheck"],
+    [/\b(get|grab|check|need) (me )?(a|the) (sad|sap)\b/g, "$1 $2$3 sat"],
     // ---- Moonshine-base (the shipped recognizer) confusions, tuned on the DEV speech set only ----
     [/\b(herotted|gerated|corrated|corroded|corrupted|carrated|kerated|karated|garotted|carotted|kerotted)\b/g, "carotid"], [/\barrive (pulse|pulses)\b/g, "carotid $1"],
     [/\b(rated all|rate of all|rated al|read all|riddle|riddles|radiums|radium|read)\b(?= (and |or )?(carotid|pulse|pulses)\b| ?$)(?<=(check|checking|feel|feeling|for|his|her|a|both|the) (rated all|rate of all|rated al|read all|riddle|riddles|radiums|radium|read))/g, (m) => /s$/.test(m) && !/all$/.test(m) ? "radials" : "radial"],
@@ -733,7 +802,8 @@ const NLU = (() => {
     ["bp", /blood pressure|\bbp\b|\bnibp\b|pressure cuff|\bcuff\b|\b(manual|get a|need a|take a|check a|grab a|another|repeat) pressure\b|pressure (in|on) both arms|both arms (pressure|bp)|what'?s (the|his|her|your) pressure|(his|her) pressure\b|(re ?check|recheck|check|repeat|retake) (the |his |her )?pressure\b/],
     ["spo2", /\bsats?\b|\bspo2\b|pulseox|oximet|o2 sat|oxygen sat|saturation|finger probe|satting/],
     ["pulse", /\bpulses?\b(?! (check|ox))|heart rate|\bfeel(ing)? for (a |his |her )?(radial|carotid)\b|\bhr\b|\bradials?\b|\bcarotids?\b(?! (and|or) femoral)|\bfemorals?\b|\bpedal pulses?\b|dorsalis|pedis|posterior tibial|distal pulses?/],
-    ["rr", /resp(iratory)? rate|respirations|breathing rate|count (his|her|their|your|the) (breaths|respirations)|\brr\b|breaths per minute/],
+    ["rr", /resp(iratory)? rate|respirations|breathing rate|count (his|her|their|your|the) (breaths|respirations)|\brr\b|breaths per minute|count (his |her |their |the )?(resps?|breaths|breathing)|\bresps\b|how fast (is|are) (he|she|they|the patient|him|her) breathing|how (fast|quickly|many times) (is|does) (he|she|the patient) breath|rate of (breathing|respirations)/],
+    ["recheck", /\brecheck (the |his |her |a set of |another set of )?(vitals|vital signs)|(vitals|vital signs|bp) every \d+|repeat (vitals|vital signs) every|vitals q ?\d+|(trend|keep (getting|checking|taking)) (the |his |her )?vitals/],
     ["etco2", /etco2|end tidal|capnography|\bco2\b/],
     ["temp", /\btemp\b|temperature|thermometer/],
     ["bgl", /blood (sugar|glucose)|\bsugar\b|\bbgl\b|\bcbg\b|\bbg\b|glucometer|accu ?chek|finger ?stick|dextro ?stick|(a|the|her|his) glucose\b(?! (gel|paste|tab))|glucose (level|check)|check (a |her |his |the )?glucose/],
@@ -784,9 +854,13 @@ const NLU = (() => {
     ["look", /what (do|can|did) (i|we) see\b(?! (happen|around|in (the|this) room))|what am i (seeing|looking at)|what (are|do) we see|what (does|do) (it|that|they|this|he|she|his \w+|her \w+) look like|how (does|do) (it|that|they|this) look|(is there |do i see )?anything (there|on (it|him|her|them)|unusual|abnormal|notable)\b|do i see anything|what'?s there\b|what do i notice|what do (i|we) find/],
   ];
   const T = [
-    ["bandage", /bandage|dressing|direct pressure|control (the )?bleed|gauze|hemorrhage control/],
+    ["bandage", /bandage|dressing|direct pressure|control (the )?bleed|gauze|hemorrhage control|bleeding control/],
+    ["tourniquet", /tourniquet|\bcat tourniquet|\btq\b/],
+    ["smr", /spin(e|al) motion restriction|\bsmr\b|c ?collar|cervical collar|backboard|back board|long ?board|spinal (precautions|immobili[sz]ation)|immobili[sz]e (his|her|their|the) (neck|spine)|full spinal|\bc spine\b|cervical spine (precautions|immobili)/],
+    ["gurney", /(get|grab|bring|go get|need) (me |us )?(the|a) (gurney|stretcher|cot|stair chair|scoop|reeves)|(gurney|stretcher|stair chair) (in|over|here|ready|to the door)|\bstair chair\b/],
+    ["pads", /\bpads\b(?! (of (his|her) (feet|fingers)))|defib pads|combi ?pads|hands ?free pads|(put|place|apply|slap) (the )?(defib|zoll|lifepak|monitor) (pads|on)|(apply|put on|place|slap on) (the )?pad\b/],
     ["cpr", /\bcpr\b|compressions|continue (cpr|compressions)|resume (cpr|compressions)/],
-    ["stopcpr", /stop (cpr|compressions)|hold (cpr|compressions)/],
+    ["stopcpr", /stop (cpr|compressions?)|hold (cpr|compressions?)/],
     ["defib", /defib|\bshock\b|deliver (a )?shock|clear.*shock|200 ?j|360 ?j|\baed\b/],
     ["cardiovert", /cardiover|synchroni[sz]ed/],
     ["pace", /\bpac(e|ing)\b|\btcp\b|transcutaneous/],
@@ -871,6 +945,11 @@ const NLU = (() => {
     if (ids.includes("o2") && ["nrb", "nc", "cpap", "bvm"].some(x => ids.includes(x))) drop("o2");
     if (ids.includes("nrb") && ids.includes("nc")) drop("nc");
     if (ids.includes("pushepi")) drop("epi");
+    if (ids.includes("pads") && ids.includes("defib") && !/shock|defibrillate\b|deliver|joules|\d+ ?j\b|clear/.test(t)) drop("defib");
+    if (ids.includes("tourniquet")) drop("bandage");
+    if (ids.includes("stopcpr")) drop("cpr");
+    if (ids.includes("gurney") && ids.includes("transport") && !/\bload\b|transport|let'?s go|en route/.test(t)) drop("transport");
+    if (ids.includes("smr") && ids.includes("supine")) drop("supine");
     if (ids.includes("bvm") && ids.includes("nrb") && !/nonrebreather|non rebreather|\bnrb\b/.test(t)) drop("nrb");
     if (ids.includes("cpap") && ids.includes("nrb") && !/nonrebreather|non rebreather|\bnrb\b/.test(t)) drop("nrb");
     if (ids.includes("io") && ids.includes("iv") && !/\biv\b/.test(t.replace(/\bio\b/g, ""))) drop("iv");
@@ -1023,8 +1102,15 @@ const NLU = (() => {
   const ctx = { lastQ: null, lastSpeaker: "patient" };
   function reset() { ctx.lastQ = null; ctx.lastSpeaker = "patient"; }
 
-  function parseUtterance(text) {
-    const t = normalize(text);
+  // EMT partner scope (LA County EMT): what the partner does when told to; anything else ALS is declined/set up
+  const PARTNER_A = new Set(["bp", "spo2", "rr", "vitals", "bgl", "temp", "monitor", "12lead", "etco2", "recheck", "pulsecheck"]);
+  const PARTNER_T = new Set(["nrb", "nc", "o2", "bvm", "cpap", "opa", "suction", "cpr", "stopcpr", "pads", "bandage", "tourniquet", "fowler", "supine", "recovery", "smr", "gurney", "transport", "cooling", "protect", "removepatch", "removeheat"]);
+  function parseCore(text) {
+    let t = normalize(text);
+    // wake word: "Partner, get me a set of vitals" (strong router); "Partner" alone = partner answers "Yeah?" and takes the next utterance
+    const wake = /^ ?partner\b/.test(t);
+    const wakeOnly = wake && /^ ?partner ?(please|hey|yo|real quick|quick|come here|you there|buddy|i need you|over here)? ?$/.test(t);
+    if (wake) t = " " + t.replace(/^ ?partner\b[ ,]*/, "").trim() + " ";
     const out = { raw: text, norm: t, questions: [], assess: [], tx: [], orientParts: [], pulseSites: [], toBystander: false, byCrew: false, followup: false, semantic: null };
     out.toBystander = /\b(ma'?am|sir)\b.*\b(is|was|does|did|has|when) (he|she|your|him|her)\b|\b(ma'?am|sir)\b,? (when|does|did|is|has) (he|she|you last)|\b(your|his|her) (wife|husband|son|daughter|mom|mother|dad|father|friend|roommate|partner|coworker)\b(?! (get|grab|take|check))|\bbystander|\bfamily\b|did (he|she) |does (he|she) |is (he|she) |has (he|she) |was (he|she) |(he|she) (take|takes|have|has|use|uses)|witness|who called|who found|when did you find (him|her)|what did you see|how long has (he|she)|how long was (he|she)|(see|saw|seen) (him|her) normal|that you know of/.test(t);
     out.byCrew = /\b(have|has|can|could|let|tell) (my |the |our )?(partner|engine|crew|captain|emts?|firefighters?|guys|engine guys|fire)\b|^\s*(partner|engine|captain)\b/.test(t);
@@ -1144,8 +1230,66 @@ const NLU = (() => {
       const s = semantic(t);
       if (s) { out.semantic = s; const [k, id] = s.intent.split(":"); if (k === "q") out.questions.push(id); else out.assess.push(id); }
     }
+    // respiratory rate vs work of breathing; recheck schedules
+    if (out.assess.includes("rr") && /how fast|how quickly|count|resp|rate|\brr\b/.test(t)) { out.assess = out.assess.filter(a => a !== "work"); out.questions = out.questions.filter(x => x !== "sob" && x !== "quality"); }
+    if (out.assess.includes("expchest") && /so (we|i|you) can/.test(t)) out.tx = out.tx.filter(x => x.id !== "pads");
+    if (out.tx.some(x => x.id === "smr")) out.assess = out.assess.filter(a => a !== "back" && a !== "trauma");
+    if (out.assess.includes("recheck")) out.assess = out.assess.filter(a => !["vitals", "bp", "spo2"].includes(a));
+    // ---- partner routing ----
+    const all = [...out.assess, ...out.tx.map(x => x.id)];
+    const inScope = k => PARTNER_A.has(k) || PARTNER_T.has(k);
+    const askCue = out.byCrew || /^ ?(can|could|would|will) you (please )?(get|grab|put|set up|setup|start|hook|apply|insert|place|count|check|take|recheck|bring|suction|bag|throw|slap|run|do|go get|hand|give|push|draw up|administer|hang)\b|^ ?(please )?(go ahead and|i need you to|get me|grab me|hand me)\b/.test(t);
+    const selfVoice = /^ ?(i|i'm|i am|i'll|i will|i've|i'd|we're|we'll|we are|we will|let me|my|checking|feeling|listening|looking|getting|applying|putting|starting|placing|giving|palpating|assessing|taking)\b/.test(t);
+    const implicit = !wake && !askCue && !selfVoice && !out.questions.length && all.length > 0 && all.every(inScope);
+    const explicit = wake || (askCue && (all.some(inScope) || out.tx.length > 0));
+    const rm = t.match(/\b(?:every|q) ?(\d+)(?: ?(?:min|minutes|mins))?\b/);
+    out.partner = { wake, wakeOnly, explicit, implicit, to: explicit || implicit, recheckMin: rm ? +rm[1] : null };
     if (out.questions.length) ctx.lastQ = out.questions[out.questions.length - 1];
     return out;
+  }
+  // Partner fuzzy order matcher: after a clear wake word ("Partner, ...") the medic is giving an EMT order, so when
+  // the STT garbles the order word itself ("start cp horror", "section please", "and two bait him") match the words
+  // after the wake word against a small order lexicon by a sound-alike code (vowels dropped, b/p d/t g/k v/f s/z merged).
+  const ORDER_LEX = [["suction", "suction the airway"], ["suction it", "suction the airway"], ["cpr", "start cpr"], ["compressions", "start compressions"],
+    ["intubate", "intubate him"], ["tube him", "intubate him"], ["bp", "get a bp"], ["blood pressure", "get a bp"], ["sats", "get a sat"], ["sat", "get a sat"], ["pulse ox", "get a sat"],
+    ["vitals", "get a set of vitals"], ["nonrebreather", "put on a nonrebreather"], ["non rebreather", "put on a nonrebreather"], ["cannula", "put on a nasal cannula"],
+    ["cpap", "set up cpap"], ["bvm", "bag with the bvm"], ["bag him", "bag with the bvm"], ["capno", "put capno on"], ["opa", "insert an opa"], ["npa", "insert an npa"],
+    ["pads", "put the pads on"], ["twelve lead", "get a 12 lead"], ["monitor", "put on the monitor"], ["sugar", "check the blood sugar"], ["glucose", "check the blood sugar"],
+    ["gurney", "get the gurney"], ["stretcher", "get the gurney"], ["tourniquet", "put a tourniquet on"], ["resp rate", "count respirations"], ["respirations", "count respirations"],
+    ["breathing", "count respirations"], ["temp", "get a temp"], ["c collar", "spinal motion restriction"], ["nitro", "give the nitro"], ["iv", "start an iv"]];
+  const sk = w => w.replace(/12/g, "twelve").replace(/[^a-z]/g, "").replace(/ph/g, "f").replace(/ck/g, "k").replace(/c(?=[eiy])/g, "s").replace(/[cq]/g, "k").replace(/x/g, "ks")
+    .replace(/z/g, "s").replace(/b/g, "p").replace(/d/g, "t").replace(/g/g, "k").replace(/v/g, "f").replace(/(?!^)[aeiouyhw]/g, "").replace(/(.)\1+/g, "$1");
+  function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+  function fuzzyOrder(rest) {
+    const w = rest.trim().split(" ").filter(x => x && !/^(please|now|for|me|the|a|an|him|her|his|on|in|it|to|get|put|start|grab|and|of|with|some)$/.test(x)); let best = null;
+    for (const [k, canon] of ORDER_LEX) { const kc = sk(k.replace(/ /g, "")), n = k.split(" ").length;
+      for (let i = 0; i < w.length; i++) for (let L = 1; L <= Math.min(3, w.length - i); L++) {
+        const raw = w.slice(i, i + L).join(""), c = sk(raw); if (!c || Math.abs(c.length - kc.length) > 2) continue;
+        if (kc.length < 3 && raw !== k.replace(/ /g, "")) continue; // short codes (bp, iv, cpap) only on an exact word
+        const sc = 1 - lev(c, kc) / Math.max(c.length, kc.length, 2);
+        if (!best || sc > best.sc) best = { sc, canon, k }; } }
+    return best && best.sc >= FUZZ_MIN ? best : null;
+  }
+  const FUZZ_MIN = 0.85;
+  // Soft wake word: the STT sometimes garbles a leading "partner" ("harden a", "heart and", "hurt the", "part of").
+  // Only used when the literal utterance means nothing and what follows the garble is a real order, so
+  // medic speech like "heart rate?" or "hurt anywhere else?" is never re-routed.
+  const SOFTWAKE = /^ ?(?:a |k |uh |um |hey )?(?:harden(?: a)?|hardner|hardener|hurtener|part or|heart(?: and| may| an| a| in)?|hurt(?: him to| in a| the| and| in| a)?|parts?(?: of| to| and| a| in)?|partly|hot ?na|pardon|carton|parked)\b/;
+  function parseUtterance(text) {
+    const r = parseCore(text);
+    if (r.partner.wake && !r.partner.wakeOnly && !r.questions.length && !r.assess.length && !r.tx.length) {
+      const f = fuzzyOrder(normalize(text).replace(/^ ?partner\b/, ""));
+      if (f) { const r3 = parseCore("partner " + f.canon); if (r3.assess.length || r3.tx.length) { r3.partner.fuzzy = f; r3.raw = r.raw; return r3; } }
+    }
+    if (r.partner.wake || r.partner.to || r.questions.length) return r;
+    const n = normalize(text), m = n.match(SOFTWAKE);
+    if (!m || !n.slice(m[0].length).trim()) return r;
+    const r2 = parseCore(" partner " + n.slice(m[0].length));
+    if (r2.questions.length || !(r2.assess.length || r2.tx.length)) return r;
+    const ids = x => [...x.assess, ...x.tx.map(y => y.id)];
+    if (!ids(r).every(i => ids(r2).includes(i))) return r;
+    r2.partner.softWake = true; return r2;
   }
   // With the optional on-device model: when no rule matched (or only the lightweight trigram
   // fallback did), let MiniLM decide; keep the trigram guess if MiniLM isn't confident.
@@ -1166,7 +1310,7 @@ const NLU = (() => {
     }
     return r;
   }
-  return { parseUtterance, parseAsync, parseDose, norm, normalize, reset, setEmbedder, BANK, semantic: t => semantic(normalize(t)) };
+  return { PARTNER_A, PARTNER_T, parseUtterance, parseAsync, parseDose, norm, normalize, reset, setEmbedder, BANK, semantic: t => semantic(normalize(t)) };
 })();
 if (typeof module !== "undefined") module.exports = NLU;
 
@@ -1195,7 +1339,7 @@ const fmtT = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s /
 
 const SIM = (() => {
   let sc = null, st = null, timer = null, ui = null, lastInteraction = 0, lastAmbient = 0;
-  const TX_LABEL = { cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing", removepatch: "Medication patch removed", removeheat: "Heating pad removed" };
+  const TX_LABEL = { cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing", removepatch: "Medication patch removed", removeheat: "Heating pad removed", pads: "Defib/pacing pads applied", tourniquet: "Tourniquet applied", smr: "Spinal motion restriction", gurney: "Gurney to bedside" };
 
   function newState(scn) {
     return { t: 0, sev: scn.startSev || 0.5, flags: { o2: null, position: null }, count: {}, last: {}, eff: [], x: {}, v: {}, rev: {}, events: {}, log: [], devs: [], lastNitroDose: 0, pi: null, piT: null, ended: false };
@@ -1236,6 +1380,7 @@ const SIM = (() => {
     if (sc.drift) st.sev = clamp(st.sev + (sc.drift(st) || 0) * dt / 60, 0, 1);
     if (sc.tickExtra) sc.tickExtra(st, dt);
     computeTargets(false);
+    partnerTick();
     ui.render();
     // ambient patient cues during silence
     if (st.t - lastInteraction > 35 && st.t - lastAmbient > 40 && sc.ambient) {
@@ -1484,6 +1629,10 @@ const SIM = (() => {
         r.removed.forEach(p => rec("t:removepatch:" + p.drug));
         narr = (r.removed.length > 1 ? `${r.removed.length} ${NM(r.removed[0].drug)} patches removed` : `${cap1(NM(r.removed[0].drug))} patch removed`) + " (folded sticky sides together and bagged to bring to the ED)";
         break; }
+      case "pads": st.flags.pads = true; st.rev.monitor = st.rev.monitor || { t: st.t }; narr = "Pads applied (anterior/posterior), monitor on"; break;
+      case "tourniquet": narr = "Tourniquet applied proximal to the wound, time noted"; rec("t:bandage"); break;
+      case "smr": narr = "Spinal motion restriction (C-collar, secured to the gurney)"; break;
+      case "gurney": narr = "Gurney brought to the patient's side"; break;
       case "removeheat": if (!sc.heatPad) { log("assess", "No heating pad"); return [{ speaker: "find", text: "There's no heating pad or heat source on the patient." }]; } st.x.heatOff = st.t; narr = "Heating pad switched off and removed from under the patient"; break;
     }
     if (id !== "midaz") { st.count[id] = (st.count[id] || 0) + 1; rec("t:" + id); if (id === "albuterol" && n(st, "albuterol") >= 2) rec("t:albuterol#2"); if (n(st, id) >= 2) rec("t:" + id + "#2"); }
@@ -1513,12 +1662,157 @@ const SIM = (() => {
     return R[id] ? { speaker: "patient", text: R[id] } : null;
   }
 
+
+  // ---------- EMT partner (third character, own voice) ----------
+  // Orders go to the partner when they start with the wake word "partner" (or the previous utterance was just
+  // "partner"), when phrased as a request ("can you…", "go ahead and…", "get me…"), or, as a fallback, when an
+  // imperative/telegraphic order contains only EMT-scope tasks ("get a set of vitals", "nonrebreather at 15").
+  // The partner acknowledges at once, does the task with a realistic delay (one task at a time), then reports.
+  // ALS tasks (IV/IO, meds, advanced airway, shocks/pacing, base contact) are declined: "That's your call, medic".
+  const PT_TIME = { bp: [18, 28], spo2: [6, 10], rr: [15, 30], vitals: [40, 60], bgl: [20, 30], temp: [8, 12], monitor: [12, 20], "12lead": [35, 50], etco2: [8, 12], pulse: [8, 12], pulsecheck: [5, 8],
+    nrb: [8, 12], nc: [8, 12], o2: [8, 12], bvm: [6, 10], cpap: [35, 50], opa: [8, 12], suction: [6, 10], cpr: [2, 4], stopcpr: [1, 2], pads: [12, 18], bandage: [12, 20], tourniquet: [10, 15],
+    fowler: [6, 10], supine: [6, 10], recovery: [8, 12], smr: [60, 90], gurney: [40, 60], transport: [30, 45], cooling: [10, 15], protect: [3, 5], removepatch: [8, 12], removeheat: [8, 12] };
+  const pRand = ([a, b]) => Math.round(a + Math.random() * (b - a));
+  const he = () => sc.patient.sex === "F" ? "she" : "he", He = () => cap1(he()), him = () => sc.patient.sex === "F" ? "her" : "him", his = () => sc.patient.sex === "F" ? "her" : "his";
+  function pSay(text, extra) { log("partner", text); return Object.assign({ speaker: "partner", text }, extra || {}); }
+  const o2Name = () => ({ nc: "a nasal cannula", nrb: "the NRB", bvm: "the BVM", cpap: "CPAP" }[st.flags.o2] || "room air");
+  function hasBleeding() { const s = [st.tg && st.tg.trauma, sc.scene, sc.sceneMore, sc.trauma, sc.approach && sc.approach.see].map(x => typeof x === "function" ? "" : String(x || "")).join(" "); return /lacerat|bleed|hemorrh|amputat|gunshot|stab|spurting|blood-soaked|pooling blood/i.test(s) && !/no (active )?bleeding/i.test(s); }
+  function hasGag() { return ["alert", "anxious", "confused", "aphasic"].includes(mental()) || (st.tg.gcs && st.tg.gcs[0] + st.tg.gcs[1] + st.tg.gcs[2] >= 9); }
+  function partnerRoute(parsed, text) {
+    const P = parsed.partner || {}, lines = [];
+    const armed = st.x.pArm != null && st.t - st.x.pArm <= 20;
+    if (P.wakeOnly) { st.x.pArm = st.t; return { only: true, lines: [pSay("Yeah?")] }; }
+    const all = [...parsed.assess, ...parsed.tx.map(x => x.id)];
+    let explicit = P.explicit || (armed && all.length > 0);
+    if (armed) st.x.pArm = null;
+    if (!explicit && !P.implicit) {
+      if (armed && !all.length && !parsed.questions.length) return { only: true, lines: [pSay("Say again, medic?", { nu: true })] };
+      return { only: false, lines };
+    }
+    if (P.wake && !all.length) return { only: true, lines: [pSay(parsed.questions.length ? "That's one for the patient, medic. What do you need from me?" : "Say again, medic?", { nu: true })] };
+    const orders = [], declines = [];
+    for (const a of parsed.assess) if (explicit || NLU.PARTNER_A.has(a)) orders.push({ kind: "a", id: a });
+    for (const tx of parsed.tx) (NLU.PARTNER_T.has(tx.id) ? orders : declines).push(tx.id && NLU.PARTNER_T.has(tx.id) ? { kind: "t", id: tx.id, tx } : tx);
+    // fold "BVM with capno" into one task; "recheck vitals" includes a set now
+    const bvm = orders.find(o => o.id === "bvm"), cap = orders.find(o => o.id === "etco2");
+    if (bvm && cap) { bvm.capno = true; orders.splice(orders.indexOf(cap), 1); }
+    if (orders.some(o => o.id === "recheck")) { const v = orders.findIndex(o => o.id === "vitals"); if (v >= 0) orders.splice(v, 1); }
+    parsed.assess = parsed.assess.filter(a => !orders.some(o => o.kind === "a" && o.id === a) && !(a === "etco2" && bvm && bvm.capno));
+    parsed.tx = parsed.tx.filter(tx => !orders.some(o => o.kind === "t" && o.id === tx.id) && !declines.includes(tx));
+    parsed.partnerHandled = true;
+    const raw = parsed.norm || "";
+    for (const o of orders) {
+      const busy = (st.pBusy || 0) > st.t + 2;
+      const ack = partnerAck(o, raw, P.recheckMin);
+      if (o.id === "cpr" && st.tg.pulse !== false && !st.x.arrest) { lines.push(pSay(`Hold on, medic, ${he()} has a pulse. I'm not starting compressions on ${him()}.`)); continue; }
+      const dur = pRand(PT_TIME[o.id] || [8, 14]), start = Math.max(st.t, st.pBusy || 0);
+      st.pBusy = start + dur; (st.pq = st.pq || []).push(Object.assign({}, o, { due: start + dur, raw, recheckMin: P.recheckMin }));
+      lines.push(pSay(ack + (busy ? " Right after this one." : "")));
+      rec("p:order"); log("partner", `ORDER (${o.kind === "a" ? "assess" : "treat"} ${o.id}${o.capno ? " + capnography" : ""}): due in ~${Math.round(start + dur - st.t)} s`);
+    }
+    for (const tx of declines) lines.push(pSay(partnerDecline(tx)));
+    return { only: !parsed.questions.length && !parsed.assess.length && !parsed.tx.length, lines };
+  }
+  function partnerAck(o, raw, every) {
+    const A = { vitals: "Copy, getting a set of vitals.", bp: "Copy, getting a BP.", spo2: "Pulse ox going on.", rr: "Copy, counting respirations.", bgl: "Copy, checking a sugar.", temp: "Getting a temp.",
+      monitor: `Putting ${him()} on the monitor.`, "12lead": "Copy, 12-lead.", etco2: "Putting capno on.", pulse: "Checking a pulse.", pulsecheck: "Checking for a pulse.",
+      recheck: `Copy, vitals every ${every || 5} minutes. Starting a set now.`,
+      nrb: "Copy, NRB at 15 liters.", nc: /\b([1-6]) ?(l|liters|lpm)\b/.test(raw) ? `Cannula at ${RegExp.$1} liters, copy.` : "Copy, nasal cannula at 4 liters.", o2: "Copy, oxygen going on.",
+      bvm: o.capno ? "Copy, bagging with in-line capno." : "Copy, bagging.", cpap: "Copy, setting up CPAP.", opa: /\bnpa\b|nasal (airway|trumpet)|nasopharyngeal/.test(raw) ? "Copy, NPA." : "Copy, OPA.",
+      suction: "Suctioning.", cpr: "Starting compressions!", stopcpr: "Holding compressions.", pads: "Pads going on.", bandage: "Copy, bleeding control.", tourniquet: "Tourniquet, copy.",
+      fowler: `Sitting ${him()} up, position of comfort.`, supine: `Laying ${him()} flat.`, recovery: `Rolling ${him()} onto ${his()} side.`, smr: "Copy, SMR: collar and secure to the gurney.",
+      gurney: "Going for the gurney.", transport: "Copy, packaging for transport.", cooling: "Copy, cooling measures.", protect: `Protecting ${his()} head.`, removepatch: "Copy, pulling the patch.", removeheat: "Pulling the heating pad." };
+    return A[o.id] || `Copy, checking ${(FOCUS_LABEL[o.id] || o.id).toLowerCase()}.`;
+  }
+  function partnerDecline(tx) {
+    const id = tx.id, label = (TX_LABEL[id] || id);
+    log("partner", "DECLINED (ALS): " + label); rec("p:declined");
+    if (id === "iv" || id === "io") return `That's your call, medic. I can set it up: ${id === "io" ? "the EZ-IO" : "an IV start kit"} and a bag of saline are out for you.`;
+    if (id === "sga") return "Advanced airway is your call, medic. I'll set up the i-gel and suction, and keep bagging.";
+    if (["defib", "cardiovert", "pace"].includes(id)) { if (!st.flags.pads && !(st.pq || []).some(q => q.id === "pads")) { const start = Math.max(st.t, st.pBusy || 0), d = pRand(PT_TIME.pads); st.pBusy = start + d; (st.pq = st.pq || []).push({ kind: "t", id: "pads", tx: { id: "pads" }, due: start + d }); return `Pads are going on. The ${id === "pace" ? "pacing" : "shock"} is your call, medic.`; } return `Pads are on. The ${id === "pace" ? "pacing" : "shock"} is your call, medic.`; }
+    if (id === "base" || id === "notify") return "That's on you, medic. I'll grab the radio for you.";
+    if (id === "leavebehind") return "That's your call, medic. The leave-behind kit is in the bag.";
+    return `That's your call, medic, I can set it up. ${label.replace(/\s*\(.*\)$/, "")} is out and ready for you.`;
+  }
+  function rrReport() {
+    const rr = Math.round(st.v.rr || 0);
+    if (!rr || st.x.arrest || st.tg.pulse === false) return `${He()}'s not breathing, medic. No respirations.`;
+    const work = String(EXAM.find("work", sc, st, "", mental()) || "") + " " + String(st.tg.airway || "") + " " + String(st.tg.lungs || "");
+    const q = [];
+    if (/kussmaul|deep, rapid/i.test(work)) q.push("deep");
+    else if (rr < 10 || /shallow|minimal chest/i.test(work)) q.push("shallow");
+    if (/accessory|retraction|tripod|labored|distress/i.test(work) || rr >= 28) q.push("labored");
+    if (/snor/i.test(work)) q.push("snoring");
+    q.push(/agonal|irregular|gasping|cheyne|apneic pauses/i.test(work) ? "irregular" : "regular");
+    let t = `Resps are ${rr}, ${q.join(", ")}.`;
+    if (/accessory|retraction|tripod/i.test(work) && !/no accessory/i.test(work)) t += ` ${He()}'s using accessory muscles.`;
+    return t;
+  }
+  function partnerRun(o) {
+    const out = [];
+    const say = (t, extra) => out.push(pSay(t, extra));
+    if (o.kind === "a") {
+      const saveT = lastText; lastText = o.raw || lastText;
+      switch (o.id) {
+        case "bp": { const r = assess("bp").join(" "); const m = r.match(/(\d+\/\d+)/); say(m ? `BP is ${m[1]}.` + (st.tg.bpNote ? " " + st.tg.bpNote : "") : `I can't get a pressure on ${him()}, medic.`); break; }
+        case "spo2": assess("spo2"); say(st.v.spo2 == null ? `I can't get a good waveform on the pulse ox, ${he()}'s too ${st.x.arrest ? "down" : "cold"}.` : `Sat is ${Math.round(st.v.spo2)}% on ${o2Name()}.`); break;
+        case "rr": assess("rr"); say(rrReport()); break;
+        case "recheck": { const n = o.recheckMin || 5; st.x.recheck = { every: n * 60, next: st.t + n * 60 }; } // fallthrough to a set now
+        case "vitals": {
+          rec("a:vitals"); const noPulse = st.x.arrest || st.tg.pulse === false || !st.v.hr;
+          if (noPulse) { say(`Medic, I've got no pulse on ${him()}!`); break; }
+          const hr = Math.round(st.v.hr); st.rev.pulse = { t: st.t, val: hr };
+          const bpr = assess("bp").join(" "), bpm = bpr.match(/(\d+\/\d+)/); assess("rr"); assess("spo2");
+          const irr = /afib|irregular|ectop|pvc/i.test(String(st.tg.rhythm) + " " + String(st.tg.rhythmName));
+          say(`${o.auto ? "Recheck. " : ""}Vitals: pulse ${hr}${irr ? " and irregular" : ""}, BP ${bpm ? bpm[1] : "unable to get one"}, ${rrReport().replace(/^Resps are/, "resps").replace(/\.$/, "")}, sat ${st.v.spo2 == null ? "no reading" : Math.round(st.v.spo2) + "% on " + o2Name()}.`);
+          break; }
+        case "bgl": { assess("bgl"); const bt = st.tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); say(`Sugar is ${bt}.`); break; }
+        case "temp": assess("temp"); say(`Temp is ${st.v.temp.toFixed(1)}°F.`); break;
+        case "monitor": { const r = assess("monitor"); say("Leads are on, monitor's up. Take a look."); out.push({ speaker: "find", text: r.join(" ") }); break; }
+        case "12lead": { const r = assess("12lead"); say(st.tg.twelve ? "12-lead's done. Here you go." : "Can't get a clean 12-lead right now, medic."); out.push({ speaker: "find", text: r.join(" ") }); break; }
+        case "etco2": { assess("etco2"); const inl = st.flags.o2 === "bvm" || st.flags.sga; say(`${inl ? "In-line" : "Nasal"} capno is on. EtCO2 ${Math.round(st.v.etco2)}, waveform's up.`); break; }
+        default: { const r = assess(o.id).join(" "); say(r || "Nothing remarkable, medic."); }
+      }
+      lastText = saveT;
+      return out;
+    }
+    // treatments
+    const id = o.id, tx = o.tx || { id, doses: [], route: null };
+    if (id === "opa" && !/\bnpa\b|nasal (airway|trumpet)|nasopharyngeal/.test(o.raw || "") && hasGag()) { say(`${He()}'s got a gag reflex, medic. ${He()} won't tolerate an OPA. Want an NPA instead?`); log("partner", "OPA not placed: gag reflex"); return out; }
+    if (id === "tourniquet" && !hasBleeding()) { say("I don't see any bleeding that needs a tourniquet, medic."); return out; }
+    const res = treat(tx);
+    const T = { nrb: "NRB is on at 15 liters.", nc: `Cannula's on at ${/\b([1-6]) ?(l|liters|lpm)\b/.test(o.raw || "") ? RegExp.$1 : 4} liters.`, o2: `Oxygen's on: ${o2Name()}.`,
+      bvm: "Bagging at 10 a minute with 15 liters. Good chest rise.", cpap: "CPAP's on at 5 of PEEP, good seal.", opa: /\bnpa\b|nasal|nasopharyngeal/.test(o.raw || "") ? "NPA's in, right nare, lubed." : "OPA's in, sized, no gag.",
+      suction: "Suctioned. Airway's clear now.", cpr: "Compressions going, 100 to 120.", stopcpr: "Off the chest.", pads: "Pads are on, monitor's up.", bandage: "Pressure dressing's on. Bleeding's controlled.",
+      tourniquet: `Tourniquet's on, high and tight. Time is ${fmtT(st.t)} into the call.`, fowler: `${He()}'s sitting up.`, supine: `${He()}'s flat.`, recovery: `${He()}'s on ${his()} side.`, smr: "Collar's on, SMR's done.",
+      gurney: "Gurney's at the bedside, ready when you are.", transport: "Packaged and ready to roll.", cooling: "Cooling measures going.", protect: `${His()} head's protected.`, removepatch: "Patch is off and bagged.", removeheat: "Heating pad's off." };
+    let reported = false;
+    for (const r of res) {
+      if (r.speaker === "narrator" && /^✓/.test(r.text)) { if (!reported) { say(T[id] || r.text.replace(/^✓\s*/, "")); reported = true; } }
+      else out.push(r);
+    }
+    if (!reported && T[id]) say(T[id]);
+    if (id === "bvm" && o.capno) { assess("etco2"); say(`In-line capno's on. EtCO2 ${Math.round(st.v.etco2)}.`); }
+    return out;
+  }
+  const His = () => cap1(his());
+  function partnerTick() {
+    if (st.x.recheck && st.t >= st.x.recheck.next) { st.x.recheck.next += st.x.recheck.every; const start = Math.max(st.t, st.pBusy || 0), d = pRand(PT_TIME.vitals); st.pBusy = start + d; (st.pq = st.pq || []).push({ kind: "a", id: "vitals", auto: true, due: start + d }); }
+    if (!st.pq || !st.pq.length) return;
+    st.pq.sort((a, b) => a.due - b.due);
+    const lines = [];
+    while (st.pq.length && st.pq[0].due <= st.t) lines.push(...partnerRun(st.pq.shift()));
+    if (lines.length) { lines.filter(l => l.speaker === "patient").forEach(l => log("patient", l.text)); ui.say(lines); }
+  }
+
   // ---------- utterance ----------
   async function handle(text) {
     if (!st || st.ended) return [];
     lastInteraction = st.t;
     const parsed = await NLU.parseAsync(text); parsed.tx.forEach(t => t.raw = parsed.norm);
     lastText = parsed.norm; lastSites = parsed.pulseSites || []; lastParsed = parsed;
+    const pOut = partnerRoute(parsed, text);
+    if (pOut.only) { log("me", text); parsed.questions.forEach(q => rec("q:" + q)); ui.render(); return pOut.lines; }
     if (parsed.questions.includes("reassure") && ["alert", "anxious", "confused", "aphasic"].includes(mental())) { st.x.calmT = st.t; st.x.calmN = (st.x.calmN || 0) + 1; }
     log("me", text);
     parsed.questions.forEach(q => rec("q:" + q));
@@ -1528,7 +1822,7 @@ const SIM = (() => {
     pre.forEach(p => log("patient", p.text));
     let reactions = [];
     parsed.tx.forEach(tx => reactions.push(...treat(tx)));
-    const out = [...pre];
+    const out = [...pOut.lines, ...pre];
     if (find.length) out.push({ speaker: "find", text: (parsed.byCrew ? "Your partner reports: " : "") + find.join("\n") });
     const ctx = { utterance: text, parsed, scenario: sc, state: st, mental: mental(), reactions, history: ui.history(), complied: pre.length > 0 };
     const replies = await PatientEngine.reply(ctx);
@@ -1597,7 +1891,7 @@ const SIM = (() => {
   function setPI(code) { st.pi = code; st.piT = st.t; log("pi", `Provider Impression selected: ${code} – ${(PROVIDER_IMPRESSIONS[code] || [code])[0]}`); }
   function end() { st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() }; }
 
-  return { start, stop, handle, end, event, mental, setPI, flow, approach, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
+  return { start, stop, handle, end, event, mental, setPI, flow, approach, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
 })();
 
 /* ===== exam.js ===== */
@@ -4474,6 +4768,7 @@ const RuleBasedPatient = (() => {
       const desc = mental === "seizing" ? "Patient is actively seizing and cannot respond." : mental === "arrest" ? "Patient is pulseless and apneic." : "No response. Patient is unresponsive.";
       if (!out.some(o => o.speaker === "narrator" && o.text.includes("respon"))) out.unshift({ speaker: "narrator", text: desc });
     }
+    if (parsed.partnerHandled && !qs.length) return out;
     if (!qs.length && !parsed.tx.length && !parsed.assess.length) {
       if (talk) out.push({ speaker: "patient", nu: true, text: mental === "confused" ? pick(sc.confusedAnswers || CONFUSED) : clarify(sc, mental, st) });
       else if (parsed.toBystander) out.push({ speaker: "bystander", text: "I... I don't know. Please just help him!".replace("him", sc.patient.sex === "F" ? "her" : "him") });
@@ -5244,9 +5539,9 @@ const Semantic = (() => {
 
   // ---------------- transcript ----------------
   function addMsg(m) {
-    const cls = ({ me: "me", patient: "pt", bystander: "by", narrator: "sys", system: "sys", find: "find", warn: "warn", hint: "hint", heard: "heard" }[m.speaker] || "sys") + (m.approach ? " approach" : "");
+    const cls = ({ me: "me", patient: "pt", bystander: "by", narrator: "sys", system: "sys", find: "find", warn: "warn", hint: "hint", heard: "heard", partner: "partner" }[m.speaker] || "sys") + (m.approach ? " approach" : "");
     const sc = SIM.scenario, st = SIM.state;
-    const who = m.speaker === "patient" ? sc.patient.name.split(" ")[0] + " (patient)" : m.speaker === "bystander" ? `${sc.bystander.name} (${sc.bystander.role})` : m.speaker === "me" ? (m.tap ? "You (tapped)" : "You") : m.speaker === "find" ? (m.approach ? "Instructor · on arrival" : "Instructor") : m.speaker === "heard" ? "Not understood" : "";
+    const who = m.speaker === "patient" ? sc.patient.name.split(" ")[0] + " (patient)" : m.speaker === "bystander" ? `${sc.bystander.name} (${sc.bystander.role})` : m.speaker === "me" ? (m.tap ? "You (tapped)" : "You") : m.speaker === "find" ? (m.approach ? "Instructor · on arrival" : "Instructor") : m.speaker === "heard" ? "Not understood" : m.speaker === "partner" ? "Partner (EMT)" : "";
     const d = document.createElement("div"); d.className = "msg " + cls;
     d.innerHTML = (who ? `<span class="who">${esc(who)}<span class="ts">${fmtT(st ? st.t : 0)}</span>${m.approach ? '<button type="button" class="tiny skip" data-skip>Skip ▶▶</button>' : ""}</span>` : "") + (m.html || esc(m.text));
     if (m.approach) d.querySelector("[data-skip]").onclick = e => { e.stopPropagation(); skipSpeech(); e.target.remove(); };
@@ -5258,7 +5553,7 @@ const Semantic = (() => {
       if (m.speaker === "patient") chatHistory.push({ role: "assistant", content: m.text });
       if (m.speaker === "bystander") chatHistory.push({ role: "assistant", content: "BYSTANDER: " + m.text });
     });
-    const speakable = list.filter(m => m.speaker === "patient" || m.speaker === "bystander" || (settings.instr && (m.speaker === "find" || (m.speaker === "narrator" && /no response|unresponsive|seizing|pulseless|✗/i.test(m.text)))));
+    const speakable = list.filter(m => m.speaker === "patient" || m.speaker === "bystander" || m.speaker === "partner" || (settings.instr && (m.speaker === "find" || (m.speaker === "narrator" && /no response|unresponsive|seizing|pulseless|✗/i.test(m.text)))));
     speakQueue(speakable);
   }
   async function submit(text, tap) {
@@ -5274,6 +5569,11 @@ const Semantic = (() => {
     }
   }
   const SUGGEST = ["What's bothering you today?", "What year is it, and where are we?", "Checking radial and carotid pulses", "Do you have any allergies?", "Lift his shirt, what do I see?"];
+  const PSHEET = {
+    o2: [["Nasal cannula 4 L", "Partner, nasal cannula at 4 liters"], ["NRB 15 L", "Partner, put him on a nonrebreather at 15"], ["CPAP", "Partner, set up CPAP"]],
+    oa: [["OPA", "Partner, insert an OPA"], ["NPA", "Partner, insert an NPA"]],
+    mon: [["Monitor", "Partner, put him on the monitor"], ["Pads", "Partner, apply the pads"]],
+  };
   function skipSpeech() { if (window.speechSynthesis) speechSynthesis.cancel(); ttsPending = 0; ttsTailUntil = 0; }
   const HELP = [
     ["Arrival", ["Is the patient tracking me?", "What do I see? (describes your last inspection; at the start, the scene)"]],
@@ -5282,7 +5582,7 @@ const Semantic = (() => {
     ["Pulses & skin", ["Checking radial pulse / Feeling for a radial", "Checking his carotid", "I'm checking his radial and carotid", "Feeling the forehead / Skin signs", "Cap refill"]],
     ["Look / expose", ["Open your mouth, checking the airway", "Lift his shirt, what do I see?", "Check pupils", "Expose the patient / Look at his legs / Check his back"]],
     ["History (SAMPLE / OPQRST)", ["Any allergies? Medications? Medical history?", "When did it start? What makes it worse?", "Does it go anywhere? Zero to ten?"]],
-    ["Partner / treatment", ["Get me a set of vitals / BP / sats", "Put him on the monitor, 12-lead", "Check a blood sugar", "Give aspirin 325 chewed / Start an IV"]],
+    ["Your EMT partner (start with \"Partner\")", ["Partner, get me a set of vitals / a BP / a sat / a glucose", "Partner, count respirations (or: resp rate? / how fast is he breathing?)", "Partner, put him on a nonrebreather at 15 / nasal cannula at 4 / set up CPAP", "Partner, bag him with the BVM and put capno on", "Partner, suction / insert an OPA or NPA", "Partner, put him on the monitor / get a 12-lead / apply the pads", "Partner, start compressions / get the gurney / spinal motion restriction", "Partner, recheck vitals every 5", "Say just \"Partner\" and wait for \"Yeah?\", then give the order", "IVs, meds, advanced airways and shocks are yours: \"Start an IV\", \"Give aspirin 325 chewed\""]],
   ];
   function openHelp() { $("#helpBody").innerHTML = HELP.map(([h, l]) => `<h4>${esc(h)}</h4><ul>${l.map(x => `<li>“${esc(x)}”</li>`).join("")}</ul>`).join(""); $("#modalHelp").classList.add("open"); }
 
@@ -5311,6 +5611,7 @@ const Semantic = (() => {
     return local.length ? rank(local) : base.length ? rank(base) : null;
   }
   let ttsPending = 0, ttsTailUntil = 0;
+  window.__partnerVoice = (pv, bv, iv) => partnerVoice(pv, bv, iv);
   function speaking() { return ttsPending > 0 || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil; }
   const byName = n => voices.find(v => v.name === n) || null;
   function patientVoice() { const sc = SIM.scenario; return (settings.ptVoice !== "auto" && byName(settings.ptVoice)) || pickVoice(sc.patient.sex, null, sc.patient.age); }
@@ -5325,6 +5626,16 @@ const Semantic = (() => {
     const opp = pool.filter(ptSex === "F" ? isM : isF);
     const v = opp.find(v => v.localService && /en-(GB|AU|IE|IN)/i.test(v.lang)) || opp.find(v => v.localService) || opp[0] || pool.find(v => v.localService) || pool[0] || null;
     return { voice: v || pv || null, same: !v };
+  }
+  // EMT partner: a third voice, different from the patient, bystander and instructor when the device has one;
+  // otherwise the closest voice with a clearly different pitch/rate (lower, quicker: a partner talking while working).
+  function partnerVoice(pv, bv, ivv) {
+    if (!voices.length) loadVoices();
+    const offline = !navigator.onLine;
+    const pool = voices.filter(v => v !== pv && v !== bv && v !== ivv && (!offline || v.localService));
+    const v = pool.find(v => v.localService && /en-US/i.test(v.lang)) || pool.find(v => /en-US/i.test(v.lang)) || pool.find(v => v.localService && /^en/i.test(v.lang)) || pool.find(v => /^en/i.test(v.lang)) || null;
+    if (v) return { voice: v, pitch: 0.95, rate: 1.12, distinct: true };
+    return { voice: ivv || pv || null, pitch: 0.7, rate: 1.22, distinct: false };
   }
   // Read numbers/abbreviations the way a proctor would say them.
   function spokenFinding(t) {
@@ -5347,7 +5658,13 @@ const Semantic = (() => {
     const pv = patientVoice(), bv = sc.bystander ? pickVoice(sc.bystander.sex, pv, 45) : null;
     const iv = instructorVoice(pv, bv);
     const ment = SIM.mental();
+    const ptv = partnerVoice(pv, bv, iv.voice);
     list.forEach(m => {
+      if (m.speaker === "partner") {
+        if (!settings.voice) return;
+        (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, ptv.voice, ptv.pitch, settings.rate * ptv.rate, 1));
+        return;
+      }
       if (m.speaker === "find" || m.speaker === "narrator") {
         if (!settings.instr) return;
         const ptPitch = sc.patient.sex === "F" ? 1.1 : 0.9;
@@ -5633,7 +5950,8 @@ const Semantic = (() => {
     const ckHtml = checklist.map(c => `<div class="ck ${c.done ? "done" : c.optional ? "" : "miss"}"><span class="i">${c.done ? "✔" : c.optional ? "○" : "✘"}</span><div>${esc(c.label)}${c.critical ? ' <b style="color:#ff8a95">critical</b>' : ""}${c.optional ? " <small>(if indicated)</small>" : ""}<br><small>LA County Ref. ${esc(c.ref)}${c.time != null && c.done ? " · done at " + fmtT(c.time) : ""}</small></div></div>`).join("");
     const devs = st.devs.length ? st.devs.map(d => `<div class="dev"><b>${fmtT(d.t)} · ${esc(d.level.toUpperCase())}</b>: ${esc(d.text)} <small>[Ref. ${esc(d.ref)}]</small></div>`).join("") : "<p>No protocol deviations flagged. 👍</p>";
     const missedCrit = checklist.filter(c => c.critical && !c.done);
-    const logHtml = st.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc({ me: "🗣 You", patient: "🧑 Patient", bystander: "👥 Bystander", assess: "🔎 Assess", tx: "💉 Treat", warn: "⚠️", find: "📟", sys: "•", pi: "🩺 PI" }[l.kind] || l.kind)}</td><td>${esc(l.text)}</td></tr>`).join("");
+    const partnerBox = st => { const P = st.log.filter(l => l.kind === "partner" && /^(ORDER|DECLINED)/.test(l.text)); if (!P.length) return ""; const rows = P.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc(l.text)}</td></tr>`).join(""); return `<div class="db-box" style="margin-top:1em"><h3>Partner (EMT) orders</h3><p class="fine">${P.filter(l => /^ORDER/.test(l.text)).length} order(s), ${P.filter(l => /^DECLINED/.test(l.text)).length} declined as ALS (your call). Partner tasks count toward the checklist exactly as if you did them.</p><table class="log">${rows}</table></div>`; };
+    const logHtml = st.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc({ me: "🗣 You", patient: "🧑 Patient", bystander: "👥 Bystander", partner: "🚑 Partner", assess: "🔎 Assess", tx: "💉 Treat", warn: "⚠️", find: "📟", sys: "•", pi: "🩺 PI" }[l.kind] || l.kind)}</td><td>${esc(l.text)}</td></tr>`).join("");
     const refs = [...new Set([...(sc.refs || []), ...((g && PROVIDER_IMPRESSIONS[g.p.correct]) ? [PROVIDER_IMPRESSIONS[g.p.correct][1].split("/")[0]] : [])])];
     $("#debriefBody").innerHTML = `
       <h1>${esc(sc.dispatchTitle)}</h1>
@@ -5646,6 +5964,7 @@ const Semantic = (() => {
         </div>
       </div>
       ${flowHtml()}
+      ${partnerBox(st)}
       <div class="db-box" style="margin-top:1em"><h3>Time-stamped log</h3><table class="log">${logHtml}</table></div>
       <p class="fine">Education only. Doses and steps are from the LA County EMS Agency Prehospital Care Manual as retrieved Oct 20, 2026; always use the current official protocols and medical direction.</p>`;
     currentDebrief.text = debriefText(sc, st, checklist, g, score);
@@ -5731,6 +6050,14 @@ const Semantic = (() => {
     $("#quick").onclick = e => { if (e.target.tagName === "BUTTON") submit(e.target.textContent); };
     // quick-assess row: a tap goes through exactly the same path as saying the phrase (logged + assessment flow)
     $("#assessRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
+    // Partner quick actions: a tap is logged exactly like saying the order. Buttons with a ▾ open a small choice sheet.
+    const pr = n => { const F = SIM.scenario && SIM.scenario.patient.sex === "F"; return F ? n.replace(/\bhim\b/g, "her").replace(/\bhis\b/g, "her") : n; };
+    $("#partnerRow").onclick = e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.sheet) { const sh = $("#partnerSheet"), open = !sh.hidden && sh.dataset.for === b.dataset.sheet; sh.hidden = open; if (!open) { sh.dataset.for = b.dataset.sheet; sh.innerHTML = PSHEET[b.dataset.sheet].map(([l, t]) => `<button type="button" data-say="${esc(t)}">${esc(l)}</button>`).join("") + '<button type="button" class="x" data-close-sheet>✕</button>'; } return; }
+      if (b.dataset.say) submit(pr(b.dataset.say), true);
+    };
+    $("#partnerSheet").onclick = e => { const b = e.target.closest("button"); if (!b) return; $("#partnerSheet").hidden = true; if (b.dataset.say) submit(pr(b.dataset.say), true); };
     $("#btnHelp").onclick = openHelp;
   });
 })();
