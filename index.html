@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.1-instructor-handsfree 9b69eb305e">
+<meta name="medicsim-version" content="2.2-inspection d442d12d23">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -496,7 +496,7 @@ const PROVIDER_IMPRESSIONS = {
   STRK: ["Stroke / CVA / TIA", "1232"], SEAC: ["Seizure – Active", "1231"], SEPI: ["Seizure – Postictal", "1231"], SYNC: ["Syncope / Near Syncope", "1233"],
   SEPS: ["Sepsis", "1204"], FEVR: ["Fever", "1204"], WEAK: ["Weakness – General", "1202"], DIZZ: ["Dizziness / Vertigo", "1230"],
   HYTN: ["Hypertension", "1202"], PREG: ["Pregnancy Complications", "1217"], COMO: ["Carbon Monoxide", "1238"], SMOK: ["Smoke Inhalation", "1236"],
-  NAVM: ["Nausea / Vomiting", "1205"], DRHA: ["Diarrhea", "1205"], TRMA: ["Traumatic Injury", "1244"], HOTN: ["Shock / Hypotension", "1207"],
+  NAVM: ["Nausea / Vomiting", "1205"], DRHA: ["Diarrhea", "1205"], TRMA: ["Traumatic Injury", "1244"], HOTN: ["Shock / Hypotension", "1207"], FAIL: ["Medical Device Malfunction – Fail", "1206"],
 };
 
 /* ===== nlu.js ===== */
@@ -514,6 +514,12 @@ const PROVIDER_IMPRESSIONS = {
 const NLU = (() => {
   // ---------------- 1. normalization & STT repair ----------------
   const PHRASE_FIX = [
+    // inspection / exposure mishearings
+    [/\bleft (his|her|their|the|your|up (his|her|the)) (shirt|top|blouse|gown|sweater|t shirt|dress)/g, "lift $1 $3"], [/\blift is (shirt|top)/g, "lift his $1"], [/\b(lived|lifted|lift up) (his|her) (shirt|top)/g, "lift $2 $3"],
+    [/\bopen (you're|you|yer|ur|your) (mouse|mouth|moth|mouths)\b/g, "open your mouth"], [/\bopen your mouse\b/g, "open your mouth"], [/\bsay (awe|aww|aah|ahh+|ah+)\b/g, "say ah"],
+    [/\b(fentanyl|nitro|nicotine|medication|medicine|pain|the|a|any|his|her|that|this|skin|drug) (batch|batches|pack|patched|path)\b/g, (m, a, b) => a + (/es$/.test(b) ? " patches" : " patch")],
+    [/\bpace ?maker\b/g, "pacemaker"], [/\bheating (pat|pads|path)\b/g, "heating pad"], [/\b(expo's|expos|ex pose|x pose)\b/g, "expose"], [/\brole (him|her|them) (over|on)\b/g, "roll $1 $2"],
+    [/\b(you vula|uvular|you vela|you view la)\b/g, "uvula"], [/\bpen ?lite\b/g, "penlight"], [/\btrans ?dermal\b/g, "transdermal"], [/\bport a ?cath?\b|\bport cath\b/g, "port a cath"],
     [/\bnight ?(row|roe|rose|road)\b/g, "nitro"], [/\bnitro ?gl[a-z]*\b/g, "nitroglycerin"], [/\bnitrogen\b(?! gas)/g, "nitro"], [/\bneighbor (tro|throw)\b/g, "nitro"],
     [/\b(al|el|all) ?(but|bute|butte|beauty|bu) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol)\b/g, "albuterol"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
     [/\b(see|sea|c|si) ?pap\b/g, "cpap"], [/\bbye? ?pap\b/g, "bipap"], [/\bc ?pop\b/g, "cpap"],
@@ -650,7 +656,7 @@ const NLU = (() => {
     ["lastoral", /last (oral|meal|ate|eat|drink|thing to eat)|\beat(en)?\b|\bate\b|\bfood\b|drink anything|anything to (eat|drink)|\bintake\b|\bbreakfast\b|\blunch\b|\bdinner\b/],
     ["events", /what were you doing|leading up|led up|before (this|it) (started|happened)|\bevents\b|how did (this|it) happen|what led|doing (right )?(when|before)|prior to|brought this on|what did you see|see (it )?happen|what happened before/],
     ["orient", /where are (you|we)|where we are|what day|what'?s the date|what year is|what month|who'?s the president|what time is it|do you know where|what city|what happened to you|oriented\b(?! times)/],
-    ["consent", /is (it|that) (ok|okay|alright|all right) (if|for)|can i (check|examine|take|listen|look|put|start|give|touch)|\bmay i\b|mind if|permission|consent|ok if i|okay if i|alright if i/],
+    ["consent", /can (we|i) help you|may (we|i) help|is it ok(ay)? if (we|i) (help|take a look|check|examine)|is (it|that) (ok|okay|alright|all right) (if|for)|can i (check|examine|take|listen|look|put|start|give|touch)|\bmay i\b|mind if|permission|consent|ok if i|okay if i|alright if i/],
     ["reassure", /you'?re going to be (ok|okay|alright|fine)|(we'?ll|we are going to|we'?re going to|gonna) take (good )?care|don'?t worry|we'?ve got you|we got you|try to (relax|stay calm|calm down)|stay calm|you'?re in good hands|it'?s going to be (ok|okay|alright)|^ ?(ok |okay |now |just )?take a (deep|slow) breath|hang in there|you'?re safe|we'?re here (for you|to help)/],
     ["pde5", /viagra|cialis|levitra|sildenafil|tadalafil|vardenafil|erectile|sexual(ly)? enhanc|\bed med|performance (med|pill)/],
     ["sob", /short(ness)? of breath|trouble (breathing|catching)|hard to breath|breathing (ok|okay|alright|hard)|can you breath|difficulty breathing|\bsob\b|how'?s (your|the) breathing|catch(ing)? your breath|struggling to breath/],
@@ -685,7 +691,7 @@ const NLU = (() => {
   const A = [
     ["monitor", /\bmonitor\b|leads on|\b(3|4) ?lead|hook (him|her|you|them) up|cardiac monitor|put (him|her|you|them) on the (monitor|lp|lifepak|zoll)|\brhythm\b(?! check)|\bekg\b|\becg\b|\belectrocardiogram/],
     ["12lead", /\b12 ?lead/],
-    ["bp", /blood pressure|\bbp\b|\bnibp\b|pressure cuff|\bcuff\b|\b(manual|get a|need a|take a|check a|grab a|another|repeat) pressure\b|pressure (in|on) both arms|both arms (pressure|bp)|what'?s (the|his|her|your) pressure|(his|her) pressure\b/],
+    ["bp", /blood pressure|\bbp\b|\bnibp\b|pressure cuff|\bcuff\b|\b(manual|get a|need a|take a|check a|grab a|another|repeat) pressure\b|pressure (in|on) both arms|both arms (pressure|bp)|what'?s (the|his|her|your) pressure|(his|her) pressure\b|(re ?check|recheck|check|repeat|retake) (the |his |her )?pressure\b/],
     ["spo2", /\bsats?\b|\bspo2\b|pulseox|oximet|o2 sat|oxygen sat|saturation|finger probe|satting/],
     ["pulse", /\bpulses?\b(?! (check|ox))|heart rate|\bhr\b|\bradials?\b|\bcarotids?\b(?! (and|or) femoral)|\bfemorals?\b|\bpedal pulses?\b|dorsalis|pedis|posterior tibial|distal pulses?/],
     ["rr", /resp(iratory)? rate|respirations|breathing rate|count (his|her|their|your|the) (breaths|respirations)|\brr\b|breaths per minute/],
@@ -694,7 +700,7 @@ const NLU = (() => {
     ["bgl", /blood (sugar|glucose)|\bsugar\b|\bbgl\b|\bcbg\b|\bbg\b|glucometer|accu ?chek|finger ?stick|dextro ?stick|(a|the|her|his) glucose\b(?! (gel|paste|tab))|glucose (level|check)|check (a |her |his |the )?glucose/],
     ["gcs", /\bgcs\b|glasgow|mental status|level of consciousness|\bloc\b|(eye|verbal|motor) (score|response)|eye opening/],
     ["pupils", /pupil|penlight|\bperrl|reactive to light/],
-    ["skin", /\bskin\b(?! (rash|hives))|\bis (he|she|the patient) (clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)\b|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
+    ["skin", /\bskin\b(?! (rash|hives))|(feel|touch|check|palpate) (his|her|their|the|your) forehead|hand on (his|her|their) forehead|\bis (he|she|the patient) (clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)\b|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
     ["caprefill", /\bcap(illary)? ?refill|capillary/],
     ["corneal", /\bcorneals?\b|\bcornea|blink reflex|(touch|touching|brush) (the|his|her|their) (eye|eyelashes|lashes)/],
     ["gag", /\bgag(ging)? ?(reflex)?\b(?!s)|\bgag\b/],
@@ -706,11 +712,11 @@ const NLU = (() => {
     ["pelvis", /\bpelvi[sc]|pelvic|(check|palpate|rock) (the |his |her )?(hips|pelvis)|hips? (stable|exam)/],
     ["extrem", /extremit(y|ies)|long bones?|(arms|legs) for (deformit|injur|swelling)|deformit(y|ies) (in|to|of) (his|her|the) (arms|legs)/],
     ["cms", /\bcms\b|\bpms\b|\bpmsx?4|pulse,? motor,? (and )?sens|circulation,? motor|motor and sens|sensory and motor|neurovascular|sensation in (all|his|her|both)|can (he|she) feel (me|this) (touch|on)|distal (cms|pms|circulation)/],
-    ["back", /\bspine\b|spinal|step ?offs?|(check|palpate|look at|feel) (his|her|the|their) back|log ?roll|c ?spine|midline (neck )?tenderness|sacral/],
+    ["back", /\bspine\b|spinal|step ?offs?|(check|palpate|look at|feel|inspect|expose|examine|look under|check out) (his|her|the|their|your) (back|backside|upper back|lower back)(?! of (the|his|her|their|your) (throat|mouth|head|neck|hand))|log ?roll|c ?spine|midline (neck )?tenderness|sacral|roll (him|her|them) (over|onto (his|her|their) side|on (his|her|their) side)|turn (him|her|them) over|look under (him|her|them)|sit (him|her) forward and (look|check)/],
     ["head", /head,? face,? (and )?neck|dcap|btls|battle'?s|raccoon|(check|look at|palpate|examine|assess) (his|her|the|their) (head|face|neck|scalp)|head to neck|head exam/],
     ["speech", /slurred speech(?!.*\byou)|^ ?(assess|check|evaluate) speech\b|(assess|check|how'?s|how is|evaluate|listen to) (his|her|the|their) speech|speech (clear|slurred|normal|okay|ok)|is (he|she) (slurring|aphasic)|\baphasi|dysarthri|repeat (a|this|after me)|you can'?t teach an old dog/],
     ["orient4", /oriented (times|x|by) ?(one|two|three|four|[1-4])|\ba ?(and|n|&) ?o( times| x| by)?\b|\baox ?\d|\baox?\b|orientation|is (he|she|the patient) oriented|alert and oriented/],
-    ["avpu", /\bavpu\b/],
+    ["avpu", /\bavpu\b|a v p u|\bresponds? to (verbal|voice|pain|painful|my voice)|\b(un)?responsive to (verbal|voice|pain|painful)|(does|is) (he|she|they|the patient) respond(ing)? to (voice|verbal|me)\b|level of responsiveness|how responsive is|(is|are) (he|she|they) (alert|responsive|responding) or|what'?s (his|her|their) (level of consciousness|loc)\b|\b(alert|verbal|painful|pain|unresponsive) on (the )?avpu/],
     ["painresp", /sternal rub|trap(ezius)? (squeeze|pinch)|pain(ful)? (stimulus|stimuli|response)|respond(s|ing)? to pain|nail ?bed (pressure|pinch)|supra ?orbital/],
     ["smell", /\bsmell|\bodou?r|on (his|her|their) breath|\bfruity\b|acetone|ketones? (on|breath)/],
     ["incont", /incontinen|wet (himself|herself|themselves|his pants|her pants)|(urinated|peed|soiled) (on )?(himself|herself|themselves)|bowel or bladder|loss of bladder/],
@@ -725,7 +731,14 @@ const NLU = (() => {
     ["trauma", /trauma|head to toe|secondary (survey|assessment)|physical exam|\bdcap|check (him|her|them) for injur|any injur|rapid (trauma|assessment)|hit (his|her|your) head|look for injur/],
     ["edema", /edema|\bjvd\b|jugular|neck veins|ankles|pitting|swollen (legs|feet|ankles)|swelling in (his|her|your|the) (legs|feet|ankles|lower extremities)/],
     ["abdomen", /\babdom|\babd\b|\bbelly\b|\b[rl][ul]q\b|quadrants?|\brebound|\bguarding\b|distended|distension|rigid(ity)?\b|\btumm(y|ies)\b|stomach (sore|hurt|tender)|stomach (soft|tender|exam)|palpate (the |his |her )?(abd|belly|stomach)|is (his|her) stomach/],
-    ["airway", /check (the|his|her) airway|airway (patent|clear|open)|look in (his|her) mouth|head tilt|jaw thrust|open (the|his|her) airway/],
+    ["airway", /(check|inspect|assess|look at|examine|visuali[sz]e|evaluate|look in|look into) (the|his|her|their|your) airway|airway (patent|clear|open)|head tilt|chin lift|jaw thrust|open (the|his|her|their) airway|open (your|his|her|their|the) mouth|open (up )?wide|say ah\b|stick (your|his|her|their) tongue out|(look|looking|peek|see) (in|into|inside) (your|his|her|their|the) (mouth|throat|airway|oropharynx)|(inspect|check|examine|look at|look in|assess) (the|his|her|their|your) (mouth|throat|tongue|oropharynx|uvula|oral cavity|posterior pharynx)|penlight (in|into|to) (the|his|her|their|your) (mouth|throat)|let me (see|look at|check) (your|his|her) (mouth|tongue|throat)|any(thing)? in (his|her|their|the) mouth|foreign bod(y|ies)|(look|check) for (an? )?(obstruction|foreign)|(is|are) (his|her|the) (tongue|uvula|lips) swollen|(check|look) for (tongue|uvula) swelling|tongue (swelling|swollen)|uvula|^ ?open up( wide)?( for me)? ?$|open up (wide|for me)|(check|look) inside (the|his|her|their|your) mouth|back of (his|her|the|their|your) (throat|mouth)|blocking (his|her|the|their) airway|airway (obstruct|block)|(blood|vomit|secretions|pills?|food|gum|anything|something|dentures?|teeth) in (his|her|the|their|your) (mouth|throat)|swelling (in|of) (his|her|the|their) (mouth|throat|lips)/],
+    ["expchest", /(lift|raise|pull up|pull|open|unbutton|unzip|take off|remove|cut off|cut open|cut|move) (up )?(his|her|their|the|your) (shirt|top|blouse|gown|sweater|t shirt|hoodie|jacket|bra|dress)|(shirt|top|blouse|gown) (up|off|open)\b|(look at|inspect|examine|expose|visuali[sz]e|see|check out|look over|eyeball) (his|her|their|the|your) (bare )?(chest|torso|trunk)(?! (pain|hurt|rise))|expose (the |his |her )?(chest|torso|trunk)|look under (his|her|their|the) (shirt|top|gown)|pacemaker|implanted (device|defibrillat\w*)|\baicd\b|\bicd\b|port a cath|any (scars|surgical scars|devices)|sternotomy|(check|look) (his|her|the) (chest|torso) for (scars|rash|hives|patches|anything|marks|bruis)/],
+    ["expabd", /(look at|inspect|expose|see|check out|visuali[sz]e|look over) (his|her|their|the|your) (abdomen|belly|stomach|tummy)(?! (hurt|pain|sore|tender))|(look|check) (at )?(his|her|the) (belly|abdomen|stomach) for (scars|rash|hives|patches|bruis|injection|marks|an ostomy)|ostomy|colostomy|insulin pump|infusion site|injection sites? on (his|her|the) (belly|abdomen|stomach)/],
+    ["exparms", /(look at|inspect|check|examine|expose|check out|look over) (his|her|their|the|your|both) (arms|forearms|wrists|hands|upper arms)\b(?! for (drift|strength|weakness|deformit|injur|swelling))|roll up (his|her|their|your|the) sleeves?|(push|pull) up (his|her|their|your) sleeves?|(look|check) (at )?(his|her|their) (arms|forearms|wrists) for (patches|bracelets?|scars|rash|hives|bruis|anything)|dialysis (fistula|shunt|access)|\bfistula\b|\bav shunt\b/],
+    ["explegs", /(look at|inspect|check|examine|expose|check out|look over) (his|her|their|the|your|both) (legs|thighs|feet|knees|lower extremities|lower body)\b(?! for (swelling|edema|deformit|injur|pitting))|(pull|roll) up (his|her|their|the) (pant legs?|pants|trousers)|(look|check) under (the|his|her|their) (blanket|sheet|covers)|(pull|take) (off|down) (his|her|their|the) (pants|trousers|blanket)|mottling (on|of) (the|his|her) (knees|legs)|(is|are) (his|her) (pants|clothes) wet|(pull|lift|move|take) (back |off )?(the|his|her|their) (blanket|sheet|covers)/],
+    ["expall", /expose (him|her|them|the patient|patient)\b|full(y)? expos|exposure|(remove|cut off|cut away|take off|cut) (his|her|their|all|all of (his|her|their)|the) (clothes|clothing)|undress (him|her|them|the patient)|strip (him|her|them) (down)?|look (him|her|them) over|check (him|her|them) (all )?over|(full|whole) body (check|look|exam|survey|sweep)|look everywhere|check (his|her|their) whole body|rapid body (survey|sweep)|(get|have) (him|her|them) undressed|\bundressed\b|\bexpose (and|for|everything)\b|^ ?expose ?$|head to toe for anything/],
+    ["tracking", /track(s|ing)? (me|us|you)\b|is (he|she|the patient|they) tracking|tracking on approach|\bon approach\b|general impression|as (i|we) (walk|approach|come) (in|up)|eyes (follow|following|tracking)|does (he|she) (follow|look at|see) (me|us)|first impression|from the door(way)?|look at (him|her) as (i|we) walk/],
+    ["patches", /\bpatch(es)?\b|transdermal|duragesic/],
     ["vitals", /vitals|vital signs|full set|set of vitals|(some|a set of|get|grab) numbers on/],
     ["pulsecheck", /pulse check|check (for )?(a )?pulse\b(?! ?ox)|is there a pulse|rhythm check/],
     ["scene", /look around|\bscene\b|environment|surroundings|(the|this) room|what do i see|anything (around|nearby|on the (table|floor|counter|nightstand))/],
@@ -777,6 +790,8 @@ const NLU = (() => {
     ["transport", /\btransport\b|load (him|her|them|up|and go)|let'?s go|to the (ambulance|rig|gurney)|get (him|her) on the (gurney|stretcher)|move (him|her) to the|en route|package (him|her|them)|\blet'?s (load|roll)\b/],
     ["vagal", /valsalva|vagal|bear down|blow (into|through) (a|the) syringe/],
     ["cooling", /passive cooling|cool (him|her) down|remove (excess )?(clothing|blankets)|cold packs/],
+    ["removepatch", /(remove|removing|take off|taking off|pull off|pull|peel off|peel|get rid of|take away|discard|tear off|rip off|take) (the |that |this |his |her |their |those |these |all (the |of the )?|both )?(\w+ )?(\w+ )?patch(es)?\b|\bpatch(es)? (off|removed)\b|(remove|take off|peel off|pull off) (the |his |her )?duragesic/],
+    ["removeheat", /(remove|take|turn off|switch off|unplug|get|pull|shut off) .*\b(heating pad|heat pad|electric blanket|heat source)|(heating pad|heat pad|electric blanket) (off|away|out)\b/],
     ["leavebehind", /leave ?behind|naloxone kit|leave (you|him|her) (a |some )?narcan/],
   ];
   const GIVE = /\b(give|giving|administer|push|pushing|start|starting|hang|hanging|put|putting|place|placing|apply|applying|let'?s|go ahead|i'?m going to|i'll|we'll|we'?re going to|gonna|initiate|deliver|spray|squirt|draw up|establish|drill|get (an?|the|him|her)|need (an?|the)|want to|charge|sit|lay|load|package|call|contact|have (him|her|them)|do (a|an|the)|perform|bag)\b/;
@@ -811,6 +826,8 @@ const NLU = (() => {
     for (const [id, re] of T) if (re.test(t)) out.tx.push({ id });
     let ids = out.tx.map(x => x.id);
     const drop = id => { out.tx = out.tx.filter(x => x.id !== id); ids = out.tx.map(x => x.id); };
+    if (/\bpatch(es)?\b|duragesic|heating pad/.test(t)) ["fentanyl", "nitro", "transport"].forEach(drop);
+    if (ids.includes("removeheat") && ids.includes("removepatch") && !/patch/.test(t)) drop("removepatch");
     if (ids.includes("o2") && ["nrb", "nc", "cpap", "bvm"].some(x => ids.includes(x))) drop("o2");
     if (ids.includes("nrb") && ids.includes("nc")) drop("nc");
     if (ids.includes("pushepi")) drop("epi");
@@ -825,7 +842,7 @@ const NLU = (() => {
     const needsVerb = ["iv", "ns", "o2", "nc", "nrb", "fowler", "supine", "transport", "defib", "epi", "d10", "oralglucose", "albuterol", "cpr", "suction", "protect", "aspirin", "nitro", "naloxone", "glucagon", "fentanyl", "morphine", "midaz", "ondansetron", "diphen", "amio", "atropine", "pushepi", "io", "bvm", "cpap", "sga", "opa", "calcium", "bicarb", "ketorolac", "pace", "base", "notify", "cooling"];
     const doses = parseDose(t);
     out.tx = out.tx.filter(x => {
-      if (isQuestionAboutUse && !/\b(i'?m going to|i'?ll|we'?ll|let'?s|we'?re going to|give|administer)\b/.test(t)) return false;
+      if (isQuestionAboutUse && !/\bpatch(es)?\b|heating pad|\b(i'?m going to|i'?ll|we'?ll|let'?s|we'?re going to|give|administer)\b/.test(t)) return false;
       if (!needsVerb.includes(x.id)) return true;
       if (hasGive || doses.length) return true;
       if (/^\s*(can|could|would) you\b/.test(t)) return true; // requests
@@ -935,7 +952,13 @@ const NLU = (() => {
     "a:head": ["check head face and neck for injuries", "dcap btls"],
     "a:smell": ["what does his breath smell like", "any odor"],
     "a:medbottles": ["look for medication bottles", "any pill bottles around"],
-    "a:airway": ["check the airway", "is the airway patent", "look in the mouth"],
+    "a:airway": ["check the airway", "is the airway patent", "look in the mouth", "open your mouth for me", "let me see inside your mouth", "look in her throat with a penlight"],
+    "a:expchest": ["lift his shirt", "expose the chest", "take her shirt off", "look at his chest", "let me see your chest"],
+    "a:expall": ["expose the patient", "cut off his clothes", "undress her", "full exposure"],
+    "a:exparms": ["look at his arms", "roll up her sleeves"],
+    "a:explegs": ["look at his legs", "pull up her pant legs"],
+    "a:expabd": ["look at her belly", "inspect his abdomen"],
+    "a:patches": ["any patches on her", "look for medication patches"],
   };
   const STOP = new Set("the a an and or to of in on at for with is are was were be been do does did you your yours he she his her it its this that me my i we us our can could would please okay ok so just any some there here".split(" "));
   const stem = w => w.replace(/(ing|ed|es|s)$/, "").replace(/(.)\1$/, "$1");
@@ -1025,6 +1048,29 @@ const NLU = (() => {
       if (has("back")) out.questions = out.questions.filter(x => x !== "radiation");
       if (has("trachea")) drop("airway");
       if (has("pulse") && /pedal pulse|distal pulse/.test(t)) drop("edema");
+      if (out.tx.some(x => x.id === "removepatch" || x.id === "removeheat")) drop("patches", "expchest", "expabd", "exparms", "explegs", "expall", "back");
+      if (has("patches") && ["expchest", "expabd", "exparms", "explegs", "back", "expall"].some(has) && !/any (medication |med )?patch|look for (a |any )?patch|check for (a |any )?patch/.test(t)) drop("patches");
+      if (["expchest", "expabd", "exparms", "explegs", "expall", "patches", "airway", "back"].some(has)) out.questions = out.questions.filter(x => !["swelling", "rash", "nausea", "pregnant"].includes(x));
+      if (has("patches") && /\b(do|does|did) (you|he|she|they) (wear|use|have|put on|take|get)\b/.test(t)) { drop("patches"); if (!out.questions.includes("meds")) out.questions.push("meds"); }
+      else if (["patches", "expabd"].some(has) && !/\b(what|which) (medic|meds)|any (medic\w*|meds)\b(?! patch)/.test(t)) out.questions = out.questions.filter(x => x !== "meds");
+      if (/\b(do|does|did|have|has) (you|he|she|they) (have|got|had|ever)\b.*\b(pacemaker|defibrillat\w*|\bicd\b|aicd|port a cath)/.test(t)) { drop("expchest"); out.tx = out.tx.filter(x => x.id !== "defib"); if (!out.questions.includes("history")) out.questions.push("history"); }
+      if (has("expabd") && /insulin pump|injection site/.test(t)) { drop("tracks"); out.questions = out.questions.filter(x => x !== "meds"); }
+      if (has("back") && /look|check|inspect/.test(t)) out.tx = out.tx.filter(x => x.id !== "recovery");
+      if (has("tracking")) { drop("skin", "pulse", "scene"); out.questions = out.questions.filter(x => x !== "understand"); }
+      if (has("expchest")) drop("expabd", "trauma", "skin", "hives");
+      if (["expchest", "expabd", "exparms", "explegs"].some(has)) drop("expall");
+      if (has("expall")) drop("trauma", "skin", "hives", "back", "tracks");
+      if (has("expabd") && !/palpat|press|push|tender|soft|feel/.test(t)) drop("abdomen");
+      if (has("exparms") && (has("tracks") || has("neuro") || has("extrem"))) drop("exparms");
+      if (has("exparms")) { drop("medalert"); if (!/track|needle/.test(t)) drop("tracks"); }
+      if (has("explegs") && has("extrem") && /(look|inspect|expose) .*lower extremit/.test(t) && !/for (swelling|edema|deformit|injur)|palpat|feel/.test(t)) drop("extrem");
+      if (has("explegs") && (out.assess.includes("edema") || out.assess.includes("extrem"))) drop("explegs");
+      if (has("avpu") && !/gcs|glasgow/.test(t)) drop("gcs");
+      if (has("avpu") && has("painresp") && !/avpu|verbal|voice/.test(t)) drop("avpu");
+      if (has("explegs")) drop("incont");
+      if (has("airway") && has("tongue") && /\bbit|lacerat|look at (his|her|their|the) tongue|tongue (bite|bitten)/.test(t) && !/swell|swollen|open|stick/.test(t)) drop("airway");
+      if (out.assess.includes("airway")) { drop("tongue", "pupils", "hives"); out.questions = out.questions.filter(x => !["swelling", "understand", "consent"].includes(x)); if (!/smell|odou?r/.test(t)) drop("smell"); if (!/jvd|neck veins/.test(t)) drop("head"); }
+      if (has("back")) drop("trauma");
     }
     if (out.questions.includes("history") && /high blood pressure|hypertension/.test(t) && !/check|take|get|what'?s (his|her|the)/.test(t)) out.assess = out.assess.filter(a => a !== "bp");
     if (out.questions.includes("palpitations")) out.questions = out.questions.filter(x => x !== "quality");
@@ -1072,7 +1118,7 @@ if (typeof module !== "undefined") module.exports = NLU;
 const EFFECTS = { // onset s, plateau s
   nitro: [60, 300], fentanyl: [120, 900], morphine: [300, 1200], epi: [150, 600], pushepi: [30, 180], ns: [300, 1800],
   albuterol: [150, 600], naloxone: [180, 2400], midaz: [180, 1800], d10: [60, 240], glucagon: [600, 600], oralglucose: [300, 300],
-  diphen: [120, 1200], ondansetron: [300, 1800], amio: [60, 900], atropine: [30, 300], aspirin: [600, 99999], adenosine: [8, 20], vagal: [10, 20], cardiovert: [2, 99999], pace: [10, 99999], calcium: [60, 600], bicarb: [60, 600], cooling: [300, 99999], fowler: [30, 99999], cpap: [60, 99999],
+  diphen: [120, 1200], ondansetron: [300, 1800], amio: [60, 900], atropine: [30, 300], aspirin: [600, 99999], adenosine: [8, 20], vagal: [10, 20], cardiovert: [2, 99999], pace: [10, 99999], calcium: [60, 600], bicarb: [60, 600], removepatch: [480, 99999], removeheat: [600, 99999], cooling: [300, 99999], fowler: [30, 99999], cpap: [60, 99999],
 };
 function E(st, key) {
   let sum = 0;
@@ -1089,7 +1135,7 @@ const fmtT = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s /
 
 const SIM = (() => {
   let sc = null, st = null, timer = null, ui = null, lastInteraction = 0, lastAmbient = 0;
-  const TX_LABEL = { cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing" };
+  const TX_LABEL = { cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing", removepatch: "Medication patch removed", removeheat: "Heating pad removed" };
 
   function newState(scn) {
     return { t: 0, sev: scn.startSev || 0.5, flags: { o2: null, position: null }, count: {}, last: {}, eff: [], x: {}, v: {}, rev: {}, events: {}, log: [], devs: [], lastNitroDose: 0, pi: null, piT: null, ended: false };
@@ -1098,6 +1144,7 @@ const SIM = (() => {
     stop(); sc = scn; ui = uiApi; st = newState(scn); if (NLU.reset) NLU.reset();
     if (sc.init) sc.init(st);
     computeTargets(true);
+    st.x.m0 = mental(); st.x.v0 = Object.assign({}, st.v); st.x.aw0 = String(st.tg.airway || "");
     lastInteraction = 0; lastAmbient = 0;
     log("sys", `Scenario started: ${sc.dispatchTitle || sc.title}`);
     timer = setInterval(() => tick(1), 1000);
@@ -1139,7 +1186,7 @@ const SIM = (() => {
   function mental() { return sc.mental ? sc.mental(st) : "alert"; }
   function event(text, kind = "sys") { log(kind === "warn" ? "warn" : "find", text); ui.say([{ speaker: kind === "warn" ? "warn" : "find", text }]); }
   function log(kind, text) { st.log.push({ t: st.t, kind, text }); }
-  function rec(key) { (st.events[key] = st.events[key] || []).push(st.t); }
+  function rec(key) { (st.events[key] = st.events[key] || []).push(st.t); st.evOrder = st.evOrder || {}; if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1); }
   function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); log("warn", `${level.toUpperCase()}: ${text} [Ref. ${ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [LA County Ref. ${ref}]` }; }
 
   // ---------- assessments ----------
@@ -1187,7 +1234,19 @@ const SIM = (() => {
         const nt = /lams|mlapss|lapss|stroke|droop|drift|grip/.test(t) ? strokeScreen() : tg.neuro; R("neuro", nt); out.push(`Neuro: ${nt}`); break; }
       case "trauma": out.push(`Trauma assessment: ${tg.trauma}.`); break;
       case "edema": out.push(X("edema")); break;
-      case "airway": out.push(X("airway")); break;
+      case "airway": {
+        const r = INSPECT.view("mouth", sc, st, lastText, mental());
+        if (r.pt) (st.x.preLines = st.x.preLines || []).push(r.pt);
+        const aw = String(tg.airway || "Patent");
+        out.push(r.find + (/^patent\b/i.test(aw) && !/;|,/.test(aw) ? " Airway patent." : " Airway status: " + aw.replace(/\.$/, "") + "."));
+        R("airway", aw); break; }
+      case "expchest": case "expabd": case "exparms": case "explegs": case "expall": case "patches": {
+        const reg = { expchest: "chest", expabd: "abdomen", exparms: "arms", explegs: "legs", expall: "all", patches: "patches" }[id];
+        const r = INSPECT.view(reg, sc, st, lastText, mental());
+        if (r.pt) (st.x.preLines = st.x.preLines || []).push(r.pt);
+        st.x.exposed = Object.assign(st.x.exposed || {}, { [reg]: st.t }); rec("a:exposed");
+        out.push(r.find); break; }
+      case "back": out.push(X("back") + " On inspection: " + INSPECT.backLook(sc, st, lastText, mental())); rec("a:exposed"); break;
       case "abdomen": out.push(X("abdomen")); break;
       case "scene": out.push(`Scene: ${sc.scene}${sc.sceneMore ? " " + sc.sceneMore : ""}`); break;
       case "vitals": ["pulse", "bp", "rr", "spo2", "skin"].forEach(k => out.push(...assess(k))); break;
@@ -1331,6 +1390,17 @@ const SIM = (() => {
       case "base": narr = "Base hospital contacted"; break;
       case "notify": narr = "Receiving center notified" + (st.rev.twelve ? " and 12-lead transmitted" : ""); break;
       case "transport": narr = "Packaged for transport"; break;
+      case "removepatch": {
+        const r = INSPECT.removePatch(sc, st, tx.raw || "");
+        const NM = d => (INSPECT.PATCH_NAMES[d] || d);
+        if (!r.removed.length) {
+          const msg = r.unseen ? "You haven't found a patch yet. Expose the patient and look (chest, back, arms, legs) to find it first." : r.none ? "You don't find any medication patch on this patient." : r.already ? "The patch has already been removed." : `There's no ${NM(r.want)} patch on this patient. You do see: ${r.other.map(p => typeof p.text === "function" ? p.text(st) : p.text).join("; ")}.`;
+          log("assess", msg); return [{ speaker: "find", text: msg }];
+        }
+        r.removed.forEach(p => rec("t:removepatch:" + p.drug));
+        narr = (r.removed.length > 1 ? `${r.removed.length} ${NM(r.removed[0].drug)} patches removed` : `${cap1(NM(r.removed[0].drug))} patch removed`) + " (folded sticky sides together and bagged to bring to the ED)";
+        break; }
+      case "removeheat": if (!sc.heatPad) { log("assess", "No heating pad"); return [{ speaker: "find", text: "There's no heating pad or heat source on the patient." }]; } st.x.heatOff = st.t; narr = "Heating pad switched off and removed from under the patient"; break;
     }
     if (id !== "midaz") { st.count[id] = (st.count[id] || 0) + 1; rec("t:" + id); if (id === "albuterol" && n(st, "albuterol") >= 2) rec("t:albuterol#2"); if (n(st, id) >= 2) rec("t:" + id + "#2"); }
     if (st.x.rosc) rec("t:" + id + "@rosc");
@@ -1348,6 +1418,7 @@ const SIM = (() => {
     computeTargets(false); ui.render();
     return out;
   }
+  const cap1 = s => s ? s[0].toUpperCase() + s.slice(1) : s;
   function reaction(id, m) {
     if (["unresponsive"].includes(m) && ["iv", "io", "opa", "pace"].includes(id)) { const g = st.tg.gcs || [1, 1, 1]; return { speaker: "narrator", text: g[2] >= 4 ? "(withdraws from the painful stimulus, moans)" : g[2] >= 2 ? "(abnormal posturing to the stimulus)" : "(no response to the painful stimulus)" }; }
     if (id === "opa" && ["unresponsive"].includes(m)) return null;
@@ -1367,13 +1438,15 @@ const SIM = (() => {
     if (parsed.questions.includes("reassure") && ["alert", "anxious", "confused", "aphasic"].includes(mental())) { st.x.calmT = st.t; st.x.calmN = (st.x.calmN || 0) + 1; }
     log("me", text);
     parsed.questions.forEach(q => rec("q:" + q));
-    const find = [];
+    const find = []; st.x.preLines = [];
     parsed.assess.forEach(a => find.push(...assess(a)));
+    const pre = (st.x.preLines || []).map(t => ({ speaker: "patient", text: t })); st.x.preLines = [];
+    pre.forEach(p => log("patient", p.text));
     let reactions = [];
     parsed.tx.forEach(tx => reactions.push(...treat(tx)));
-    const out = [];
+    const out = [...pre];
     if (find.length) out.push({ speaker: "find", text: (parsed.byCrew ? "Your partner reports: " : "") + find.join("\n") });
-    const ctx = { utterance: text, parsed, scenario: sc, state: st, mental: mental(), reactions, history: ui.history() };
+    const ctx = { utterance: text, parsed, scenario: sc, state: st, mental: mental(), reactions, history: ui.history(), complied: pre.length > 0 };
     const replies = await PatientEngine.reply(ctx);
     replies.forEach(r => { if (["patient", "bystander"].includes(r.speaker)) log(r.speaker, r.text); });
     out.push(...replies);
@@ -1392,11 +1465,55 @@ const SIM = (() => {
   function checklist() {
     return (sc.checklist || []).map(c => ({ ...c, done: c.all ? c.keys.every(keyDone) : (c.keys.some(k => k.startsWith("!")) ? c.keys.every(keyDone) : c.keys.some(keyDone)), time: firstTime(c.keys) }));
   }
+  // ---------- assessment flow (instructor's expected order) ----------
+  // tracking → intro/consent → radial+carotid → skin/forehead → partner BP/SpO2/RR → chief complaint
+  // → AVPU → fix ABCs/life threats → A&O → if altered find why → history/allergies/meds/OPQRST/negatives → treat & transport.
+  // Early hands-on steps (1-6) may be done in any reasonable order; A&O before AVPU/ABC fixes is flagged.
+  const FIX_KEYS = ["t:opa", "t:suction", "t:bvm", "t:sga", "t:nrb", "t:nc", "t:o2", "t:cpap", "t:cpr", "t:defib", "t:bandage", "t:epi", "t:pushepi", "t:naloxone", "t:pace", "t:cardiovert", "t:removepatch", "t:removeheat", "t:midaz", "t:ns", "t:recovery", "t:supine", "t:d10", "t:glucagon", "t:atropine", "a:airway"];
+  function flow() {
+    const ev = k => (st.events[k] || [])[0], ord = k => (st.evOrder || {})[k] != null ? st.evOrder[k] : (st.events[k] ? 1e6 + st.events[k][0] : null);
+    const first = keys => keys.reduce((t, k) => { const e = ev(k); return e != null && (t == null || e < t) ? e : t; }, null);
+    const firstI = keys => keys.reduce((t, k) => { const e = ord(k); return e != null && (t == null || e < t) ? e : t; }, null);
+    const m0 = st.x.m0 || "alert", v0 = st.x.v0 || {}, aw0 = st.x.aw0 || "";
+    const altered = !["alert", "anxious"].includes(m0), cantTalk = ["unresponsive", "arrest", "seizing"].includes(m0);
+    const abcNeeded = cantTalk || (v0.spo2 != null && v0.spo2 < 92) || (v0.sbp != null && v0.sbp > 0 && v0.sbp < 90) || (v0.rr != null && (v0.rr < 10 || v0.rr >= 28)) || /stridor|obstruct|snor|froth|secretion|apneic|swell|drool|at risk/i.test(aw0);
+    const OPQRST = ["q:onset", "q:provocation", "q:quality", "q:radiation", "q:severity", "q:time"], NEG = ["q:sob", "q:chestpain", "q:nausea", "q:dizzy", "q:headache", "q:weakness", "q:syncope", "q:fever", "q:cough", "q:blood", "q:swelling", "q:palpitations"];
+    const S = [
+      { id: "track", label: "Tracking on approach (general impression)", keys: ["a:tracking", "a:scene"] },
+      { id: "intro", label: "Introduce yourself / consent", keys: ["q:greet", "q:consent"] },
+      { id: "pulses", label: "Radial + carotid pulses", keys: ["a:pulse", "a:pulsecheck"] },
+      { id: "skin", label: "Skin signs (feel the forehead: temp, moisture, color)", keys: ["a:skin", "a:caprefill"] },
+      { id: "partner", label: "Partner gets BP, SpO2, RR", keys: ["a:bp", "a:spo2", "a:rr", "a:vitals"] },
+      { id: "cc", label: "Chief complaint", keys: ["q:cc"] },
+      { id: "avpu", label: "AVPU", keys: ["a:avpu", "a:painresp"] },
+      { id: "abc", label: "Fix ABCs / life threats", keys: FIX_KEYS, na: !abcNeeded, naText: "No immediate airway, breathing or circulation threat at the start of this call." },
+      { id: "ao", label: "A&O (orientation)", keys: ["a:orient4", "q:orient"], na: m0 === "arrest" || m0 === "seizing", naText: "Not assessable (pulseless or actively seizing)." },
+      { id: "why", label: "Altered? Find why (BGL, pupils, trauma, tox/drugs, stroke screen, smell, exposure)", keys: ["a:bgl", "a:pupils", "a:trauma", "a:head", "a:neuro", "q:drugs", "a:smell", "a:medbottles", "a:exposed", "a:patches"], na: !altered, naText: "Patient was alert and oriented; no altered mental status to work up." },
+      { id: "hx", label: "History, allergies, meds, OPQRST, pertinent negatives", keys: ["q:history", "q:allergies", "q:meds", ...OPQRST, ...NEG] },
+      { id: "tx", label: "Treat and transport", keys: ["t:transport"] },
+    ];
+    for (const s of S) { s.t = first(s.keys); s.i = firstI(s.keys); s.done = s.t != null; }
+    const P = S.find(s => s.id === "partner"); { const got = [["BP", "a:bp"], ["SpO2", "a:spo2"], ["RR", "a:rr"]].map(([n, k]) => [n, !!st.events[k] || !!st.events["a:vitals"]]); P.note = got.map(([n, ok]) => `${n} ${ok ? "✔" : "✘"}`).join(" · "); }
+    const H = S.find(s => s.id === "hx"); H.note = `history ${st.events["q:history"] ? "✔" : "✘"} · allergies ${st.events["q:allergies"] ? "✔" : "✘"} · meds ${st.events["q:meds"] ? "✔" : "✘"} · OPQRST ${OPQRST.filter(k => st.events[k]).length}/6 · pertinent negatives asked: ${NEG.filter(k => st.events[k]).length}`;
+    const T = S.find(s => s.id === "tx"); const anyTx = Object.keys(st.events).filter(k => k.startsWith("t:") && !/transport/.test(k)).map(k => st.events[k][0]); T.note = `${anyTx.length ? "treatment started at " + fmtT(Math.min(...anyTx)) : "no treatment given"}${st.events["t:transport"] ? " · transport at " + fmtT(ev("t:transport")) : " · transport not initiated"}`;
+    const A = S.find(s => s.id === "abc"); if (A.done && abcNeeded) A.note = "first ABC intervention at " + fmtT(A.t);
+    const flags = [], g = id => S.find(s => s.id === id);
+    const ao = g("ao"), avpu = g("avpu"), abc = g("abc");
+    if (ao.done && !ao.na) {
+      if (!avpu.done) flags.push("A&O was assessed but AVPU never was. Get the AVPU level first, then fix ABCs, then A&O.");
+      else if (ao.i < avpu.i) flags.push(`A&O (${fmtT(ao.t)}) was done before AVPU (${fmtT(avpu.t)}). AVPU comes first.`);
+      if (abcNeeded && (!abc.done || ao.i < abc.i)) flags.push(abc.done ? `A&O (${fmtT(ao.t)}) was done before fixing the ABCs / life threats (${fmtT(abc.t)}). Fix ABCs first, then A&O.` : "A&O was assessed, but the ABC problem / life threat was never fixed.");
+    }
+    for (const id of ["why", "hx"]) { const s = g(id); if (abcNeeded && s.done && !s.na && abc.done && s.i < abc.i) flags.push(`${s.label.split(" (")[0].split(",")[0]} started (${fmtT(s.t)}) before the ABCs / life threats were fixed (${fmtT(abc.t)}).`); }
+    if (abcNeeded && !abc.done) flags.push("This patient had an ABC problem / life threat at the start, and no ABC intervention was recorded.");
+    const seq = S.filter(s => s.done && !s.na).sort((a, b) => a.i - b.i).map(s => s.label.split(" (")[0].split(",")[0]);
+    return { steps: S, flags, seq, abcNeeded, altered };
+  }
   function nextHint() { const c = checklist().find(c => !c.done && !c.optional && !c.keys[0].startsWith("!")); return c ? `${c.label} (Ref. ${c.ref})` : null; }
   function setPI(code) { st.pi = code; st.piT = st.t; log("pi", `Provider Impression selected: ${code} – ${(PROVIDER_IMPRESSIONS[code] || [code])[0]}`); }
   function end() { st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() }; }
 
-  return { start, stop, handle, end, event, mental, setPI, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
+  return { start, stop, handle, end, event, mental, setPI, flow, get state() { return st; }, get scenario() { return sc; }, checklist, tick };
 })();
 
 /* ===== exam.js ===== */
@@ -1567,7 +1684,7 @@ const EXAM = (() => {
       if (m === "confused") return x.g[1] >= 4 ? "Alert and oriented times one: knows their name but not the place, time or event." : "Disoriented times four.";
       return "Alert and oriented times four: person, place, time and event.";
     },
-    avpu(x) { const { m, g } = x; if (x.arrest) return "AVPU: U, unresponsive."; if (m === "seizing") return "AVPU: U, actively seizing."; if (m === "unresponsive") return g[2] >= 4 ? "AVPU: P, responds to pain." : g[2] >= 2 ? "AVPU: P, abnormal posturing to pain." : "AVPU: U, unresponsive."; if (m === "confused") return g[0] >= 4 ? "AVPU: A, but confused." : "AVPU: V, responds to verbal stimuli."; return "AVPU: A, alert."; },
+    avpu(x) { const { m, g } = x; if (x.arrest) return "AVPU: U, unresponsive."; if (m === "seizing") return "AVPU: U, actively seizing."; if (m === "unresponsive" && g[0] >= 3) return "AVPU: V, responds to verbal stimuli (opens eyes to your voice)."; if (m === "unresponsive") return g[2] >= 4 ? "AVPU: P, responds to pain." : g[2] >= 2 ? "AVPU: P, abnormal posturing to pain." : "AVPU: U, unresponsive."; if (m === "confused") return g[0] >= 4 ? "AVPU: A, but confused." : "AVPU: V, responds to verbal stimuli."; return "AVPU: A, alert."; },
     painresp(x) { const { m, g } = x; if (x.arrest) return "No response to painful stimulus."; if (m === "unresponsive" || m === "seizing") return [, "No response to painful stimulus.", "Extension posturing to pain.", "Abnormal flexion to pain.", "Withdraws from pain.", "Localizes to pain.", "Localizes to pain."][g[2]] || "Withdraws from pain."; if (m === "confused") return "Localizes and pushes your hand away."; return "The patient is alert and objects appropriately to the stimulus. A painful stimulus isn't indicated."; },
     smell(x) { const s = x.tg.skin || ""; if (/fruity|acetone/.test(s)) return "Fruity, acetone odor on the breath."; if (/alcohol/i.test(x.sc.scene || "")) return "Odor of alcohol on the breath."; return "No unusual odors: no alcohol, ketones or smoke."; },
     incont(x) { return /incontinent|wet stain/i.test(x.sc.scene || "") ? "Urinary incontinence present." : "No urinary or fecal incontinence."; },
@@ -1580,6 +1697,16 @@ const EXAM = (() => {
       const onScene = /bottle|pill|pharmacy|medication|insulin|inhaler|nebulizer|concentrator/i.test((sc.scene || "") + " " + (sc.sceneMore || ""));
       if (names.length) return `${onScene ? "Medications found on scene" : "Medications (from the patient and family)"}: ${names.map(cap).join(", ")}.`;
       return onScene ? "There are medication bottles on scene; read the labels or ask the family." : "No medication bottles found on scene.";
+    },
+    tracking(x) {
+      const { m, v } = x;
+      if (x.arrest) return "On approach: the patient is motionless, eyes closed, not breathing normally; no response to your arrival.";
+      if (m === "seizing") return "On approach: eyes deviated and not tracking; the patient is actively seizing.";
+      if (m === "unresponsive") return x.g[0] >= 3 ? "On approach: eyes closed; they flutter open briefly when you speak, but the patient doesn't track you." : "On approach: eyes closed; the patient doesn't track you or react to your arrival.";
+      if (m === "confused") return "On approach: eyes open, but the patient tracks you inconsistently and looks past you.";
+      if (m === "aphasic") return "On approach: eyes open and tracking you; the patient looks frightened and tries to speak.";
+      const dysp = v.rr >= 26 || (v.spo2 != null && v.spo2 < 90);
+      return "On approach: eyes open and tracking you as you walk in" + (dysp ? "; the patient is visibly working hard to breathe." : x.shock ? "; the patient looks pale and unwell." : ".");
     },
     tracks() { return "No track marks or injection sites."; },
     hives(x) { const s = x.tg.skin || ""; const h = pick(s, /hive|urtic|wheal|rash|welt|petech/i); return h.length ? cap(h.join(", ")) + "." : "No rash, hives or petechiae."; },
@@ -1603,6 +1730,228 @@ const EXAM = (() => {
     return fn ? end(fn(x)) : null;
   }
   return { find, has: k => !!D[KEYMAP[k] || k] || ["radial", "carotid", "femoral", "pedal"].includes(k), D, EXAM_X };
+})();
+
+/* ===== inspect.js ===== */
+/* =====================================================================
+ * INSPECTION / EXPOSURE ENGINE: what the medic SEES when they look in
+ * the mouth or expose a body region. The instructor describes it.
+ *   view(region, sc, st, text, mental) -> { pt: compliance line|null, find }
+ *   regions: mouth, chest (lift shirt = chest + abdomen), abdomen, back,
+ *            arms, legs, all (full exposure), patches (look for patches)
+ * Precedence per region: scenario-authored (sc.inspect / INSPECT_X[id]),
+ * then patches/devices in that region, then cues derived from the LIVE
+ * state (hives fade, cyanosis clears, mottling appears in shock...).
+ * Patches are real objects: SIM "removepatch" takes them off (st.x.patchOff).
+ * ===================================================================== */
+const INSPECT = (() => {
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+  const end = s => { s = String(s).trim(); return /[.!?)]$/.test(s) ? s : s + "."; };
+  const val = (x, st, c) => typeof x === "function" ? x(st, c) : x;
+  const hivesNow = st => /hive|urtic|wheal|welt/i.test(st.tg.skin || "") && !/fading|residual/i.test(st.tg.skin || "");
+  const hivesFading = st => /fading|residual/i.test(st.tg.skin || "");
+  const sev = st => st.sev == null ? 0.5 : st.sev;
+  const PATCH_NAMES = { fentanyl: "fentanyl", nitro: "nitroglycerin", clonidine: "clonidine", nicotine: "nicotine", scopolamine: "scopolamine", estrogen: "estrogen", lidocaine: "lidocaine", buprenorphine: "buprenorphine", testosterone: "testosterone" };
+
+  // ---- authored findings per scenario ----
+  const INSPECT_X = {
+    stemi: { arms: "Nicotine-stained fingers on the right hand. No track marks or medical jewelry." },
+    chf: { mouth: "Pink, frothy sputum at the lips and pooling in the back of the throat; tongue normal size; upper denture in place and secure.", back: "Sacral edema: your thumb leaves a deep pit over the sacrum. No pressure injuries." },
+    anaph: {
+      mouth: st => sev(st) > 0.3 && sev(st) <= 0.6 && !E(st, "epi") ? "Lips swollen; the tongue is mildly swollen and the uvula slightly enlarged; voice hoarse; she's handling her secretions for now. No stridor." : sev(st) > 0.6 ? "Lips markedly swollen. The tongue is visibly swollen and fills more of the mouth than normal; the uvula is swollen and boggy. Drooling; voice hoarse and muffled" + (sev(st) > 0.85 ? "; inspiratory stridor is now audible" : "") + "." : sev(st) > 0.3 ? "Lips and tongue still swollen, but less than before epinephrine; uvula mildly swollen; she's handling her secretions." : "Mild residual lip swelling; tongue and uvula look nearly normal; voice clearer.",
+      mouthPt: st => sev(st) > 0.3 && !E(st, "epi") ? "Ahh... (muffled, thick voice) my tongue... feels so big..." : "Ahh... (opens wide) it feels less tight now.",
+      chest: st => hivesNow(st) ? "Confluent, raised red hives across the chest, neck and upper back; the skin is flushed bright red." : hivesFading(st) ? "Hives on the chest are flattening and fading; flushing is much less." : "Faint, blotchy residual redness; hives have mostly resolved.",
+      arms: st => hivesNow(st) ? "Raised hives and fresh scratch marks on both forearms; hands cool." : "Scratch marks on both forearms; the hives are fading.",
+      legs: st => hivesNow(st) ? "Hives scattered over both thighs; feet cool to the touch." : "A few fading welts on the thighs.",
+    },
+    asthma: { chest: st => st.v.spo2 < 92 || st.v.rr >= 28 ? "Suprasternal, intercostal and subcostal retractions with every breath; neck (sternocleidomastoid) muscles straining. No scars, patches or rashes." : "Mild intercostal retractions only; neck muscles relaxed now. No scars or patches.", mouth: "Mucous membranes pink and moist; no swelling or foreign body; breath smells of smoke." },
+    hypo: { abdomen: "Multiple small injection sites around the umbilicus with mild lipohypertrophy (soft fatty lumps) from insulin injections. No bruising.", mouth: "Mucous membranes moist; no tongue bite; no food or candy in the mouth. He isn't reliably protecting his airway for anything by mouth right now." },
+    opioid: {
+      mouth: st => SIM.mental() === "unresponsive" ? "The tongue has fallen back against the posterior pharynx (the cause of the snoring). A small amount of frothy saliva; no vomit, pills or foreign body; teeth intact. An OPA or NPA would hold the airway open." : "Mouth clear; tongue normal; no secretions; teeth intact.",
+      arms: "No fresh track marks; a few old, faded scars in the left antecubital fossa. No medical jewelry.",
+    },
+    stroke: { mouth: "Saliva pooling on the right side of the mouth with drooling from the right corner. The tongue deviates slightly to the right when she tries to stick it out. Upper partial denture in place.", arms: "Scattered bruises on both forearms (she's on a blood thinner). No other findings." },
+    seizure: {
+      mouth: st => SIM.mental() === "seizing" ? "Jaw clenched during the seizure; you can't open the mouth, and nothing should be forced in. Blood-tinged froth at the lips and gurgling secretions in the back of the throat; she needs suctioning and an NPA." : "Lateral tongue laceration on the right side, still oozing; blood-tinged saliva. No loose teeth or foreign body.",
+      legs: "Urine-soaked pants (urinary incontinence). No injuries to the legs.",
+      chest: "Medical ID necklace: 'Epilepsy – Keppra'. No rashes or injuries.",
+    },
+    vf: { mouth: "Some vomit in the posterior pharynx; suction it before you ventilate. No dentures.", chest: "A large tattoo across the upper chest reads 'DO NOT RESUSCITATE'. A tattoo is not one of the valid DNR forms in Ref. 815 (EMS prehospital DNR form, DNR medallion, POLST with DNR checked, or an advance directive). No scars, patches or implanted device." },
+    dissection: { arms: "The left hand and forearm look paler and are cooler than the right.", legs: "The left foot is slightly paler and cooler than the right." },
+    stemi_brady: { arms: "A small healed puncture scar over the right wrist (radial artery access from his 2015 stent). No medical jewelry.", chest: "No sternotomy scar; no pacemaker. Pale and sweaty." },
+    chf_cp: { chest: "A healed midline sternotomy scar (prior bypass surgery). Barrel-shaped chest with accessory muscle use. No patches or devices.", mouth: "Lips dusky; no frothy sputum; upper and lower dentures in place." },
+    chf_soft: { arms: "Scattered bruises on both forearms (on warfarin). No other findings." },
+    allergy_hives: {
+      chest: st => hivesNow(st) ? "Raised, blanching urticarial wheals across the chest and abdomen. No flushing of the face." : "A few faint residual welts on the chest.",
+      arms: st => hivesNow(st) ? "Raised, blanching wheals with scratch marks on both arms." : "Faint welts and scratch marks on the arms.",
+      mouth: "No lip, tongue or uvula swelling. Voice normal, no stridor. Mucous membranes pink and moist.",
+    },
+    anaph_gi: { chest: st => hivesNow(st) ? "Scattered raised hives across the chest and abdomen (hidden under the shirt until now); chest flushed." : "Fading hives on the trunk; flushing settling.", mouth: "Traces of vomit in the mouth; no lip, tongue or uvula swelling." },
+    copd: { chest: "Barrel chest with pursed-lip breathing and accessory neck-muscle use. No scars.", mouth: "Pursed lips with mild cyanosis; no secretions; smells of cigarette smoke.", patches: [{ drug: "nicotine", region: "arms", text: "a nicotine patch (21 mg) on the right upper arm" }] },
+    pe: { legs: "The LEFT calf is visibly swollen compared with the right; the skin over it is warm and taut. The right leg is normal." },
+    hypo_elder: { mouth: "Upper and lower dentures; the upper denture is loose. Mucous membranes moist; no food or pills in the mouth.", back: "Redness over the sacrum and right hip from lying on the floor overnight; the skin is intact.", legs: "A bruise over the right hip; legs equal length, not rotated." },
+    dka: { mouth: "Very dry, cracked lips and a dry, furrowed tongue; strong fruity (acetone) odor on the breath.", abdomen: "Old insulin-pump infusion sites on the abdomen; the most recent one, on the left lower abdomen, is red and irritated. No pump is attached." },
+    etoh: { mouth: "Strong odor of alcohol; poor dentition; no vomit or blood in the mouth.", chest: "Several spider angiomas on the upper chest. Faded tattoos on both shoulders. No bruising.", arms: "Faded tattoos on both forearms; no track marks." },
+    bb_od: { mouth: "Small white pill fragments on the tongue and between the teeth; mucous membranes moist." },
+    stroke_lams5: { mouth: "Saliva pooling with drooling from the left corner of the mouth; no vomit; he's barely managing his secretions." },
+    postictal_etoh: { mouth: "A bitten right lateral tongue with a small laceration; blood-tinged saliva; strong odor of stale alcohol.", legs: "A wet stain on his pants (urinary incontinence)." },
+    focal_sz: { chest: "An implanted port-a-cath under the right clavicle (not accessed). No rash." },
+    pea_hyperk: { arms: "A left-forearm AV fistula (dialysis access); no thrill palpable now. Bruising from previous needle sticks.", mouth: "A loose upper denture; take it out before ventilating. No vomit." },
+    pvt_young: { mouth: "A sports mouthguard is in his mouth; take it out before you ventilate. No vomit.", chest: "Muscular chest; a tattoo on the right shoulder. No scars or implanted device." },
+    vasovagal: { arms: "Gauze and tape over the right antecubital fossa from the blood donation; no bleeding." },
+    orthostatic: { mouth: "Dry, tacky mucous membranes and a dry tongue.", legs: "Clothing soiled with diarrhea. A small abrasion on the right forearm." },
+    syncope_lac: { mouth: "No tongue bite; teeth intact; no blood in the mouth." },
+    urosepsis: { mouth: "Dry, cracked lips and dry, tacky mucous membranes; dentures are out (on the nightstand).", abdomen: "An indwelling urinary catheter draining cloudy, dark urine. No surgical scars.", back: "A dressing over the sacrum; underneath, a shallow stage 2 pressure ulcer with surrounding redness." },
+    pna_sepsis: { mouth: "Dry mucous membranes; rust-colored sputum in the mouth." },
+    fever_flu: { mouth: "Red pharynx; slightly dry mucous membranes; no tonsillar swelling.", chest: "No rash or petechiae." },
+  };
+
+  // ---- derived (live-state) cues ----
+  function skinWords(st) {
+    const s = (st.tg.skin || "").split(/[;,]/).map(x => x.trim()).filter(c => c && !/cap refill|lips|nail|breath|mucous|tongue|turgor|accessory|tremul|hive|urtic|wheal|welt|extremit/i.test(c));
+    return s.length ? s.join(", ").toLowerCase() : "";
+  }
+  function shockSkin(x) { return x.shock && /cool|cold|gray|ashen|mottl|pale/i.test(x.st.tg.skin || ""); }
+  function derived(region, x) {
+    const { st, sc } = x, out = [], tgs = st.tg.skin || "";
+    const ex = k => EXAM.find(k, sc, st, x.text, x.m) || "";
+    if (region === "chest") {
+      const w = skinWords(st); if (w) out.push(`Skin ${w}`);
+      if (hivesNow(st)) out.push("raised hives across the chest"); else if (hivesFading(st)) out.push("fading hives");
+      if (/mottl/i.test(tgs) || (x.shock && st.v.sbp < 75 && !x.arrest)) out.push("mottling across the trunk");
+      const wk = ex("work"); if (wk && !/unlabored|full sentences|no accessory|normal|improving|easier/i.test(wk) && !x.arrest) out.push(wk.replace(/\.$/, ""));
+      if (x.arrest) out.push(st.rev.monitor ? "defib pads in place" : "chest bare and ready for pads and compressions");
+    }
+    if (region === "abdomen") {
+      const a = ex("abdomen").replace(/non-?distended/ig, ""); if (/distended|distension/i.test(a)) out.push("visibly distended");
+      if (hivesNow(st)) out.push("hives on the abdomen");
+      if (x.shock && st.v.sbp < 75 && !x.arrest) out.push("mottled skin");
+    }
+    if (region === "back") {
+      const b = ex("back"); if (/sacral edema/i.test(b)) out.push("sacral edema");
+      if (hivesNow(st)) out.push("hives on the upper back");
+      if (x.arrest || (x.shock && st.v.sbp < 75)) out.push("dependent mottling");
+    }
+    if (region === "arms") {
+      const t = ex("tracks"); if (t && !/^no /i.test(t)) out.push(t.replace(/\.$/, ""));
+      const ma = ex("medalert"); if (ma && !/^no /i.test(ma) && /bracelet|wrist/i.test(ma)) out.push(ma.replace(/\.$/, ""));
+      if (hivesNow(st)) out.push("hives on both arms");
+      if (/cyan|dusky/i.test(tgs)) out.push("dusky nail beds");
+      if (st.flags.iv && !st.flags.io) out.push("your IV is in place and patent");
+    }
+    if (region === "legs") {
+      const e = ex("pedalEdema"); if (e && !/^no /i.test(e)) out.push(e.replace(/\.$/, ""));
+      const inc = ex("incont"); if (inc && !/^no /i.test(inc) && /incontinen|wet/i.test(inc)) out.push("wet clothing from urinary incontinence");
+      if (hivesNow(st)) out.push("hives on the thighs");
+      if (/mottl/i.test(tgs) || shockSkin(x) || x.arrest) out.push("mottling over both knees");
+      if (st.flags.io) out.push("your IO is in place");
+    }
+    return out;
+  }
+  const DEFAULT = {
+    chest: "No rashes, bruising, scars, patches or implanted devices; chest rise symmetric",
+    abdomen: "No bruising, scars, distension, ostomy, devices or patches",
+    back: "No bruising, rashes, wounds, patches or pressure injuries",
+    arms: "No track marks, rashes, bruising, wounds, patches or medical jewelry",
+    legs: "No edema, rashes, wounds, deformity or patches; clothing dry",
+  };
+
+  // ---- patches & devices ----
+  function patchList(sc) { return (sc.patches || (INSPECT_X[sc.id] || {}).patches || []).map((p, i) => Object.assign({ key: p.key || p.drug + i }, p)); }
+  function patchesIn(region, sc, st) {
+    const off = (st.x.patchOff || {});
+    return patchList(sc).filter(p => p.region === region).map(p => off[p.key] != null ? `the ${PATCH_NAMES[p.drug] || p.drug} patch you removed has left a faint square outline` : val(p.text, st));
+  }
+  function regionText(region, x) {
+    const { sc, st } = x, A = Object.assign({}, INSPECT_X[sc.id] || {}, sc.inspect || {});
+    const authored = A[region] != null ? val(A[region], st, x) : null;
+    const parts = [];
+    if (authored) parts.push(end(authored));
+    const pt = patchesIn(region, sc, st); if (pt.length) parts.push(end(cap(pt.join("; "))));
+    // derived cues only add what the authored text doesn't already say
+    const FAM = [/hive|wheal|urtic|welt/i, /accessory|retraction|labou?red|kussmaul|respirations|breathing|apneic/i, /mottl/i, /edema/i, /cyan|dusky/i, /incontinen|wet/i, /track mark|injection/i, /bracelet|necklace|medical id/i];
+    const covered = c => authored && FAM.some(re => re.test(c) && re.test(authored));
+    const d = derived(region, x).filter(c => !covered(c)).map((c, i) => i ? c.replace(/^[A-Z](?![A-Z])/, ch => ch.toLowerCase()) : c);
+    if (!authored && d.length) parts.push(end(cap(d.join("; "))));
+    else if (authored && d.length) { const extra = d.filter(c => /mottl|IV|IO|pads|wet clothing|incontinence|hives|accessory|retraction|labou?red|kussmaul|respirations|breathing/i.test(c)); if (extra.length) parts.push(end(cap(extra.join("; ")))); }
+    if (!parts.length) parts.push(end(DEFAULT[region]));
+    return parts.join(" ");
+  }
+
+  // ---- mouth / airway inspection ----
+  function mouth(x) {
+    const { sc, st, m } = x, A = Object.assign({}, INSPECT_X[sc.id] || {}, sc.inspect || {});
+    const talk = ["alert", "anxious", "confused", "aphasic"].includes(m);
+    const dysp = (st.v.rr || 0) >= 26 || (st.v.spo2 != null && st.v.spo2 < 90);
+    let pt = null, lead = "";
+    if (talk) {
+      if (A.mouthPt) pt = val(A.mouthPt, st);
+      else if (m === "confused") pt = "(opens the mouth partway after you ask twice)";
+      else if (m === "aphasic") pt = "(opens her mouth when you show her what you mean)".replace("her", sc.patient.sex === "M" ? "his" : "her");
+      else if (dysp) pt = "(opens briefly, gasping) ...ahh... (gasp) can't... hold it...";
+      else pt = pick(["Ahh.", "(opens wide) Ahhh.", "Ahh... like this?"]);
+      lead = m === "confused" ? "The patient opens only partway. With a penlight: " : "With a penlight: ";
+    } else if (m === "seizing") lead = "";
+    else if (m === "arrest") lead = st.flags.sga ? "The i-gel is in place. Around it: " : "Opening the airway with a head-tilt chin-lift to ventilate, you look in: ";
+    else lead = "No response to the command to open the mouth. You open the airway manually (head-tilt chin-lift; jaw thrust if you suspect trauma) and look in with a penlight: ";
+    let body = A.mouth != null ? val(A.mouth, st, x) : null;
+    if (!body) {
+      const bits = [];
+      const aw = st.tg.airway || "Patent";
+      if (/snor|tongue obstruct/i.test(aw)) bits.push("the tongue has fallen back against the posterior pharynx");
+      if (/froth|sputum/i.test(aw)) bits.push(aw.split(/;/).find(c => /froth|sputum/i.test(c)).trim().toLowerCase());
+      if (/drool/i.test(aw)) bits.push("drooling; saliva pooling in the mouth");
+      if (/secretion|blood/i.test(aw)) bits.push(aw.split(/;/).filter(c => /secretion|blood/i.test(c)).join("; ").trim().toLowerCase());
+      if (!bits.length) bits.push("tongue and uvula normal size and midline; no swelling, blood, vomit, secretions or foreign body");
+      const mu = EXAM.find("mucous", sc, st, x.text, m) || "";
+      if (mu) bits.push(mu.replace(/\.$/, "").replace(/^Lips and mucous membranes/i, "lips and mucous membranes").replace(/^Mucous membranes/, "mucous membranes"));
+      const sm = EXAM.find("smell", sc, st, x.text, m) || "";
+      if (sm && !/^no unusual/i.test(sm)) bits.push(sm.replace(/\.$/, "").toLowerCase());
+      if (sc.patient.age >= 75) bits.push(talk ? "dentures in place and secure" : "a loose upper denture (remove it before airway adjuncts or BMV)");
+      body = cap(bits.join("; ")) + ".";
+    }
+    if (st.flags.sga && m === "arrest" && /vomit/i.test(body)) body += " (Suctioned.)";
+    return { pt, find: (lead ? lead + body.replace(/^[A-Z]/, c => lead.endsWith(": ") ? c.toLowerCase() : c) : body) };
+  }
+
+  const LABEL = { chest: "Chest", abdomen: "Abdomen", back: "Back", arms: "Arms", legs: "Legs" };
+  function exposureAck(x) {
+    const talk = ["alert", "anxious"].includes(x.m);
+    if (!talk || Math.random() < 0.5) return null;
+    return pick(["Okay.", "Go ahead.", "(nods)", "Okay... it's cold."]);
+  }
+  function view(region, sc, st, text, mental) {
+    const x = { sc, st, text: text || "", m: mental, arrest: mental === "arrest" || st.tg.pulse === false || !st.v.hr, shock: st.v.sbp != null && st.v.sbp < 90 };
+    if (region === "mouth") return mouth(x);
+    if (region === "chest") return { pt: exposureAck(x), find: `You lift the shirt. Chest: ${regionText("chest", x)} Abdomen: ${regionText("abdomen", x)}` };
+    if (region === "all") {
+      return { pt: exposureAck(x), find: "Patient exposed (" + (x.arrest || mental === "unresponsive" ? "clothing cut away" : "clothing removed, privacy kept") + ", log-rolled to see the back). " + ["chest", "abdomen", "back", "arms", "legs"].map(r => `${LABEL[r]}: ${regionText(r, x)}`).join(" ") + " Cover the patient again to keep them warm." };
+    }
+    if (region === "patches") {
+      const list = patchList(sc), off = st.x.patchOff || {};
+      const on = list.filter(p => off[p.key] == null), done = list.filter(p => off[p.key] != null);
+      return { pt: null, find: on.length ? "Checking all exposed skin for medication patches: " + on.map(p => end(cap(val(p.text, st)))).join(" ") : done.length ? "No patches left on the skin; the one you removed is bagged." : "You check the chest, back, arms, legs and abdomen: no medication patches." };
+    }
+    if (LABEL[region]) return { pt: region === "back" ? null : exposureAck(x), find: `${LABEL[region]}: ${regionText(region, x)}` };
+    return null;
+  }
+  // backward-compatible helper used by the "back" assessment (palpation + look)
+  function backLook(sc, st, text, mental) { return regionText("back", { sc, st, text, m: mental, arrest: mental === "arrest", shock: st.v.sbp != null && st.v.sbp < 90 }); }
+
+  // patch removal: returns { removed:[patch], missing:bool, other:[patch] }
+  function removePatch(sc, st, text) {
+    const want = Object.keys(PATCH_NAMES).find(k => new RegExp(k === "nitro" ? "nitro|ntg" : k).test(text || ""));
+    const list = patchList(sc), off = (st.x.patchOff = st.x.patchOff || {});
+    const ex = st.x.exposed || {}, ev = st.events || {};
+    const seen = p => ex.all != null || ex.patches != null || ex[p.region] != null || (p.region === "abdomen" && ex.chest != null) || (p.region === "back" && ev["a:back"]);
+    const on = list.filter(p => off[p.key] == null);
+    const cand = want ? on.filter(p => p.drug === want) : on;
+    const hit = cand.filter(seen);
+    if (cand.length && !hit.length) return { removed: [], want, other: [], unseen: true, none: false, already: false };
+    hit.forEach(p => { off[p.key] = st.t; });
+    return { removed: hit, want, other: want ? on.filter(p => p.drug !== want) : [], none: !list.length, already: list.length && !on.length };
+  }
+  return { view, backLook, removePatch, patchList, INSPECT_X, PATCH_NAMES };
 })();
 
 /* ===== sc0_base.js ===== */
@@ -3619,6 +3968,185 @@ addS(G({
   SCENARIOS.forEach(sc => { if (ABD[sc.id] && !sc.abdomen) sc.abdomen = ABD[sc.id]; if (MORE[sc.id]) sc.sceneMore = MORE[sc.id]; });
 })();
 
+/* ===== scx_30_inspect.js ===== */
+/* ---------- Inspection / exposure teaching variants (patches, devices) ---------- */
+/* Ref. 1241: elderly transdermal fentanyl toxicity. Patches keep delivering drug, so naloxone wears off
+ * and she re-sedates unless every patch (and the heat source) is found and removed. */
+const fpNal = st => { let s = 0; for (const d of (st.x.nalDoses || [])) { const dt = st.t - d.t, on = d.iv ? 45 : 150; s += dt < 0 ? 0 : dt < on ? d.amt * dt / on : d.amt * Math.exp(-(dt - on) / 600); } return s; };
+const fpOn = st => ["fp1", "fp2"].filter(k => (st.x.patchOff || {})[k] == null).length;
+const fpDep = st => Math.max(0, (st.x.load || 0) - fpNal(st));
+addS({
+  id: "fent_patch", title: "Elderly patient, decreased responsiveness", tag: "TOXICOLOGY", protocol: "1241", refs: ["1241", "1302"], base: "opioid", difficulty: "Advanced",
+  dispatchTitle: "76 y/o female, hard to wake up", dispatchShort: "Downey home, daughter calling.",
+  summary: "76 y/o female, daughter can't wake her.",
+  dispatch: "RA 64, respond to a residence on Paramount Blvd, Downey. 76-year-old female, difficult to wake up, snoring. Caller is the daughter. Time of call 0712.",
+  scene: "Scene safe. Dim bedroom, very warm. The patient is lying on her back in bed under a blanket, snoring, lips dusky. An electric heating pad cord runs under her back to the wall outlet; the switch light is on. A pill organizer is on the nightstand.",
+  patient: { name: "Dorothy Kessler", age: 76, sex: "F", weightKg: 58 }, bystander: { name: "Carol", role: "daughter", sex: "F" },
+  personality: "Unresponsive at first. After naloxone: drowsy, sweet, confused about why everyone is here, complains of back pain.",
+  allergies: ["codeine"], pde5Hours: null, startSev: 0.6, heatPad: true,
+  patches: [
+    { key: "fp1", drug: "fentanyl", region: "chest", text: "a fentanyl transdermal patch (50 mcg/h) on the left upper chest, dated 10/18 in marker" },
+    { key: "fp2", drug: "fentanyl", region: "back", text: st => "a second fentanyl patch (50 mcg/h) on the left upper back, dated 10/20" + ((st.x.heatOff == null) ? ", lying directly on the switched-on heating pad; the skin under the pad is warm and pink" : "; the heating pad has been removed") },
+  ],
+  inspect: { mouth: st => fpDep(st) > 0.6 ? "The tongue has fallen back against the posterior pharynx (snoring); small amount of saliva pooling; no vomit or pills. Loose upper denture: remove it before an OPA or BMV." : "Mouth clear; upper denture in place; mucous membranes moist.", arms: "Thin skin with old bruises on both forearms; no track marks. No medical jewelry.", legs: "No edema; skin intact. A pillow under her knees." },
+  exam: { medbottles: "On the dresser: a box of fentanyl transdermal system 50 mcg/h (two left), gabapentin 300 mg and lisinopril. The pill organizer is full for today.", smell: "No unusual odors.", tracks: "No track marks." },
+  init(st) { st.x.load = 1.0; st.x.hyp = 0.55; st.x.arrest = false; st.x.nalDoses = []; },
+  drift: () => 0,
+  tickExtra(st, dt) {
+    const m = dt / 60, on = fpOn(st), heat = st.x.heatOff == null && (st.x.patchOff || {}).fp2 == null;
+    if (on) st.x.load = Math.min(1.15, st.x.load + (0.012 * on + (heat ? 0.015 : 0)) * m);
+    else st.x.load = Math.max(0, st.x.load - 0.04 * m);
+    const dep = fpDep(st), vent = st.flags.o2 === "bvm" || st.flags.sga;
+    const d = (dep > 0.6 ? 0.07 : dep > 0.35 ? 0.02 : -0.2) - (vent ? 0.3 : 0) - (O2(st) > 0 && dep <= 0.6 ? 0.05 : 0);
+    st.x.hyp = Math.max(0, Math.min(1.2, st.x.hyp + d * m));
+    if (st.x.hyp >= 1.15 && !st.x.arrest) { st.x.arrest = true; st.x.arrestT = st.t; SIM.event("The patient has gone into cardiac arrest (hypoxic PEA). No carotid pulse.", "warn"); }
+    if (!st.x.resedWarned && st.x.wasAwake && dep > 0.6) { st.x.resedWarned = true; SIM.event("The patient is getting harder to rouse again: snoring returns and respirations are slowing.", "warn"); }
+    if (dep < 0.35) st.x.wasAwake = true;
+  },
+  onTreat(id, st, tx) {
+    if (id === "naloxone") {
+      const mg = (tx.doses.find(d => d.u === "mg") || {}).v || (tx.route === "IN" ? 4 : 2);
+      st.x.nalDoses.push({ t: st.t, amt: tx.route === "IN" ? 0.95 * mg / 4 : tx.route === "IV" || tx.route === "IO" ? 0.55 * mg : 0.95 * mg / 2, iv: tx.route === "IV" || tx.route === "IO" });
+      st.x.nalTotal = (st.x.nalTotal || 0) + mg;
+    }
+  },
+  targets(st) {
+    const h = st.x.hyp, dep = fpDep(st), vent = st.flags.o2 === "bvm" || st.flags.sga;
+    if (st.x.arrest) return { hr: 0, sbp: 0, dbp: 0, rr: vent ? 10 : 0, spo2: null, etco2: st.flags.cpr ? 15 : 6, temp: 98.4, bgl: 132, gcs: [1, 1, 1], pupils: "1 mm, nonreactive", pain: null, skin: "Cyanotic, cool, mottled", lungs: vent ? "Breath sounds with ventilation only" : "No spontaneous breath sounds", rhythm: st.t - st.x.arrestT < 90 ? "pea" : "asystole", rhythmName: st.t - st.x.arrestT < 90 ? "PEA (sinus brady, no pulse)" : "Asystole", cpr: st.flags.cpr, twelve: null, neuro: "Unresponsive", airway: "Apneic", trauma: "None", edema: "None", pulse: false };
+    const deep = dep > 0.6, mid = dep > 0.35;
+    const rr = vent && deep ? 12 : deep ? Math.max(3, 8 - 8 * (dep - 0.6)) : mid ? 10 : 15;
+    return {
+      hr: deep ? 54 : mid ? 64 : 82, sbp: deep ? 106 - 20 * Math.max(0, h - 0.8) : mid ? 124 : 146, dbp: deep ? 60 : 78, rr,
+      spo2: Math.max(40, 97 - 32 * h + 3 * O2(st)), etco2: vent && deep ? 42 : deep ? 60 + 10 * h : mid ? 50 : 40, temp: 98.4, bgl: 132,
+      gcs: deep ? [1, 2, 4] : mid ? [3, 4, 6] : [4, 4, 6], pupils: mid ? "Pinpoint, 1-2 mm, sluggish" : "3 mm, reactive",
+      pain: deep ? null : 4, skin: h > 0.5 && deep ? "Pale, dusky lips, warm, dry" : "Pale, warm, dry",
+      lungs: deep && !vent ? "Shallow, snoring respirations; diminished bases" : "Clear, slightly diminished at the bases",
+      rhythm: deep ? "brady" : "sinus", rhythmName: deep ? "Sinus bradycardia" : "Normal sinus rhythm",
+      twelve: { st: {}, text: "Sinus rhythm, first-degree AV block (PR 0.22). No acute ST changes." },
+      neuro: deep ? "Withdraws to pain; no focal deficit" : "Drowsy; moves all extremities, no facial droop, grips equal",
+      edema: "None", trauma: "No signs of trauma", airway: deep && !vent ? "Snoring respirations; tongue obstructing; needs head-tilt/OPA/NPA" : "Patent",
+    };
+  },
+  mental: st => st.x.arrest ? "arrest" : fpDep(st) > 0.6 ? "unresponsive" : fpDep(st) > 0.35 ? "confused" : "alert",
+  answers: {
+    greet: "Oh... hello... Carol? Who are all these people?", name: "Dorothy... Kessler.", age: "Seventy-six.",
+    cc: "I'm just so sleepy... and my back hurts.", onset: "I don't know, dear... yesterday?", meds: "My pain patch... the doctor made it stronger last week. Gabapentin. And my blood pressure pill.",
+    history: "My back... spinal stenosis. Blood pressure.", allergies: "Codeine makes me sick.", lastoral: "Soup, last night.",
+    events: "I put on my new patch yesterday... and the heating pad, it helps my back so much.", drugs: "No, dear, only my prescriptions.",
+    orient: "My bedroom... it's... Tuesday?", chestpain: "No.", sob: "No... just tired.", feelnow: "Sleepy... my back aches.",
+    hospital: "If you think I should, dear.", refusal: "I'd rather just sleep.", consent: "Alright.", pde5: "...what?",
+  },
+  confusedAnswers: ["...mmh... so tired...", "...Carol...?", "(mumbles, eyes drift closed)"],
+  bystanderAnswers: {
+    cc: "She's been so sleepy since yesterday, and this morning I couldn't wake her up. She's snoring weird and her lips look gray.",
+    meds: "She has a fentanyl patch for her back; they went up to the 50 last week. Gabapentin and lisinopril.",
+    history: "Spinal stenosis, high blood pressure.", allergies: "Codeine.", name: "Dorothy Kessler. She's 76.", age: "76.",
+    events: "She sleeps on the heating pad for her back. She put on a new patch yesterday... I don't know if she took the old one off.",
+    drugs: "No, nothing else. Just her prescriptions.", lastoral: "Soup around six last night.", onset: "She was sleepy all day yesterday. I couldn't wake her at seven.",
+  },
+  fallback: st => SIM.mental() === "alert" ? pick(["Sorry, dear?", "What was that?"]) : "...",
+  ambient: st => st.x.arrest ? null : SIM.mental() === "unresponsive" ? pick(["(snoring, slow shallow breaths)", "(no response; lips dusky)"]) : SIM.mental() === "confused" ? "(eyes drifting closed)" : pick(["My back hurts...", "Can I go back to sleep?"]),
+  checklist: [
+    { label: "Airway opened and BMV for hypoventilation", keys: ["t:bvm"], ref: "1241 ❶", critical: true },
+    { label: "Naloxone (2-4 mg IN / 2 mg IM / 0.8-2 mg IV)", keys: ["t:naloxone"], ref: "1241 #4", critical: true },
+    { label: "Patient exposed: chest and back checked for patches", keys: ["a:exposed"], ref: "1241 #16 / Special Considerations*", critical: true },
+    { label: "BOTH fentanyl patches found and removed (chest + back)*", keys: ["t:removepatch:fentanyl#2"], ref: "standard practice*; 1241 #16, #18", critical: true },
+    { label: "Heating pad (heat source) removed*", keys: ["t:removeheat"], ref: "standard practice*" },
+    { label: "Blood glucose checked", keys: ["a:bgl"], ref: "1241 #12" },
+    { label: "Capnography", keys: ["a:etco2"], ref: "1241 #7" },
+    { label: "Reassess breathing after naloxone (re-sedation)", keys: ["a:rr#2", "a:spo2#2", "a:vitals#2"], ref: "1241 #4, #6" },
+    { label: "Base contact for additional naloxone if partial response", keys: ["t:base"], ref: "1241 #6", optional: true },
+  ],
+  pi: { correct: "ODPO", accept: [], differential: ["ODPO", "ALOC", "STRK", "SEPS"],
+    clues: { ODPO: "Pinpoint pupils, RR 6-8, snoring, responds to naloxone, and fentanyl patches found on exposure (one on the chest and one on the back, heated).", ALOC: "Use only when no cause is found; here exposure reveals the cause.", STRK: "No focal deficit; the decreased responsiveness reverses with naloxone.", SEPS: "Afebrile; no infectious source." },
+    explain: "Unintentional transdermal fentanyl toxicity: a new patch put on without removing the old one, plus a heating pad that speeds absorption. Naloxone works but wears off while the patches keep delivering drug, so find every patch and remove it.", keyFindingKeys: ["a:pupils", "a:rr", "a:exposed", "a:bgl"] },
+  expected: "Open the airway and ventilate with BMV, then naloxone (2-4 mg IN / 2 mg IM / 0.8-2 mg IV) titrated to breathing. EXPOSE the patient: there's a fentanyl patch on the chest AND one on the back sitting on a heating pad. Remove both patches and the heat source, then reassess for re-sedation; contact Base for more naloxone if needed. Check BG and capnography. *LA County Ref. 1241 doesn't specifically mention transdermal patches. It directs you to assess for co-ingestion and exposures (#16, Special Considerations) and to bring containers to the ED (#18). Removing an opioid patch is standard practice.",
+});
+
+/* Ref. 1214: CHF with a nitroglycerin patch plus SL nitro → hypotension. */
+addS(G({
+  id: "chf_nitropatch", protocol: "1214", refs: ["1214", "1315"], base: "chf", difficulty: "Advanced",
+  dispatchTitle: "83 y/o male, short of breath and dizzy", dispatchShort: "Norwalk home, wife calling.",
+  dispatch: "RA 115, respond to a residence on Pioneer Blvd, Norwalk. 83-year-old male, difficulty breathing, dizzy. Time of call 0548.",
+  scene: "Scene safe. The patient is sitting upright in a recliner, pale and sweaty, breathing fast. A pill organizer and a small brown bottle are on the side table. His wife is in her robe.",
+  patient: { name: "Walter Haynes", age: 83, sex: "M" }, bystander: { name: "June", role: "wife", sex: "F" },
+  personality: "Short of breath, short phrases, apologetic, lightheaded when he leans forward.",
+  allergies: [], startSev: 0.5, drift0: 0.025, pain: [2, 3], bgl: 141, temp: 98.0,
+  vit: { good: { hr: 102, sbp: 84, dbp: 50, rr: 26, spo2: 89, etco2: 36 }, bad: { hr: 118, sbp: 68, dbp: 40, rr: 34, spo2: 80, etco2: 42 } },
+  txResp: { removepatch: { sbp: 22, dbp: 8, hr: -6, drift: -0.012 }, nitro: { sbp: -22, drift: 0.03 }, ns: { sbp: 6, drift: 0.08 }, pushepi: { sbp: 14 } },
+  flagResp: { cpap: { drift: -0.06, sbp: -8 }, nrb: { drift: -0.008 }, bvm: { drift: -0.02 }, fowler: { drift: -0.004 }, supine: { drift: 0.05 } },
+  rhythm: "sinus", skin: [[0.5, "Pale, cool, diaphoretic"], [1, "Gray, cool, clammy; lips dusky"]],
+  lungs: [[0.4, "Rales in both bases"], [1, "Rales halfway up bilaterally"]], edema: "JVD present; 2+ pitting edema to the shins",
+  mentalBands: [[0.75, "anxious"], [0.92, "confused"], [9, "unresponsive"]],
+  twelve: { st: {}, text: "Sinus tachycardia. Old inferior Q waves. No acute ST elevation." },
+  patches: [{ key: "ntg1", drug: "nitro", region: "chest", text: "a nitroglycerin transdermal patch (0.4 mg/h) on the left upper chest, dated this morning" }],
+  inspect: { chest: "A healed midline sternotomy scar (prior bypass surgery). Accessory muscle use with each breath.", mouth: "Lips dusky; a little pink frothy sputum at the corners of the mouth; upper denture in place." },
+  exam: { medbottles: "Furosemide, metoprolol and a bottle of nitroglycerin 0.4 mg SL tablets (opened; he says he took two an hour ago). A box of nitroglycerin patches 0.4 mg/h." },
+  onTreat(id, st) { if (id === "cpap" && st.v.sbp < 90) (st.events["t:cpap@lowbp"] = st.events["t:cpap@lowbp"] || []).push(st.t); },
+  answers: {
+    greet: "Hi... sorry... can't... catch my breath.", name: "Walter.", age: "Eighty-three.", cc: "Can't breathe... and dizzy... like I'll pass out.",
+    onset: "Last night... worse... this morning.", provocation: "Lying down... worse.", chestpain: "Tight... earlier... took my pills.",
+    severity: "Two... maybe three.", allergies: "None.", meds: "Water pill... metoprolol... the patch... and my nitro pills. Took two... for the tightness.",
+    history: "Heart failure... angina... bypass... years ago.", lastoral: "Toast... last night.", events: "Woke up... drowning... sat up in the chair.",
+    dizzy: st => st.v.sbp < 95 ? "Yes... woozy... when I lean." : "Better... now.", pde5: "No... none of that.", feelnow: st => st.v.sbp < 90 ? "Still... dizzy." : st.sev < 0.35 ? "Easier... breathing." : "Not much... better.",
+  },
+  bystanderAnswers: { cc: "He was up all night in the chair, couldn't breathe. Now he's gray and says he's going to faint.", meds: "Furosemide, metoprolol, the nitro patch the home-health nurse put on yesterday morning, and he took two of his nitro pills about an hour ago for chest tightness.", history: "Heart failure, angina, a bypass in 2009." },
+  checklist: [
+    { label: "Blood pressure assessed (SBP < 100)", keys: ["a:bp"], ref: "1214 #8", critical: true },
+    { label: "Nitroglycerin patch found (chest exposed) and removed: hold NTG with SBP < 100", keys: ["t:removepatch:nitro"], ref: "1214 #8 (hold NTG if SBP < 100)", critical: true },
+    { label: "No SL nitroglycerin (SBP < 100)", keys: ["!t:nitro"], ref: "1214 #8", critical: true },
+    { label: "CPAP only when SBP ≥ 90", keys: ["!t:cpap@lowbp"], ref: "1214 #4", critical: true },
+    { label: "Oxygen / ventilatory support (high-flow for impending respiratory failure)", keys: ["t:nrb", "t:bvm", "t:cpap"], ref: "1214 #3" },
+    { label: "Lung sounds", keys: ["a:lungs"], ref: "1201" },
+    { label: "Cardiac monitor + 12-lead (chest tightness)", keys: ["a:12lead"], ref: "1214 #5-6" },
+    { label: "Vascular access", keys: ["t:iv", "t:io"], ref: "1214 #7" },
+    { label: "Position of comfort (upright)", keys: ["t:fowler"], ref: "1214 #2" },
+    { label: "Shock / respiratory failure: CONTACT BASE, treat with TP 1207", keys: ["t:base"], ref: "1214 #10", critical: true },
+  ],
+  pi: { correct: "CHFF", accept: ["HOTN"], acceptNote: "Hypotension is real, but it's driven by nitrates in a pulmonary edema patient; CHF is the primary impression.", differential: ["CHFF", "HOTN", "CPMI"],
+    clues: { CHFF: "Orthopnea, rales, JVD and edema in a known CHF patient.", HOTN: "SBP 84 from a nitro patch plus two SL nitro; it improves once the patch comes off.", CPMI: "Earlier tightness, but no ST elevation on the 12-lead." },
+    explain: "Pulmonary edema made dangerous by nitrate-induced hypotension. Expose the chest: the nitro patch has to come off (1214: hold nitroglycerin with SBP < 100). No SL nitro, and no CPAP until SBP ≥ 90. Contact Base for shock / respiratory failure.", keyFindingKeys: ["a:bp", "a:lungs", "a:edema", "a:exposed"] },
+  expected: "CHF/pulmonary edema with SBP 84. Expose the chest and REMOVE the nitroglycerin patch, and give no SL nitro (hold for SBP < 100). High-flow O2 and position of comfort. CPAP only once SBP ≥ 90 (1214 #4). Monitor, 12-lead, IV. Contact Base for shock / respiratory failure and treat with TP 1207 (1214 #10).",
+}));
+
+/* Ref. 1212: symptomatic bradycardia from pacemaker failure to capture. */
+addS(G(Object.assign({}, bradyBase, {
+  id: "pacer_fail", difficulty: "Advanced", rhythm: "chb", rhythmName: "Paced rhythm with FAILURE TO CAPTURE: pacer spikes at 70, most not followed by a QRS; wide escape ~36",
+  dispatchTitle: "81 y/o female, dizzy and weak", dispatchShort: "Bellflower home, husband calling.",
+  dispatch: "RA 162, respond to a residence on Bellflower Blvd, Bellflower. 81-year-old female, dizzy and weak, nearly fainted. Time of call 1344.",
+  scene: "Scene safe. The patient is sitting in an armchair, pale and clammy, eyes half closed. Her husband is holding her hand. A walker is beside the chair.",
+  patient: { name: "Lorraine Whitaker", age: 81, sex: "F" }, bystander: { name: "Frank", role: "husband", sex: "M" },
+  personality: "Polite, slow to answer, apologizes for the fuss, gets woozy when she sits forward.",
+  allergies: ["sulfa"], startSev: 0.45, drift0: 0.03, pain: [0, 0], bgl: 118, temp: 97.6,
+  vit: { good: { hr: 38, sbp: 86, dbp: 48, rr: 18, spo2: 95, etco2: 33 }, bad: { hr: 30, sbp: 64, dbp: 36, rr: 22, spo2: 91, etco2: 26 } },
+  txResp: { atropine: { hr: 2 }, ns: { sbp: 6 }, pace: { drift: -0.08 } }, flagResp: { supine: { sbp: 4 }, fowler: { sbp: -6 } },
+  skin: [[0.5, "Pale, cool, clammy"], [1, "Gray, cold, clammy"]], lungs: "Clear", mentalBands: [[0.55, "anxious"], [0.85, "confused"], [9, "unresponsive"]],
+  twelve: { st: {}, text: "Pacemaker spikes at a fixed 70/min; most are NOT followed by a QRS (failure to capture). Underlying wide ventricular escape ~36. No ST elevation." },
+  inspect: { chest: "A firm, rectangular pacemaker generator under the LEFT clavicle with a well-healed scar over it. No redness, swelling or drainage at the site.", arms: "Medical ID bracelet: 'PACEMAKER – see wallet card'. Thin skin, old bruises." },
+  exam: { medalert: "Medical ID bracelet: 'PACEMAKER – see wallet card'. The wallet card shows a dual-chamber pacemaker implanted in 2020.", medbottles: "Lisinopril, aspirin 81 mg, levothyroxine." },
+  answers: {
+    greet: "Oh... hello. I'm sorry... everything's spinning.", name: "Lorraine Whitaker.", age: "Eighty-one.", cc: "I'm so weak... I nearly fainted in the kitchen.",
+    onset: "This morning... I've felt off since yesterday.", dizzy: "Yes... worse when I sit up.", chestpain: "No, no pain.", sob: "A little winded.",
+    allergies: "Sulfa.", meds: "Lisinopril, a baby aspirin, and my thyroid pill.", history: "I have a pacemaker... they put it in about six years ago for a slow heart. And my thyroid.",
+    lastoral: "Some oatmeal at eight.", events: "I stood up from the table and everything went gray.", syncope: "I think I blacked out for a second.",
+    feelnow: st => n(st, "pace") ? "Better... but that thing pinches." : "Still so woozy.", pde5: "No.",
+  },
+  bystanderAnswers: { cc: "She stood up, went gray and slumped against the counter for a few seconds. Her pulse was so slow.", history: "She's got a pacemaker, about six years now, for a slow heart. The device clinic called last month; her check was overdue.", meds: "Lisinopril, baby aspirin, levothyroxine." },
+  checklist: [
+    { label: "Cardiac monitor + 12-lead (pacer spikes without capture)", keys: ["a:12lead"], ref: "1212 #3", critical: true },
+    { label: "Implanted pacemaker identified (chest exposed / ID bracelet / history)", keys: ["a:exposed", "a:medalert", "q:history"], ref: "1212 #3 / 1200.3" },
+    { label: "Supine", keys: ["t:supine"], ref: "1212 #5" },
+    { label: "Vascular access (don't delay TCP)", keys: ["t:iv", "t:io"], ref: "1212 #6" },
+    { label: "Transcutaneous pacing for HR ≤ 40 with poor perfusion (atropine first if it won't delay TCP)", keys: ["t:pace"], ref: "1212 #8-9", critical: true },
+    { label: "Base contact (required for symptomatic bradycardia; concurrent with TCP)", keys: ["t:base"], ref: "1212 #9", critical: true },
+    { label: "Sedation/analgesia consideration for TCP", keys: ["t:midaz", "t:fentanyl"], ref: "1212 #9", optional: true },
+  ],
+  pi: { correct: "DYSR", accept: [], differential: ["DYSR", "FAIL", "SYNC"],
+    clues: { DYSR: "HR in the 30s with poor perfusion; pacer spikes without capture on the monitor.", FAIL: "Ref. 1200.3: Medical Device Malfunction – Fail is for a failed device, but for SYMPTOMATIC patients use the PI related to the symptoms (here, symptomatic bradycardia → Dysrhythmia).", SYNC: "The near-syncope is a symptom of the bradycardia; Dysrhythmia is the primary PI." },
+    explain: "Pacemaker failure to capture: the device fires, but the heart doesn't respond, leaving a slow escape rhythm. Treat per 1212 (TCP for HR ≤ 40 with poor perfusion; Base contact). Per 1200.3, use the symptom-based PI (Dysrhythmia) rather than Device Malfunction.", keyFindingKeys: ["a:12lead", "a:bp", "a:exposed"] },
+  expected: "Symptomatic bradycardia (HR ~38, SBP 86) from pacemaker failure to capture. Expose the chest (pacemaker under the left clavicle), monitor/12-lead, supine, IV. Atropine 1 mg is unlikely to help; proceed to TCP for HR ≤ 40 with poor perfusion, with Base contact. Consider sedation for TCP.",
+})));
+
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
 const META = {
@@ -3736,7 +4264,7 @@ const RuleBasedPatient = (() => {
       else out.push({ speaker: "narrator", text: resolve(sc.fallback, st) || "No response." });
     } else if (qs.length && !answered && talk) {
       out.push({ speaker: "patient", text: pick(FALLBACK[mental] || FALLBACK.alert) });
-    } else if (!qs.length && talk && parsed.assess.length && !parsed.tx.length && Math.random() < 0.2 && mental !== "confused") {
+    } else if (!qs.length && talk && parsed.assess.length && !parsed.tx.length && !ctx.complied && Math.random() < 0.2 && mental !== "confused") {
       out.push({ speaker: "patient", text: pick(parsed.byCrew ? ["(watches your partner work)", "Okay..."] : ["Okay.", "Go ahead.", "Mm-hm.", "Is it bad?"]) });
     }
     // breathless speech: short broken phrases when tachypneic / hypoxic
@@ -4693,7 +5221,7 @@ const Semantic = (() => {
     setNum("ecg", rv.ecg ? rv.ecg.val : "--", !rv.ecg);
     $("#btn12").hidden = !rv.twelve;
     // treatment chips
-    const chips = Object.keys(st.count).filter(k => st.count[k] && !["base", "notify", "transport", "stopcpr"].includes(k)).map(k => `<span class="chip">${esc(k.toUpperCase())}${st.count[k] > 1 ? " ×" + st.count[k] : ""}</span>`);
+    const chips = Object.keys(st.count).filter(k => st.count[k] && !["base", "notify", "transport", "stopcpr"].includes(k)).map(k => `<span class="chip">${esc(({ removepatch: "PATCH OFF", removeheat: "HEAT OFF" }[k] || k).toUpperCase())}${st.count[k] > 1 ? " ×" + st.count[k] : ""}</span>`);
     if (st.flags.o2) chips.unshift(`<span class="chip">O₂: ${st.flags.o2.toUpperCase()}</span>`);
     if (st.pi) chips.unshift(`<span class="chip" style="border-color:#3ea6ff">PI: ${st.pi}</span>`);
     $("#txStrip").innerHTML = chips.join("");
@@ -4760,14 +5288,22 @@ const Semantic = (() => {
           <div class="db-box" style="margin-top:1em"><h3>Expected management</h3><p>${esc(sc.expected)}</p></div>
         </div>
       </div>
+      ${flowHtml()}
       <div class="db-box" style="margin-top:1em"><h3>Time-stamped log</h3><table class="log">${logHtml}</table></div>
       <p class="fine">Education only. Doses and steps are from the LA County EMS Agency Prehospital Care Manual as retrieved Oct 20, 2026; always use the current official protocols and medical direction.</p>`;
     currentDebrief.text = debriefText(sc, st, checklist, g, score);
+  }
+  function flowHtml() {
+    const f = SIM.flow();
+    const rows = f.steps.map((s, i) => `<div class="ck ${s.na ? "" : s.done ? "done" : "miss"}"><span class="i">${s.na ? "–" : s.done ? "✔" : "✘"}</span><div><b>${i + 1}. ${esc(s.label)}</b>${s.done && !s.na ? ` <small>· ${fmtT(s.t)}</small>` : ""}${s.na ? `<br><small>N/A: ${esc(s.naText || "")}</small>` : ""}${s.note && !s.na ? `<br><small>${esc(s.note)}</small>` : ""}</div></div>`).join("");
+    const flags = f.flags.length ? f.flags.map(x => `<div class="dev"><b>ORDER</b>: ${esc(x)}</div>`).join("") : `<p>✅ Order OK: AVPU → ABCs/life threats → A&O.</p>`;
+    return `<div class="db-box" style="margin-top:1em"><h3>Assessment flow</h3><p class="fine">Expected order: tracking on approach → intro/consent → radial + carotid → skin/forehead → partner gets BP/SpO2/RR → chief complaint → AVPU → fix ABCs/life threats → A&O → if altered, find why → history/allergies/meds/OPQRST/pertinent negatives → treat and transport. The early hands-on steps (1–6) can be done in any reasonable order.</p>${rows}<h4>Order check</h4>${flags}<p class="fine">Your sequence: ${esc(f.seq.join(" → ") || "nothing recorded")}</p></div>`;
   }
   function debriefText(sc, st, checklist, g, score) {
     const L = [`MedicSim LA debrief: ${sc.dispatchTitle}`, `Patient: ${sc.patient.name}, ${sc.patient.age}${sc.patient.sex}`, `Duration: ${fmtT(st.t)} | Checklist score: ${score}%`];
     if (g) L.push(`Provider Impression: chose ${g.chosen || "none"}; correct ${g.p.correct} (${g.ok ? "CORRECT" : g.partial ? "PARTIAL" : "INCORRECT"}). ${g.p.explain}`);
     L.push("", "CHECKLIST:"); checklist.forEach(c => L.push(`${c.done ? "[x]" : c.optional ? "[-]" : "[ ]"} ${c.label} (Ref. ${c.ref})`));
+    { const f = SIM.flow(); L.push("", "ASSESSMENT FLOW:"); f.steps.forEach((s, i) => L.push(`${s.na ? "[n/a]" : s.done ? "[x]" : "[ ]"} ${i + 1}. ${s.label}${s.done && !s.na ? " @" + fmtT(s.t) : ""}${s.note && !s.na ? " (" + s.note + ")" : ""}`)); f.flags.forEach(x => L.push("ORDER: " + x)); L.push("Sequence: " + f.seq.join(" > ")); }
     L.push("", "DEVIATIONS:"); st.devs.forEach(d => L.push(`${fmtT(d.t)} ${d.level}: ${d.text} [${d.ref}]`)); if (!st.devs.length) L.push("none");
     L.push("", "LOG:"); st.log.forEach(l => L.push(`${fmtT(l.t)} [${l.kind}] ${l.text}`));
     return L.join("\n");
