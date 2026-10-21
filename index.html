@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.6-pacing a5e203366e">
+<meta name="medicsim-version" content="2.6-pacing 6d0141e2ed">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -542,7 +542,7 @@ const PROTOCOLS = {
   "1365": { title: "MCG 1365 Transcutaneous Pacing", revised: "04-01-24",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040604_1365-TCP.pdf",
     keyPoints: ["Indication: symptomatic bradycardia with poor perfusion (TP 1212); NOT for asystole", "Awake patient: sedation/analgesia (midazolam 5 mg; pain per MCG 1345) unless RR < 10 or unresponsive", "Pads anterior/posterior (or per manufacturer); monitor leads on", "Rate 70/min (100/min for children < 12 months)",
-      "Start at 40 mA (or per manufacturer) and increase slowly until ELECTRICAL capture (spike → wide QRS + T) AND MECHANICAL capture (palpable femoral pulse at the paced rate), then add 10 mA", "No capture by 120–130 mA: reposition the pads and re-try", "Poor perfusion despite capture: increase the rate by 10/min (max 100 adult, 120 pediatric)", "Electrical capture can occur WITHOUT mechanical capture: always confirm the pulse (carotid is unreliable: pacer muscle twitch)"]},
+      "Start at 40 mA (or per manufacturer) and increase slowly until ELECTRICAL capture (spike → wide QRS + T) AND MECHANICAL capture (palpable femoral pulse at the paced rate), then add 10 mA", "No capture by 120–130 mA: reposition the pads and re-try", "Poor perfusion despite capture: increase the rate by 10/min (max 100 adult, 120 pediatric)", "Electrical capture can occur WITHOUT mechanical capture: confirm a palpable pulse at the paced rate (1212 ❹ / MCG 1365 #5 don't specify the site)"]},
   "1345": { title: "MCG 1345 Pain Management / MCG 1317.19 Fentanyl", revised: "01-01-25 / 07-01-24",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040600_1345-PainManagement.pdf",
     keyPoints: ["Fentanyl 50 mcg slow IV/IO or IM/IN, repeat every 5 min prn, max 150 mcg before Base contact (Base may allow up to 250 mcg)"]}
@@ -783,14 +783,13 @@ const DEVICE = (() => {
   // femoral/carotid/radial pulse while pacing -> mechanical capture check
   function pulseCheck(C, sites, explicit) {
     const st = C.st, d = st.x.dv; if (!d || !d.pace.on || !d.pace.mA || !st.flags.pads) return null;
-    const c = capture(st, C.sc), u = underlying(st), rate = d.pace.rate, site = sites && sites.length ? sites[0] : "femoral";
+    const c = capture(st, C.sc), u = underlying(st), rate = d.pace.rate, site = sites && sites.length ? sites[0] : "carotid"; // Adrian's flow: carotid check (femoral optional); 1212 ❹ / MCG 1365 #5 don't name a site
     const under = Math.round(u.hr || st.v.hr || 0);
     let txt;
-    if (c === "mech") { txt = `${cap(site)} pulse palpable at about ${rate}, matching the paced rate on the monitor.`; if (site !== "carotid") { C.rec("a:mechcap"); d.mechConfT = d.mechConfT || st.t; } }
+    if (c === "mech") { txt = `${cap(site)} pulse palpable at about ${rate}, matching the paced rate on the monitor.`; if (site !== "radial" || st.v.sbp >= 80) { C.rec("a:mechcap"); if (d.mechConfT == null) { d.mechConfT = st.t; dlog(C, `Mechanical capture confirmed by ${site} pulse at ${d.pace.mA} mA`); } } }
     else if (c === "inhibited") txt = `${cap(site)} pulse about ${under}, the patient's own rhythm (the pacer is inhibited).`;
     else txt = `${cap(site)} pulse about ${under}, weak. It does NOT match the paced rate of ${rate} on the monitor.`;
     if (c !== "mech" && explicit) C.rec("a:mechcheck");
-    if (site === "carotid") txt += " (Carotid pulse checks are unreliable during pacing: pacer muscle twitch can feel like a pulse. Femoral is better.)";
     if (site === "radial" && st.v.sbp < 80) txt = `Radial pulse not palpable. ` + txt.replace(/^Radial pulse/, "Femoral pulse");
     dlog(C, `Pulse check during pacing (${site}): ${c === "mech" ? "matches paced rate" : "does not match"}`);
     return txt;
@@ -861,8 +860,9 @@ const DEVICE = (() => {
     d.ramp = target > d.ramp ? Math.min(1, d.ramp + 1 / 15) : Math.max(0, d.ramp - 1 / 4);
     const p = d.pace, m = C.mental();
     // safety margin: capture + 10 mA (MCG 1365 #5)
-    if (c === "mech" && p.mA >= tcpOf(sc).mech + 10) C.rec("x:margin");
-    if (c === "mech" && d.mechT != null && st.t - d.mechT > 40 && p.mA < tcpOf(sc).mech + 10 && !d.noted.margin) { d.noted.margin = true; C.devQuiet("Once capture is achieved, increase the output by 10 mA to ensure ongoing capture.", "MCG 1365 #5", "note"); }
+    // sequence (Adrian + MCG 1365 #5): electrical capture -> pulse confirms mechanical capture -> +10 mA over the capture threshold
+    if (c === "mech" && d.mechConfT != null && p.mA >= tcpOf(sc).mech + 10 && !st.events["x:margin"]) { C.rec("x:margin"); dlog(C, `Safety margin set: ${p.mA} mA (capture threshold ${tcpOf(sc).mech} mA + 10)`); }
+    if (c === "mech" && d.mechConfT != null && st.t - d.mechConfT > 40 && p.mA < tcpOf(sc).mech + 10 && !d.noted.margin) { d.noted.margin = true; C.devQuiet("Once capture is achieved, increase the output by 10 mA to ensure ongoing capture.", "MCG 1365 #5", "note"); }
     // pacing discomfort in an awake patient
     if (p.on && p.mA >= 20 && st.flags.pads && awake(m) && ["none", "elec", "mech"].includes(c)) {
       const sed = sedation(st);
@@ -1037,7 +1037,7 @@ if (typeof module !== "undefined") module.exports = RADIO;
 /* Timed debrief: time-to-key-interventions vs targets, trend cues, med log, interpretation, radio, curveball; local score history. */
 const DEBRIEF = (() => {
   // education targets, seconds from first patient contact (scenario start). Only applied to items the scenario expects.
-  const TARGET = { "t:cpr": 30, "t:defib": 120, "t:tourniquet": 60, "t:bvm": 90, "t:sga": 300, "t:naloxone": 240, "t:epi": 240, "t:pushepi": 300, "t:cpap": 240, "t:pace": 300, "x:ecap": 360, "a:mechcap": 420, "t:cardiovert": 300, "x:converted": 360, "t:adenosine": 300, "t:atropine": 300,
+  const TARGET = { "t:cpr": 30, "t:defib": 120, "t:tourniquet": 60, "t:bvm": 90, "t:sga": 300, "t:naloxone": 240, "t:epi": 240, "t:pushepi": 300, "t:cpap": 240, "t:pace": 300, "x:ecap": 360, "a:mechcap": 420, "x:margin": 480, "t:cardiovert": 300, "x:converted": 360, "t:adenosine": 300, "t:atropine": 300,
     "t:midaz": 240, "t:d10": 480, "t:oralglucose": 480, "t:glucagon": 480, "a:bgl": 300, "a:monitor": 240, "a:12lead": 600, "t:aspirin": 600, "t:notify": 720, "a:lams": 480, "a:stroke": 480, "t:albuterol": 300, "t:nitro": 600, "t:o2": 180, "t:nrb": 180, "t:calcium": 480, "t:removepatch": 300, "t:ns": 600, "t:base": 900, "t:transport": 1200 };
   const DEFAULT_CRIT = 600;
   function timeline(checklist) {
@@ -5107,7 +5107,7 @@ addS(G(Object.assign({}, bradyBase, {
   pi: { correct: "DYSR", accept: [], differential: ["DYSR", "SYNC", "CPSC"],
     clues: { DYSR: "Ventricular rate 36 with dropped beats after non-conducted P waves (2:1), wide QRS, hypotension and diaphoresis = symptomatic infranodal block.", SYNC: "The near-syncope is from the bradycardia; Dysrhythmia is the primary PI.", CPSC: "Only vague heaviness and no ST elevation; the rhythm is the treatment target." },
     explain: "1212 #8: for 2nd-degree type II or 3rd-degree block with HR ≤ 40 and poor perfusion, proceed immediately to TCP (❸: atropine is unlikely to help, don't delay TCP for it). Contact Base concurrent with TCP.", keyFindingKeys: ["a:12lead", "a:bp", "a:skin"] },
-  expected: "Unstable Mobitz II (HR 36, SBP 80, diaphoretic). Monitor/12-lead, supine, pads, IMMEDIATE TCP: rate 70, start 40 mA and titrate to electrical capture, confirm mechanical capture with a femoral pulse, then +10 mA. Base concurrent with TCP. Atropine not needed first.",
+  expected: "Unstable Mobitz II (HR 36, SBP 80, diaphoretic). Monitor/12-lead, supine, pads, IMMEDIATE TCP: rate 70, start 40 mA and titrate to electrical capture, confirm mechanical capture with a carotid (or femoral) pulse at the paced rate, then +10 mA. Base concurrent with TCP. Atropine not needed first.",
 })));
 
 /* ---------- Ref. 1213 Tachycardia ---------- */
@@ -6034,13 +6034,13 @@ SCENARIOS.forEach(sc => {
       // MCG 1365 #5: start 40 mA, increase slowly until electrical + mechanical capture; 1212 ❹ electrical capture = QRS + T after each spike
       Object.assign({ label: "TCP: electrical capture (each spike followed by a wide QRS); mA titrated up from the start setting", keys: ["x:ecap"], ref: "MCG 1365 #5" }, f),
       // 1212 ❹ / MCG 1365 #5: mechanical capture = palpable pulse correlating with the paced rate
-      Object.assign({ label: "Mechanical capture confirmed: femoral pulse matches the paced rate", keys: ["a:mechcap"], ref: "1212 ❹ / MCG 1365 #5" }, f),
+      Object.assign({ label: "Mechanical capture confirmed: carotid (or femoral) pulse matches the paced rate", keys: ["a:mechcap"], ref: "1212 ❹ / MCG 1365 #5" }, f),
       // MCG 1365 #5: "Once capture is noted increase the mAs by 10mAs"
-      { label: "Output set 10 mA above the capture threshold", keys: ["x:margin"], ref: "MCG 1365 #5", optional: true });
+      Object.assign({ label: "After the pulse check: output increased 10 mA above the capture threshold (safety margin)", keys: ["x:margin"], ref: "MCG 1365 #5" }, { optional: base.optional }));
     // Sedation/analgesia (1212 #9, MCG 1365 #2/#4, MCG 1317.25) is deliberately NOT graded (Adrian's instruction).
   }
   if (pi < 0 && sc.tcp && !L.some(c => c.keys.includes("a:mechcap"))) L.push(
-    { label: "If you pace: electrical capture, then mechanical capture confirmed by a femoral pulse at the paced rate", keys: ["x:ecap", "a:mechcap"], all: true, ref: "MCG 1365 #5", optional: true });
+    { label: "If you pace: electrical capture, then mechanical capture confirmed by a carotid/femoral pulse at the paced rate, then +10 mA", keys: ["x:ecap", "a:mechcap", "x:margin"], all: true, ref: "MCG 1365 #5", optional: true });
   const ci = L.findIndex(c => c.keys.includes("t:cardiovert") && !c.keys.some(k => k.startsWith("!")));
   if (ci >= 0 && !L.some(c => c.keys.includes("x:converted"))) {
     L.splice(ci + 1, 0,
@@ -7050,7 +7050,7 @@ const Semantic = (() => {
     ["Look / expose", ["Open your mouth, checking the airway", "Lift his shirt, what do I see?", "Check pupils", "Expose the patient / Look at his legs / Check his back"]],
     ["History (SAMPLE / OPQRST)", ["Any allergies? Medications? Medical history?", "When did it start? What makes it worse?", "Does it go anywhere? Zero to ten?"]],
     ["Read the monitor / 12-lead out loud", ["Looks like sinus tach / A-fib with RVR / third-degree block / V-fib", "Inferior STEMI, elevation in II, III and aVF / Sinus rhythm, no STEMI", "(The label stays '?' until you call it; the instructor confirms, hints once, then reveals)"]],
-    ["Pacing (TCP) and cardioversion (or tap the monitor buttons)", ["Partner, put the pads on / Pads on", "Start pacing at 70, start at 40 milliamps / Pace at 70", "Increase the mA / Go up by 10 / Set the mA to 80 / Rate 80", "I have electrical capture / Check a femoral pulse / Does the pulse match the paced rate?", "Sync on / Synchronized cardioversion at 120 joules / Energy 150 / Charge", "Oxygen away, everybody clear / Shock / Disarm / Sync off / Pacer off"]],
+    ["Pacing (TCP) and cardioversion (or tap the monitor buttons)", ["Partner, put the pads on / Pads on", "Start pacing at 70, start at 40 milliamps / Pace at 70", "Increase the mA / Go up by 10 / Set the mA to 80 / Rate 80", "I have electrical capture / Check a carotid pulse / Does the pulse match the paced rate? / Go up 10 more milliamps", "Sync on / Synchronized cardioversion at 120 joules / Energy 150 / Charge", "Oxygen away, everybody clear / Shock / Disarm / Sync off / Pacer off"]],
     ["Radio report and handoff", ["Base, this is Medic 12... (age/sex, complaint, mental status, vitals, findings, treatment + response, ETA, request) ... over", "Ready to give you report... (at the ED) ... that's all", "Cancel the report"]],
     ["OB / newborn", ["How far apart are your contractions? / Did your water break? / Do you feel the urge to push? / How many weeks?", "Check for crowning / Open the OB kit / Deliver the baby", "Dry, warm and stimulate the baby / How's the baby? / APGAR / Clamp and cut the cord / Skin to skin", "Fundal massage / Estimate blood loss / Give magnesium 4 grams IV over 20 minutes / Give TXA 1 gram IV"]],
     ["Peds", ["Measure her with the Broselow tape (shows the MCG 1309 color; peds doses are NOT checked)"]],
@@ -7445,7 +7445,7 @@ const Semantic = (() => {
     const missedCrit = checklist.filter(c => c.critical && !c.done);
     const partnerBox = st => { const P = st.log.filter(l => l.kind === "partner" && /^(ORDER|DECLINED)/.test(l.text)); if (!P.length) return ""; const rows = P.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc(l.text)}</td></tr>`).join(""); return `<div class="db-box" style="margin-top:1em"><h3>Partner (EMT) orders</h3><p class="fine">${P.filter(l => /^ORDER/.test(l.text)).length} order(s), ${P.filter(l => /^DECLINED/.test(l.text)).length} declined as ALS (your call). Partner tasks count toward the checklist exactly as if you did them.</p><table class="log">${rows}</table></div>`; };
     const deviceBox = st => { const d = typeof DEVICE !== "undefined" && st.x.dv ? DEVICE.summary(st) : null; if (!d || !d.log.length) return "";
-      const facts = [d.paceT0 != null ? `Pacing started ${fmtT(d.paceT0)}` : "", d.ecapT != null ? `electrical capture ${fmtT(d.ecapT)}` : "", d.mechT != null ? `mechanical capture ${fmtT(d.mechT)}` : "", d.mechConfT != null ? `pulse confirmed ${fmtT(d.mechConfT)}` : (d.mechT != null ? "mechanical capture NOT confirmed by a femoral pulse" : ""), d.shocks.length ? `${d.shocks.length} shock(s): ${d.shocks.map(x => `${x.J} J ${x.sync ? "sync" : "UNSYNC"}${x.clear ? "" : " (no clear call)"}`).join(", ")}` : "", d.convT != null ? `converted ${fmtT(d.convT)}` : ""].filter(Boolean);
+      const facts = [d.paceT0 != null ? `Pacing started ${fmtT(d.paceT0)}` : "", d.ecapT != null ? `electrical capture ${fmtT(d.ecapT)}` : "", d.mechT != null ? `mechanical capture ${fmtT(d.mechT)}` : "", d.mechConfT != null ? `pulse confirmed ${fmtT(d.mechConfT)}` : (d.mechT != null ? "mechanical capture NOT confirmed by a pulse check" : ""), d.shocks.length ? `${d.shocks.length} shock(s): ${d.shocks.map(x => `${x.J} J ${x.sync ? "sync" : "UNSYNC"}${x.clear ? "" : " (no clear call)"}`).join(", ")}` : "", d.convT != null ? `converted ${fmtT(d.convT)}` : ""].filter(Boolean);
       return `<div class="db-box" style="margin-top:1em"><h3>⚡ Monitor / defibrillator log</h3><p class="fine">${esc(facts.join(" · "))}</p><table class="log">${d.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc(l.text)}</td></tr>`).join("")}</table></div>`; };
     const logHtml = st.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc({ me: "🗣 You", patient: "🧑 Patient", bystander: "👥 Bystander", partner: "🚑 Partner", radio: "📻 Radio", assess: "🔎 Assess", tx: "💉 Treat", warn: "⚠️", find: "📟", sys: "•", pi: "🩺 PI", device: "⚡ Monitor" }[l.kind] || l.kind)}</td><td>${esc(l.text)}</td></tr>`).join("");
     const sum = DEBRIEF.summary(sc, st, checklist, score, g ? g.ok : null);
