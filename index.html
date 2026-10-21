@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.5-training 1226751397">
+<meta name="medicsim-version" content="2.6-pacing a5e203366e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -74,6 +74,15 @@ h1{margin:.2em 0 .3em;font-size:1.7em}
 .num.hidden b,.as.hidden b{color:#2b3644}
 .num.alarm b{color:var(--red);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:.35}}
+.dev-panel{margin-top:.4em;border:1px solid #142030;border-radius:8px;padding:.3em .4em;background:#05080b}
+.dev-read{display:flex;flex-wrap:wrap;gap:.8em;font:700 .74em ui-monospace,monospace;color:#5d6b7a;padding-bottom:.3em}
+.dev-read .on{color:var(--org)}.dev-read .sync{color:#fff}.dev-read .chg{color:var(--red);animation:blink 1s steps(2) infinite}.dev-read .cap{color:var(--grn)}
+.dev-btns{display:flex;flex-wrap:wrap;gap:.3em}
+.dev-btns button,.dev-btns select{font:600 .74em ui-monospace,monospace;background:#0b1118;color:#cfd9e3;border:1px solid #223042;border-radius:6px;padding:.35em .55em;min-height:2.2em}
+.dev-btns select{width:auto!important;flex:0 0 auto}
+.dev-btns .dv-pair{display:inline-flex;gap:1px}
+.dev-btns button.act{border-color:var(--org);color:var(--org)}
+.dev-btns .dv-shock{border-color:#6b1d1d;color:#ff8a8a}.dev-btns .dv-shock.armed{background:#5a0f0f;color:#fff;animation:blink 1s steps(2) infinite}
 .assess-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.3em;margin-top:.45em}
 .as{background:#06090d;border:1px solid #142030;border-radius:8px;padding:.25em .45em;min-width:0}
 .as.wide{grid-column:span 5}
@@ -281,6 +290,22 @@ details summary{cursor:pointer;margin:6px 0}
               <div class="num etco2" data-k="etco2"><label>EtCO₂</label><b>--</b><small>mmHg</small></div>
             </div>
           </div>
+          <div class="dev-panel" id="devPanel">
+            <div class="dev-read"><span id="dvPads">PADS OFF</span><span id="dvPace">PACER OFF</span><span id="dvSync">SYNC OFF</span><span id="dvEnergy">200 J</span></div>
+            <div class="dev-btns" id="devBtns">
+              <button type="button" data-op="pads">Pads</button>
+              <button type="button" data-op="pacer" id="dvPacerBtn">Pacer</button>
+              <span class="dv-pair"><button type="button" data-op="ratedown" title="Rate −10">Rate −</button><button type="button" data-op="rateup" title="Rate +10">+</button></span>
+              <span class="dv-pair"><button type="button" data-op="madown" title="mA −10">mA −</button><button type="button" data-op="maup" title="mA +10">+</button></span>
+              <button type="button" data-op="sync" id="dvSyncBtn">Sync</button>
+              <select id="dvJ" title="Energy (biphasic)"><option value="120">120 J</option><option value="150">150 J</option><option value="200" selected>200 J</option><option value="360">360 J</option></select>
+              <button type="button" data-op="charge">Charge</button>
+              <button type="button" data-op="clear">Clear!</button>
+              <button type="button" data-op="o2away">O₂ away</button>
+              <button type="button" data-op="shock" class="dv-shock" id="dvShockBtn">⚡ Shock</button>
+              <button type="button" data-op="disarm">Disarm</button>
+            </div>
+          </div>
           <div class="assess-grid" id="assessGrid">
             <div class="as" data-k="bgl"><label>BGL</label><b>--</b></div>
             <div class="as" data-k="temp"><label>Temp</label><b>--</b></div>
@@ -429,7 +454,8 @@ const PROTOCOLS = {
     url: "https://file.lacounty.gov/SDSInter/dhs/1040391_1213CardiacDysrhythmia-Tachycardia2018-04-29.pdf",
     keyPoints: ["Base contact REQUIRED for all wide-complex tachycardia", "Monitor + 12-lead; supine if poor perfusion", "Sinus tach: find/treat the cause; NS 1 L if hypovolemia/poor perfusion",
       "SVT ≥ 150, adequate perfusion: Valsalva, then Adenosine 12 mg rapid IV push + NS flush, repeat x1", "SVT, alert with poor perfusion: Adenosine 12 mg; Base if no conversion (sync cardioversion)",
-      "Poor perfusion WITH ALOC: Synchronized cardioversion per manufacturer or 120 J, 150 J, 200 J; CONTACT BASE concurrent; consider midazolam 5 mg sedation",
+      "Poor perfusion WITH ALOC: Synchronized cardioversion per manufacturer's guidelines, may repeat x2, or at 120 J, 150 J, 200 J; CONTACT BASE concurrent; consider midazolam 5 mg sedation (don't delay the shock)",
+      "Polymorphic VT with poor perfusion: UNsynchronized shock (defibrillation); never sync a pulseless rhythm (VF/pVT: TP 1210)", "Check SYNC is on before EVERY cardioversion: most monitors revert to defib (unsync) mode after a shock. Call \"clear\" and move O2 away from the chest",
       "Atrial fibrillation with poor perfusion: CONTACT BASE for treatment guidance", "Wide-complex regular, adequate perfusion: Adenosine 12 mg, may repeat", "Wide-complex irregular: Base (adequate perfusion) / cardioversion (poor perfusion)"]},
   "1204": { title: "Fever / Sepsis", revised: "07-01-26",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040381_1204FeverSepsis2018-04-24.pdf",
@@ -513,6 +539,10 @@ const PROTOCOLS = {
   "1315": { title: "MCG 1315 CPAP", revised: "06-01-18",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040595_1315-CPAP.pdf",
     keyPoints: ["Contraindications: arrest, can't protect airway, can't follow commands, SBP < 90, tracheostomy, vomiting, suspected pneumothorax, traumatic respiratory distress"]},
+  "1365": { title: "MCG 1365 Transcutaneous Pacing", revised: "04-01-24",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1040604_1365-TCP.pdf",
+    keyPoints: ["Indication: symptomatic bradycardia with poor perfusion (TP 1212); NOT for asystole", "Awake patient: sedation/analgesia (midazolam 5 mg; pain per MCG 1345) unless RR < 10 or unresponsive", "Pads anterior/posterior (or per manufacturer); monitor leads on", "Rate 70/min (100/min for children < 12 months)",
+      "Start at 40 mA (or per manufacturer) and increase slowly until ELECTRICAL capture (spike → wide QRS + T) AND MECHANICAL capture (palpable femoral pulse at the paced rate), then add 10 mA", "No capture by 120–130 mA: reposition the pads and re-try", "Poor perfusion despite capture: increase the rate by 10/min (max 100 adult, 120 pediatric)", "Electrical capture can occur WITHOUT mechanical capture: always confirm the pulse (carotid is unreliable: pacer muscle twitch)"]},
   "1345": { title: "MCG 1345 Pain Management / MCG 1317.19 Fentanyl", revised: "01-01-25 / 07-01-24",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040600_1345-PainManagement.pdf",
     keyPoints: ["Fentanyl 50 mcg slow IV/IO or IM/IN, repeat every 5 min prn, max 150 mcg before Base contact (Base may allow up to 250 mcg)"]}
@@ -614,6 +644,243 @@ const DOSING = (() => {
   return { TABLE: T, check, isPeds, conv };
 })();
 if (typeof module !== "undefined") module.exports = DOSING;
+
+/* ===== device.js ===== */
+/* =====================================================================
+ * DEVICE: monitor/defibrillator in real time. Transcutaneous pacing
+ * (MCG 1365, TP 1212) and synchronized cardioversion (TP 1213).
+ * State lives in st.x.dv. sim.js passes a context C:
+ *   { st, sc, mental(), treat(tx) -> lines, dev(text, ref, level) -> line,
+ *     devQuiet(text, ref, level), rec(key), log(kind, text), event(text, kind), partner(text) }
+ * Scenario knobs:
+ *   sc.tcp  = { thr: mA for electrical capture, mech: mA for mechanical capture (default thr), sbp: BP gain with capture }
+ *   sc.sync = { convertJ: lowest synchronized energy that converts, after: text when it converts }
+ * ===================================================================== */
+const DEVICE = (() => {
+  const RATE0 = 70, STEP = 10, MAX_MA = 200;
+  const S = st => st.x.dv || (st.x.dv = { pace: { on: false, rate: RATE0, mA: 0, t0: null, started: false }, sync: false, energy: null, charged: null, charging: null,
+    clearT: null, o2T: null, shocks: [], log: [], ramp: 0, cap: "none", ecapT: null, mechT: null, mechConfT: null, convT: null, lastOK: false, painS: 0, lastComplain: -99, noted: {} });
+  const tcpOf = sc => { const t = Object.assign({ thr: 65, sbp: 24 }, sc.tcp || {}); if (t.mech == null) t.mech = t.thr; return t; };
+  const awake = m => ["alert", "anxious", "confused", "aphasic"].includes(m);
+  const perfusing = (st) => !st.x.arrest && st.tg && st.tg.pulse !== false && !["vf", "asystole"].includes(st.tg.rhythm);
+  function dlog(C, text) { const d = S(C.st); d.log.push({ t: C.st.t, text }); C.log("device", text); }
+  // raw underlying rhythm (before the pacer overlay), cached by overlay()
+  function underlying(st) { return (st.x.dvU || {}); }
+  function capture(st, sc) {
+    const d = S(st), p = d.pace; if (!p.on || !p.mA || !st.flags.pads) return "none";
+    const u = underlying(st); if (u.rhythm === "asystole" || u.rhythm === "vf") return "none";
+    if (u.hr && u.hr >= p.rate + 5 && u.rhythm !== "chb") return "inhibited"; // demand mode: own rate is faster
+    const t = tcpOf(sc); return p.mA >= t.mech ? "mech" : p.mA >= t.thr ? "elec" : "none";
+  }
+  function sedation(st) { return Math.min(1, E(st, "midaz") + 0.6 * (E(st, "fentanyl") + E(st, "morphine"))); }
+  // ---------- physiology overlay (after scenario + course targets) ----------
+  function overlay(tg, st, sc) {
+    const d = st.x.dv; st.x.dvU = { hr: tg.hr, rhythm: tg.rhythm, rhythmName: tg.rhythmName, sbp: tg.sbp };
+    if (!d) return tg;
+    const p = d.pace;
+    if (p.on && p.mA > 0 && st.flags.pads && tg.pulse !== false) {
+      const c = capture(st, sc), t = tcpOf(sc), boost = (t.sbp + 4 * Math.max(0, Math.min(3, (p.rate - 70) / 10))) * d.ramp;
+      if (c === "mech") Object.assign(tg, { hr: tg.hr + (p.rate - tg.hr) * Math.min(1, d.ramp * 1.5), sbp: tg.sbp + boost, dbp: tg.dbp + boost * 0.55, rhythm: "paced", rhythmName: `Ventricular paced rhythm at ${p.rate}: a wide QRS and T wave after every pacer spike (${p.mA} mA)`, twelve: { st: {}, text: `Ventricular paced rhythm at ${p.rate}, wide QRS after each spike.` } });
+      else if (c === "elec") Object.assign(tg, { rhythm: "paced", rhythmName: `Ventricular paced rhythm at ${p.rate}: a wide QRS after every pacer spike (${p.mA} mA)`, twelve: { st: {}, text: `Ventricular paced rhythm at ${p.rate}.` } });
+      else if (c === "none") tg.rhythmName = `${tg.rhythmName}, with pacer spikes at ${p.rate} NOT followed by a QRS (no capture, ${p.mA} mA)`;
+      if (["none", "elec", "mech"].includes(c) && p.mA >= 20 && awake(typeof SIM !== "undefined" && SIM.state === st ? SIM.mental() : "alert")) { const hurt = Math.min(10, 4 + p.mA / 15) * (1 - 0.75 * sedation(st)); if (tg.pain == null || tg.pain < hurt) tg.pain = hurt; }
+    }
+    if (d.convT != null && sc.sync && sc.sync.target) Object.assign(tg, typeof sc.sync.target === "function" ? sc.sync.target(st, tg) : sc.sync.target);
+    return tg;
+  }
+  function paced(st) { const d = st.x.dv; return !!(d && d.ramp > 0.5); }
+  // ---------- monitor display state ----------
+  function mon(st, sc) {
+    const d = st.x.dv; if (!d) return null; const p = d.pace, c = st.tg ? capture(st, sc) : "none";
+    return { pads: !!st.flags.pads, pacing: p.on && p.mA > 0 && !!st.flags.pads, pacerOn: p.on, rate: p.rate, mA: p.mA, cap: c, sync: d.sync, energy: d.energy, charged: d.charged, charging: !!d.charging, shockN: d.shocks.length, under: underlying(st) };
+  }
+  // ---------- operations ----------
+  const needPads = (C) => { const st = C.st; if (st.flags.pads) return null; const pend = (st.pq || []).some(q => q.id === "pads");
+    return { speaker: "find", text: pend ? "Your partner is still putting the pads on. Give it a few seconds." : "The pads aren't on yet. Apply the pacing/defib pads first (anterior/posterior), or have your partner do it." }; };
+  function capCheck(C, lines) { // capture state transitions after any change
+    const st = C.st, d = S(st), c = capture(st, C.sc), was = d.cap; if (c === was) return; d.cap = c; const p = d.pace;
+    if ((c === "elec" || c === "mech") && (was === "none" || was === "inhibited")) { if (d.ecapT == null) { d.ecapT = st.t; C.rec("x:ecap"); } dlog(C, `Electrical capture at ${p.mA} mA (rate ${p.rate})`); }
+    if (c === "mech") { if (d.mechT == null) { d.mechT = st.t; C.rec("x:mech"); } dlog(C, `Mechanical capture at ${p.mA} mA`); }
+    if (c === "elec" && was === "mech") dlog(C, `Mechanical capture lost at ${p.mA} mA (electrical only)`);
+    if ((was === "elec" || was === "mech") && c === "none") { C.rec("x:losscap"); dlog(C, p.on ? `LOSS OF CAPTURE at ${p.mA} mA` : "Pacing stopped: capture lost"); }
+    if (c === "inhibited") lines.push({ speaker: "find", text: `Monitor: the pacer is inhibited. The patient's own rate is above the set rate of ${p.rate}, so no spikes fire.` });
+  }
+  function startPacing(C, lines) {
+    const st = C.st, d = S(st), p = d.pace;
+    if (!p.started && p.mA > 0) {
+      p.started = true; p.t0 = st.t;
+      const r = C.treat({ id: "pace", doses: [], route: null, raw: "", fromDevice: true });
+      lines.push(...r.filter(x => !(x.speaker === "narrator" && /^✓/.test(x.text)) && x.speaker !== "patient"));
+      if (underlying(st).rhythm === "asystole") lines.push(C.dev("TCP should not be initiated on patients in asystole.", "MCG 1365"));
+    }
+  }
+  function run(C, ops, ctx) {
+    const st = C.st, sc = C.sc, d = S(st), p = d.pace, lines = [], said = [];
+    const has = k => ops.some(o => o.op === k);
+    const pend = (msg) => said.push(msg);
+    ctx = ctx || {};
+    if (has("clear")) { d.clearT = st.t; dlog(C, "\"Clear!\" called"); }
+    if (has("charge") && has("shock")) ctx.instant = true; // "charge and shock" in one breath
+    if (has("o2away")) { d.o2T = st.t; dlog(C, "Oxygen moved away from the chest"); }
+    for (const o of ops) {
+      switch (o.op) {
+        case "pads": break;
+        case "pace": case "rate": case "rateup": case "ratedown": case "ma": case "maup": case "madown": case "startat": {
+          if (o.op === "pace" || p.on || ["ma", "maup", "madown", "startat"].includes(o.op)) { const np = needPads(C); if (np && o.op === "pace") { lines.push(np); return lines; } }
+          if (o.op === "pace") { if (!p.on) { p.on = true; if (!p.rate) p.rate = RATE0; dlog(C, `PACER ON (rate ${p.rate}, ${p.mA} mA)`); pend(`Pacer on: demand mode, rate ${p.rate} ppm, output ${p.mA} mA.`); } }
+          if (o.op === "rate" || o.op === "rateup" || o.op === "ratedown") {
+            const nr = Math.max(30, Math.min(180, o.op === "rate" ? o.val : p.rate + (o.op === "rateup" ? 1 : -1) * (o.val || 10)));
+            p.rate = nr; dlog(C, `Pacing rate ${nr} ppm`); pend(`Rate ${nr} ppm.`);
+            if (nr > 100 && !d.noted.rate) { d.noted.rate = true; lines.push(C.dev("Maximum adult pacing rate is 100 bpm (increase by 10 bpm at a time for poor perfusion).", "MCG 1365 #7", "caution")); }
+          }
+          if (["ma", "maup", "madown", "startat"].includes(o.op)) {
+            const nm = Math.max(0, Math.min(MAX_MA, o.op === "ma" || o.op === "startat" ? o.val : p.mA + (o.op === "maup" ? 1 : -1) * (o.val || STEP)));
+            if (!p.mA && nm > 0 && nm !== 40 && (o.op === "ma" || o.op === "startat") && !d.noted.start40) { d.noted.start40 = true; lines.push({ speaker: "find", text: "Instructor: MCG 1365 #5 sets the initial current at 40 mA, then increase slowly until electrical and mechanical capture." }); }
+            p.mA = nm; dlog(C, `Output ${nm} mA${p.on ? "" : " (pacer not running)"}`); pend(`Output ${nm} mA${p.on ? "" : ". The pacer isn't running yet: say \"start pacing\""}.`);
+            if (nm >= 120 && capture(st, sc) === "none" && !d.noted.hi) { d.noted.hi = true; lines.push({ speaker: "find", text: "Monitor: 120+ mA and still no capture. (MCG 1365 #6: at 120-130 mA without capture, reposition the pads to the upper right chest and the apex, then re-try.)" }); }
+          }
+          break; }
+        case "paceoff": if (p.on) { p.on = false; dlog(C, "PACER OFF"); pend("Pacer off. Spikes stopped."); } else pend("The pacer isn't running."); break;
+        case "sync": {
+          if (!st.rev.monitor && !st.flags.pads) { lines.push({ speaker: "find", text: "No ECG source yet: put the monitor leads or pads on first." }); break; }
+          d.sync = o.val !== false; dlog(C, d.sync ? "SYNC ON" : "SYNC OFF");
+          const r = st.tg.rhythm, noR = ["vf", "asystole"].includes(r);
+          pend(d.sync ? (noR ? "SYNC on, but the monitor can't find any R waves to mark." : "SYNC on: a sync marker flashes on each R wave.") : "SYNC off (defibrillation mode).");
+          if (d.sync && d.charged) pend("Note: you're still charged.");
+          break; }
+        case "energy": { const j = Math.max(1, Math.min(360, o.val)); if (d.charged && d.charged !== j) { d.charged = null; pend("Energy changed: the charge was dumped. Charge again."); } d.energy = j; dlog(C, `Energy ${j} J selected`); pend(`Energy ${j} J.`); break; }
+        case "charge": { const np = needPads(C); if (np) { lines.push(np); return lines; } if (!d.energy) { d.energy = d.sync ? 120 : 200; pend(`No energy selected; using ${d.energy} J.`); }
+          d.charging = { due: st.t + (d.energy > 200 ? 6 : 4), J: d.energy }; d.charged = null; dlog(C, `Charging to ${d.energy} J${d.sync ? " (SYNC on)" : " (SYNC off)"}`); pend(`Charging to ${d.energy} J${d.sync ? ", SYNC on" : ""}…`); break; }
+        case "disarm": if (d.charged || d.charging) { d.charged = null; d.charging = null; dlog(C, "Charge dumped (disarmed)"); pend("Disarmed. Charge removed."); } break;
+        case "cardiovert": { // one-liner: SYNC + energy + charge
+          const np = needPads(C); if (np) { lines.push(np); return lines; }
+          if (!d.sync) { d.sync = true; dlog(C, "SYNC ON"); }
+          const j = o.val || d.energy || 120; d.energy = j; dlog(C, `Energy ${j} J selected`);
+          d.charging = { due: st.t + (j > 200 ? 6 : 4), J: j }; d.charged = null; dlog(C, `Charging to ${j} J (SYNC on)`);
+          pend(`SYNC on, ${j} J, charging… Call clear, then shock.`); break; }
+        case "shock": lines.push(...shock(C, o, ctx)); break;
+        case "ecap": lines.push(...readCapture(C, o.val)); break;
+        case "clear": case "o2away": break;
+      }
+    }
+    capCheck(C, lines); if (p.on) startPacing(C, lines);
+    if (said.length) lines.unshift({ speaker: "narrator", text: "⚡ " + said.join(" ") });
+    if (has("clear") && !has("shock")) lines.push({ speaker: "narrator", text: d.charged || d.charging ? "(Everyone steps back, hands off the patient.)" : "(Everyone's clear.)" });
+    if (has("o2away") && !has("shock") && !has("clear")) lines.push({ speaker: "narrator", text: "(Oxygen moved away from the chest.)" });
+    return lines;
+  }
+  function readCapture(C, saysCapture) {
+    const st = C.st, d = S(st), c = capture(st, C.sc), out = [];
+    if (!d.pace.on || !d.pace.mA) return [{ speaker: "find", text: "The pacer isn't running, so there's nothing to capture yet." }];
+    const elec = c === "elec" || c === "mech";
+    C.rec(elec === !!saysCapture ? "a:ecapread" : "a:ecapread:wrong");
+    if (elec && saysCapture) out.push({ speaker: "find", text: "Correct: every spike is followed by a wide QRS and a T wave. That's ELECTRICAL capture. Now confirm mechanical capture with a pulse." });
+    else if (!elec && !saysCapture) out.push({ speaker: "find", text: "Correct: spikes are marching through without a QRS after them. No capture yet." });
+    else if (saysCapture) out.push({ speaker: "find", text: "Look again: the spikes aren't followed by a wide QRS. No capture." });
+    else out.push({ speaker: "find", text: "Look again: each spike IS followed by a wide QRS and T wave now." });
+    return out;
+  }
+  // femoral/carotid/radial pulse while pacing -> mechanical capture check
+  function pulseCheck(C, sites, explicit) {
+    const st = C.st, d = st.x.dv; if (!d || !d.pace.on || !d.pace.mA || !st.flags.pads) return null;
+    const c = capture(st, C.sc), u = underlying(st), rate = d.pace.rate, site = sites && sites.length ? sites[0] : "femoral";
+    const under = Math.round(u.hr || st.v.hr || 0);
+    let txt;
+    if (c === "mech") { txt = `${cap(site)} pulse palpable at about ${rate}, matching the paced rate on the monitor.`; if (site !== "carotid") { C.rec("a:mechcap"); d.mechConfT = d.mechConfT || st.t; } }
+    else if (c === "inhibited") txt = `${cap(site)} pulse about ${under}, the patient's own rhythm (the pacer is inhibited).`;
+    else txt = `${cap(site)} pulse about ${under}, weak. It does NOT match the paced rate of ${rate} on the monitor.`;
+    if (c !== "mech" && explicit) C.rec("a:mechcheck");
+    if (site === "carotid") txt += " (Carotid pulse checks are unreliable during pacing: pacer muscle twitch can feel like a pulse. Femoral is better.)";
+    if (site === "radial" && st.v.sbp < 80) txt = `Radial pulse not palpable. ` + txt.replace(/^Radial pulse/, "Femoral pulse");
+    dlog(C, `Pulse check during pacing (${site}): ${c === "mech" ? "matches paced rate" : "does not match"}`);
+    return txt;
+  }
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+  function shock(C, o, ctx) {
+    const st = C.st, sc = C.sc, d = S(st), out = [], r = st.tg.rhythm, perf = perfusing(st);
+    const clearOK = d.clearT != null && st.t - d.clearT <= 20;
+    const o2on = ["nc", "nrb", "cpap"].includes(st.flags.o2) || st.flags.cpap;
+    if (ctx.instant && d.charging) { d.charged = d.charging.J; d.charging = null; dlog(C, `Charged ${d.charged} J`); }
+    const legacy = !d.charged && !d.charging; // "shock him at 200" with no charge step
+    if (d.charging && !d.charged) return [{ speaker: "find", text: "Still charging. Wait for the charged tone." }];
+    if (legacy && perf) return [{ speaker: "find", text: `Not charged. ${d.sync ? "SYNC is on. " : ""}Select the energy and charge first.` }];
+    if (legacy && !st.flags.pads) { st.flags.pads = true; dlog(C, "Pads placed (quick-look)"); }
+    const J = d.charged || o.val || d.energy || 200;
+    if (d.sync && !perf && (r === "vf" || r === "asystole" || (st.x.arrest && r !== "vt"))) {
+      C.rec("x:syncvf"); dlog(C, `SHOCK pressed with SYNC on in ${r.toUpperCase()}: no R waves, shock did not fire`);
+      out.push({ speaker: "find", text: "You press SHOCK… nothing. SYNC is on and there are no R waves to sync to, so the defibrillator won't fire." });
+      if (!d.noted.syncvf) { d.noted.syncvf = true; out.push(C.dev("Synchronized mode in a pulseless rhythm delays defibrillation. Turn SYNC off and defibrillate.", "1210 #8")); }
+      return out;
+    }
+    if (!clearOK) { C.rec("x:noclear"); if (st.x.arrest && legacy) C.devQuiet("No \"everyone clear\" call before the shock.", "standard practice*", "note"); else out.push(C.dev("Shock delivered without a \"clear\" call. Say \"everyone clear\" and look before every shock.", "Safety", "caution")); }
+    if (o2on && (d.o2T == null || st.t - d.o2T > 30) && !st.x.arrest) { C.rec("x:o2near"); out.push(C.dev("Move the oxygen away from the chest before shocking (fire risk).", "standard practice*", "note")); }
+    if (st.flags.o2 === "bvm" && st.x.arrest && (d.o2T == null || st.t - d.o2T > 30) && !d.noted.bvm) { d.noted.bvm = true; }
+    const syncShock = d.sync && perf;
+    const shockRec = { t: st.t, J, sync: syncShock, rhythm: r, ok: false, clear: clearOK };
+    d.charged = null; d.charging = null;
+    if (d.pace.on) { d.pace.on = false; dlog(C, "Pacer stopped by the shock"); }
+    if (syncShock) {
+      const conv = (sc.sync && sc.sync.convertJ) || 120, convertible = ["vt", "svt", "afib"].includes(r);
+      d.lastOK = convertible && J >= conv && !(sc.sync && sc.sync.never);
+      // 1213 #12/#16/#17/#19: "per manufacturer's guidelines, may repeat x2, or at 120J, 150J, 200J"
+      const nSync = d.shocks.filter(x => x.sync).length + 1;
+      if (J > 200 && !d.noted.j200) { d.noted.j200 = true; out.push(C.dev(`${J} J synchronized: 1213 lists 120 J, 150 J, 200 J (or per manufacturer's guidelines).`, "1213 #12/#17", "note")); }
+      if (nSync === 4 && !d.noted.rep) { d.noted.rep = true; out.push(C.dev("1213 allows the initial cardioversion plus 2 repeats (120/150/200 J). Contact Base for further direction.", "1213 #12/#17", "note")); }
+      dlog(C, `SYNC SHOCK ${J} J delivered on the R wave (${r.toUpperCase()})${clearOK ? "" : ", no clear call"}`);
+      out.push({ speaker: "narrator", text: `⚡ You hold SHOCK… it fires on the next R wave (~0.3 s). ${J} J synchronized.` });
+      const tl = C.treat({ id: "cardiovert", doses: [{ v: J, u: "J" }], route: null, raw: `synchronized cardioversion ${J} j`, fromDevice: true });
+      out.push(...tl.filter(x => !(x.speaker === "narrator" && /^✓/.test(x.text))));
+      shockRec.ok = d.lastOK;
+      if (d.lastOK) { d.convT = st.t; C.rec("x:converted"); dlog(C, `Converted at ${J} J`); out.push({ speaker: "find", text: (sc.sync && sc.sync.after) || "The rhythm converts: sinus rhythm on the monitor." }); }
+      else if (convertible) out.push({ speaker: "find", text: `Rhythm unchanged: still ${st.tg.rhythmName.replace(/\s*\(.*\)$/, "")}.` });
+    } else {
+      if (perf && /polymorphic|torsade/i.test(st.tg.rhythmName || "")) { dlog(C, `UNSYNCHRONIZED SHOCK ${J} J (polymorphic VT, per 1213 ❽)`); out.push({ speaker: "narrator", text: `⚡ SHOCK delivered immediately: ${J} J, unsynchronized (polymorphic VT can't be synchronized reliably: 1213 ❽).` }); out.push(...C.treat({ id: "defib", doses: [{ v: J, u: "J" }], route: null, raw: `shock ${J} j`, fromDevice: true, quiet: true }).filter(x => !(x.speaker === "narrator" && /^✓/.test(x.text)) && !/non-shockable/.test(x.text))); }
+      else if (perf) { C.rec("x:unsyncperf"); dlog(C, `UNSYNCHRONIZED SHOCK ${J} J to a perfusing rhythm (${r.toUpperCase()})`);
+        out.push(C.dev(`Unsynchronized shock to a patient with a pulse (${st.tg.rhythmName}). A shock that lands on the T wave can cause VF. Cardioversion must be SYNCHRONIZED.`, "1213"));
+        out.push({ speaker: "narrator", text: `⚡ SHOCK delivered immediately: ${J} J, unsynchronized.` });
+        const tl = C.treat({ id: "defib", doses: [{ v: J, u: "J" }], route: null, raw: `shock ${J} j`, fromDevice: true, quiet: true });
+        out.push(...tl.filter(x => !(x.speaker === "narrator" && /^✓/.test(x.text)) && !/non-shockable rhythm \/ patient with a pulse/.test(x.text)));
+        out.push({ speaker: "find", text: `Rhythm unchanged: still ${st.tg.rhythmName.replace(/\s*\(.*\)$/, "")}.` });
+      } else {
+        dlog(C, `DEFIBRILLATION ${J} J (${r.toUpperCase()})`);
+        const tl = C.treat({ id: "defib", doses: [{ v: J, u: "J" }], route: null, raw: `shock ${J} j`, fromDevice: true });
+        out.push(...tl);
+      }
+    }
+    d.shocks.push(shockRec);
+    // SYNC auto-reset after a shock: device behaviour on most monitors, LA County protocols are silent (standard practice*)
+    if (d.sync) { d.sync = false; dlog(C, "SYNC reset to OFF after the shock"); out.push({ speaker: "find", text: "Monitor: SYNC is OFF again after the shock (this monitor defaults back to defib mode). Re-enable SYNC before another cardioversion." }); }
+    return out;
+  }
+  // ---------- per-second tick ----------
+  function tick(C) {
+    const st = C.st, sc = C.sc, d = st.x.dv; if (!d) return;
+    if (d.charging && st.t >= d.charging.due) { d.charged = d.charging.J; d.charging = null; dlog(C, `Charged ${d.charged} J`); C.event(`Monitor: charged, ${d.charged} J${d.sync ? ", SYNC on" : ", SYNC OFF"}. (charged tone)`, "find"); }
+    const lines = []; capCheck(C, lines); if (lines.length) lines.forEach(l => C.event(l.text, "find"));
+    const c = capture(st, sc), target = c === "mech" ? 1 : 0;
+    d.ramp = target > d.ramp ? Math.min(1, d.ramp + 1 / 15) : Math.max(0, d.ramp - 1 / 4);
+    const p = d.pace, m = C.mental();
+    // safety margin: capture + 10 mA (MCG 1365 #5)
+    if (c === "mech" && p.mA >= tcpOf(sc).mech + 10) C.rec("x:margin");
+    if (c === "mech" && d.mechT != null && st.t - d.mechT > 40 && p.mA < tcpOf(sc).mech + 10 && !d.noted.margin) { d.noted.margin = true; C.devQuiet("Once capture is achieved, increase the output by 10 mA to ensure ongoing capture.", "MCG 1365 #5", "note"); }
+    // pacing discomfort in an awake patient
+    if (p.on && p.mA >= 20 && st.flags.pads && awake(m) && ["none", "elec", "mech"].includes(c)) {
+      const sed = sedation(st);
+      if (sed < 0.6) d.painS++;
+      if (sed < 0.6 && st.t - d.lastComplain >= 22) { d.lastComplain = st.t; const L = sc.patient.age < 15 ? ["(screaming and crying, trying to pull the pads off)"] : m === "confused" ? ["(moans and grabs at the pads with every beat)", "Ow! Stop! Stop it!", "(groans and tries to sit up)"] : ["AHH! It's like getting punched in the chest every second!", "Please... make it stop... it hurts so much!", "(cries out and grabs at the pads with each beat)", "I can't... take this... it hurts!"]; const line = L[Math.floor(st.t / 22) % L.length]; C.say([{ speaker: /^\(/.test(line) ? "narrator" : "patient", text: line }]); }
+      // Sedation/analgesia is NOT prompted or graded (Adrian): the patient may still voice discomfort.
+    }
+  }
+  // ---------- debrief summary ----------
+  function summary(st) {
+    const d = st.x.dv; if (!d) return null;
+    return { log: d.log.slice(), shocks: d.shocks.slice(), ecapT: d.ecapT, mechT: d.mechT, mechConfT: d.mechConfT, convT: d.convT, paceT0: d.pace.t0 };
+  }
+  return { S, run, tick, overlay, mon, paced, capture, pulseCheck, summary, tcpOf, sedation };
+})();
+function PACED(st) { return DEVICE.paced(st); }
+function PACE_RATE(st) { return st.x.dv ? st.x.dv.pace.rate : 70; }
+if (typeof module !== "undefined") module.exports = DEVICE;
 
 /* ===== interp.js ===== */
 /* =====================================================================
@@ -770,7 +1037,7 @@ if (typeof module !== "undefined") module.exports = RADIO;
 /* Timed debrief: time-to-key-interventions vs targets, trend cues, med log, interpretation, radio, curveball; local score history. */
 const DEBRIEF = (() => {
   // education targets, seconds from first patient contact (scenario start). Only applied to items the scenario expects.
-  const TARGET = { "t:cpr": 30, "t:defib": 120, "t:tourniquet": 60, "t:bvm": 90, "t:sga": 300, "t:naloxone": 240, "t:epi": 240, "t:pushepi": 300, "t:cpap": 240, "t:pace": 300, "t:cardiovert": 300, "t:adenosine": 300, "t:atropine": 300,
+  const TARGET = { "t:cpr": 30, "t:defib": 120, "t:tourniquet": 60, "t:bvm": 90, "t:sga": 300, "t:naloxone": 240, "t:epi": 240, "t:pushepi": 300, "t:cpap": 240, "t:pace": 300, "x:ecap": 360, "a:mechcap": 420, "t:cardiovert": 300, "x:converted": 360, "t:adenosine": 300, "t:atropine": 300,
     "t:midaz": 240, "t:d10": 480, "t:oralglucose": 480, "t:glucagon": 480, "a:bgl": 300, "a:monitor": 240, "a:12lead": 600, "t:aspirin": 600, "t:notify": 720, "a:lams": 480, "a:stroke": 480, "t:albuterol": 300, "t:nitro": 600, "t:o2": 180, "t:nrb": 180, "t:calcium": 480, "t:removepatch": 300, "t:ns": 600, "t:base": 900, "t:transport": 1200 };
   const DEFAULT_CRIT = 600;
   function timeline(checklist) {
@@ -882,6 +1149,30 @@ const PROVIDER_IMPRESSIONS = {
 const NLU = (() => {
   // ---------------- 1. normalization & STT repair ----------------
   const PHRASE_FIX = [
+    // v2.6 monitor/defib speech-recognizer mishears (Vosk small, synthetic + noisy blind audio)
+    [/\b(press|pressed|hit|turn on|turn|set it to|put it in|ten|then) (the )?(think|sing|sink|sank|thing|seen|cinq)\b(?! (about|that|so|he|she|it|you|we|i))/g, "$1 sync"], [/^ ?(think|sing|sink|sank|thing|cinq|the same) (on|off|mode) ?$/g, " sync $2 "],
+    [/\b(\d+|the|on|to|by|of) (million ants|million and|million times|million|millions|millionaire|millie hands|millie ants|melly hands|merely hands|many apps|many hands|mill hands|milly amps)\b/g, "$1 milliamps"],
+    [/\b(the|\d+|give me \d+|increase|decrease) (am a|an a|and a|i'm a|a may|and may)\b/g, "$1 ma"],
+    [/\b(electrical|mechanical|me chemical|no|lost|have|of) (catcher|captor|captain)\b/g, "$1 capture"], [/\bme chemical\b/g, "mechanical"],
+    [/\b(after every|each) (spite|spy|spice)\b/g, "$1 spike"], [/\b(why|white|wise) qrs\b/g, "wide qrs"],
+    [/\b(set|check|bump|thump|increase|decrease|lower|raise) (the )?right\b/g, "$1 the rate"], [/^ ?(right|great|wait|regaining) (\d{2,3})\b/g, " rate $2"],
+    [/\b(deliver|delivered|push|press|the live with) the (shop|shot|jock|shark)\b/g, "deliver the shock"],
+    [/\b(the )?(o to|oh to|al two|out to|c o two|movie or two|o two|or two)( away)\b/g, " o2 away"], [/\boxygen (to way|subway)\b/g, "oxygen away"],
+    [/\bcardi\w* (overt|over|that|of it|vert|virgin|version|aversion)\b/g, "cardioversion"], [/\bcarded a version\b/g, "cardioversion"], [/\bcardinal version\b/g, "cardioversion"],
+    [/\b\w+ cutaneous\b/g, "transcutaneous"], [/\btransportation just basic\b/g, "transcutaneous pacing"],
+    [/\b(the )?(pay so|paisa|pacey|pay sir)\b/g, "the pacer"],
+    [/\b(go|going|then) (on|and) synchronized\b/g, "$1 unsynchronized"], [/\b(febrile eight|fibrillate|defibrillator|beverley|separate night)\b(?! pads)/g, "defibrillate"],
+    [/(\d) (tools|twos|jews|tool|jew|joel|joels)\b/g, "$1 joules"],
+    [/\bpace (or|of|is) off\b|\bthe pace off\b|\bthe pace of\b/g, " pacer off"],
+    [/\b(trump|dumped|come|jump|thump) the charge\b/g, "dump the charge"],
+    [/\bsome (verse|first|versa|person)\b/g, "some versed"],
+    [/\b(heads|hats|pats|that's|had some) on the patient\b/g, "pads on the patient"], [/\b(interior|and terrier|material) (pasteur year|posterior)\b/g, "anterior posterior"],
+    [/\b(ephemeral|family|feminine) (pulse|polls|calls|house)\b/g, "femoral pulse"],
+    [/\b(turn )?(the )?(paces|paces are|pencil|pacers are|pace is) off\b/g, " pacer off"], [/\bon the (out|dial)\b/g, "on the output"], [/\band out$/g, "on the output"], [/\b(increased?|give me \d+) ema\b/g, "$1 ma"],
+    [/\b(midas,? allam|metisol and|metisol|middizzollum|medizal in|medizal|midas allam|met is all and)\b/g, "midazolam"], [/\b(fenton r\.?|fenton are|benton out|fenton)\b(?= \d| fifty)/g, "fentanyl"],
+    [/\b(ml|m l) ants\b|\bmelee hamps\b|\bmilli hamps\b/g, "milliamps"], [/^ ?(chalking|chucking|shocking now|shock in)\.? ?$/g, " shocking "], [/^ ?(tink|tinkon|tink on|think on)\.? ?$/g, " sync on "],
+    [/\bdump the chart\b/g, "dump the charge"], [/\bno catch yet\b/g, "no capture yet"], [/\b(from|for) a chemical capture\b/g, "for mechanical capture"], [/\bhads on\b/g, "pads on"],
+    [/\bon the (out|it up|it out)$/g, "on the output"], [/\bup (\d+|ten|twenty) more\b/g, "up by $1 more"],
     // rhythm / 12-lead read-outs (STT spellings)
     [/\b(steamy|stemmy|stimmy|stemie|stem e|stemy|steamie)\b/, " stemi "],
     [/\b(r v r|our vr|rv are|are vr)\b/, " rvr "],
@@ -1019,6 +1310,14 @@ const NLU = (() => {
     [/\bpen ?lights?\b|\bpenn light\b/g, "penlight"], [/\bc m s\b|\bsee (ems|em ess|m s)\b|\bc ms\b/g, "cms"], [/\ba ?v ?p ?u\b/g, "avpu"], [/\bd ?cap ?b ?t ?l ?s\b|\bdee cap\b/g, "dcap btls"],
     [/\b(jay|j) ?v ?d\b/g, "jvd"], [/\bpronate?or drift\b|\bpro nator drift\b/g, "pronator drift"], [/\bgag reflects\b/g, "gag reflex"], [/\bstern ?(al|el|um)? (rub|rob)\b/g, "sternal rub"],
     [/\bfemoral'?s\b|\bfemur all?s\b/g, "femorals"], [/\bcarotid'?s\b|\bcarrot ?(id|ids|it)s?\b/g, "carotids"], [/\bmucus\b/g, "mucous"], [/\btruck marks\b|\btract marks\b/g, "track marks"],
+    // monitor/defibrillator mishears (MCG 1365 / TP 1213)
+    [/\bun ?(sync|sink|synch)(ed|hronized|hronised)?\b/g, "unsynchronized"], [/\b(synchroni[sz]e|synchroni[sz]ing|synchroni[sz]ation|synchronous|synch|sinc|syncing|synced|sinked)\b/g, "synchronized"],
+    [/\b(hit|press|push|turn on|turn off|put it on|put it in|enable|disable|activate|select|put on|in|the|on|off) sink\b/g, "$1 synchronized"], [/\bsink (on|off|mode|button|it|him|her|marker|markers|cardio\w*)\b/g, "synchronized $1"],
+    [/\b(cardio ?versions?|cardio virgin|cardiac version|cardio vert|cardio burt|cardio ?vision|cardio ?person)\b/g, "cardioversion"], [/\bcardio ?verts?\b/g, "cardiovert"],
+    [/\b(milli ?amps?|milliamperes?|milli ?amperes?|mill ?amps?|mil ?amps?|mili ?amps?|million amps|mila amps|amps)\b/g, "ma"], [/(?<![a-z'])(m a|em a|emma|m as|m a's|mas)\b(?! (paramedic|medic|little|lot|bit|patient))/g, "ma"],
+    [/(\d) ?mas?\b/g, "$1 ma"], [/\bpace (yourself|your breathing|your breaths)\b/g, "slow down"], [/\b(jewels?|jules|joule|jewel|jouls?|dules|duels)\b/g, "joules"],
+    [/\b(start|begin|stop|pause) (facing|basing|pasing|placing)\b/g, "$1 pacing"], [/^ ?(facing|basing|pasing) (at|rate)\b/g, "pacing $2"], [/\bpace ?(her|him) at\b/g, "pace $1 at"],
+    [/\bevery ?(one|body)('?s)? clear\b/g, "everyone clear"], [/\b(oh two|o two|0 2)\b/g, "o2"],
     [/\bsink (cardio\w*|cardiovert)/g, "synchronized $1"], [/\bsync\b/g, "synchronized"], [/\bsat(t)?ing\b/g, "sats"],
   ];
   const NUM = { zero: 0, oh: 0, one: 1, won: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
@@ -1059,7 +1358,7 @@ const NLU = (() => {
     "intermittent describe sharp stabbing crushing squeezing tearing burning pain chest shortness palpitations racing pounding fever chills cough coughing urinate travel traveled rash stiff " +
     "monitor rhythm electrocardiogram mlapss lams stroke facial droop drift glasgow oriented consciousness unconscious unresponsive orientation hospital refuse refusal transport ambulance " +
     "partner engine paramedic paramedics firefighter emergency yesterday today morning afternoon evening sublingual intranasal intramuscular intravenous intraosseous milligrams micrograms " +
-    "milliliters joules liters nebulizer inhaler insulin metformin blood thinner thinners warfarin eliquis xarelto plavix viagra cialis sildenafil tadalafil erectile alcohol drinking drugs " +
+    "milliliters joules milliamps pacer unsynchronized liters nebulizer inhaler insulin metformin blood thinner thinners warfarin eliquis xarelto plavix viagra cialis sildenafil tadalafil erectile alcohol drinking drugs " +
     "heroin fentanyl overdose diabetic diabetes asthma copd emphysema cancer kidney dialysis surgery surgeries diagnosed problems medical conditions anything everything happened happening " +
     "started starting started began sudden suddenly gradually exactly symptoms feeling better worse").split(/\s+/);
   const LEXSET = new Set(LEXICON);
@@ -1218,6 +1517,7 @@ const NLU = (() => {
     ["tracking", /track(s|ing)? (me|us|you)\b|is (he|she|the patient|they) tracking|tracking on approach|\bon approach\b|general impression|as (i|we) (walk|approach|come) (in|up)|eyes (follow|following|tracking)|does (he|she) (follow|look at|see) (me|us)|first impression|from the door(way)?|look at (him|her) as (i|we) walk/],
     ["patches", /\bpatch(es)?\b|transdermal|duragesic/],
     ["vitals", /vitals|vital signs|full set|set of vitals|(some|a set of|get|grab) numbers on/],
+    ["mechcap", /mechanical capture|(pulses?|femorals?|carotids?)( pulse)? (match|matches|matching|correlat\w*)|match(es|ing)? the (paced|pacer|pacing|monitor) ?(rate|beats?)?|check(ing)? for (mechanical )?capture|confirm(ing)? (mechanical )?capture|pulse with (each|every) (paced )?(beat|spike|complex)|do (we|i) have mechanical|is (he|she|it|the pacer) capturing/],
     ["pulsecheck", /pulse check|check (for )?(a )?pulse\b(?! ?ox)|is there a pulse|rhythm check/],
     ["scene", /look around|what do (i|we) see around|\bscene\b|environment|surroundings|(the|this) room|anything (around|nearby|on the (table|floor|counter|nightstand))/],
     ["look", /what (do|can|did) (i|we) see\b(?! (happen|around|in (the|this) room))|what am i (seeing|looking at)|what (are|do) we see|what (does|do) (it|that|they|this|he|she|his \w+|her \w+) look like|how (does|do) (it|that|they|this) look|(is there |do i see )?anything (there|on (it|him|her|them)|unusual|abnormal|notable)\b|do i see anything|what'?s there\b|what do i notice|what do (i|we) find/],
@@ -1241,7 +1541,7 @@ const NLU = (() => {
     ["stopcpr", /stop (cpr|compressions?)|hold (cpr|compressions?)/],
     ["defib", /defib|\bshock\b|deliver (a )?shock|clear.*shock|200 ?j|360 ?j|\baed\b/],
     ["cardiovert", /cardiover|synchroni[sz]ed/],
-    ["pace", /\bpac(e|ing)\b|\btcp\b|transcutaneous/],
+    ["pace", /\bpac(e|ing)\b|\bpacer\b(?! spikes?)|\btcp\b|transcutaneous/],
     ["cpap", /\bcpap\b|\bbipap\b|positive airway pressure/],
     ["bvm", /\bbvm\b|bag valve|bag mask|\bbmv\b|\bbag (him|her|them|the patient)\b|assist (his |her )?(ventilations|breathing|respirations)|start bagging|ventilate|rescue breaths|positive pressure/],
     ["sga", /igel|supraglottic|\bsga\b|king airway|intubat|\bett\b|advanced airway|endotracheal/],
@@ -1486,6 +1786,50 @@ const NLU = (() => {
   // EMT partner scope (LA County EMT): what the partner does when told to; anything else ALS is declined/set up
   const PARTNER_A = new Set(["bp", "spo2", "rr", "vitals", "bgl", "temp", "monitor", "12lead", "etco2", "recheck", "pulsecheck"]);
   const PARTNER_T = new Set(["nrb", "nc", "o2", "bvm", "cpap", "opa", "suction", "cpr", "stopcpr", "pads", "bandage", "tourniquet", "fowler", "supine", "recovery", "smr", "gurney", "transport", "cooling", "protect", "removepatch", "removeheat", "obkit", "drynewborn", "fundal", "skintoskin"]);
+  // ---- monitor/defibrillator operations (DEVICE) ----
+  function deviceParse(t, out) {
+    const ops = [], add = (op, val) => { if (!ops.some(o => o.op === op)) ops.push(val == null ? { op } : { op, val }); };
+    const q = /^ ?(do|does|did|have|has|is|are|was|were|should|can|could) (you|he|she|they|we|i|the patient|there)\b/.test(t) && !/\b(can|could) (you|we) (start|turn|set|charge|shock|increase|decrease)\b/.test(t);
+    t = t.replace(/\bpace (yourself|your breathing|your breaths)\b/g, "slow down");
+    const MEDFOR = /\b(midazolam|versed|fentanyl|morphine|ketamine|sedat\w*|analgesi\w*|pain meds?)\b/.test(t) && /\b(for|before|from|during|with|while)( the| we| he'?s| she'?s| him| her| his| we'?re)? (pac(e|ing|er)|tcp|cardiover\w*|synchronized cardiover\w*|(the )?shock)\b/.test(t);
+    if (MEDFOR) t = t.replace(/\b(for|before|from|during|with|while)( the| we| he'?s| she'?s| him| her| his| we'?re)? (synchronized )?(pac(e|ing|er)|tcp|cardiover\w*|(the )?shock)\b/g, " ");
+    const paceCtx = /\bpac(e|ing|er)\b|\btcp\b|transcutaneous|\bppm\b/.test(t);
+    if (q && !/capture|match/.test(t)) return ops;
+    if (/\b(stop|pause|turn off|discontinue|hold|cease|end|kill)( the)? (pacing|pacer|tcp)\b|\bpac(er|ing) off\b/.test(t)) add("paceoff");
+    else if (/\b(start|begin|initiate|turn on|activate|switch to|go to|hit|press|start up|resume)( the)?( transcutaneous)? (pacing|pacer|tcp)\b|\bpace (him|her|them|the patient|at|now)\b|\bpac(er|ing) (on|mode)\b|^ ?(transcutaneous )?(pacing|pace|tcp|pacer)\b|\b(let'?s|we('re| are)? (going to|gonna)|i'?m (going to |gonna )?) ?pac(e|ing)\b|transcutaneous pacing|\bpacing (him|her|at)\b/.test(t)) add("pace");
+    let m;
+    if (/^ ?(set (the )?)?(pacing |pacer )?rate (to |at |of )?\d{2,3}( ppm| per minute| a minute)?[.!]? ?$/.test(t)) { const r = +t.match(/(\d{2,3})/)[1]; if (r >= 40 && r <= 180) add("rate", r); }
+    else if (paceCtx || /\b(set|increase|raise|decrease|lower|bump|change|turn|bring)( up| down)?( the)? (pacing |pacer )?rate\b/.test(t) || (/\bma\b/.test(t) && /\brate \d/.test(t))) {
+      if ((m = t.match(/\b(?:pace|pacing|pacer|tcp)(?: (?:him|her|them|the patient|it))?(?: (?:at|to|rate))(?: a rate of| rate of)? (\d{2,3})\b(?! ?ma)/)) || (m = t.match(/\brate (?:of |to |at |is )?(\d{2,3})\b(?! ?ma)/)) || (m = t.match(/\b(\d{2,3}) ?(?:ppm|beats per minute|bpm|beats a minute)\b/))) add("rate", +m[1]);
+      else if ((m = t.match(/\b(increase|raise|bump|turn up|up|bring up|decrease|lower|turn down|reduce|drop|bring down)( the)? (pacing |pacer |heart )?rate( by (\d{1,2}))?/))) add(/increase|raise|bump|up/.test(m[1]) ? "rateup" : "ratedown", m[5] ? +m[5] : 10);
+    }
+    if ((m = t.match(/\bby (\d{1,2}) ?(?:ma)?\b/)) && /\b(ma|current|output|milliamps?)\b/.test(t) && !/rate/.test(t)) add(/\b(decrease|lower|reduce|down|drop|less|back off)\b/.test(t) ? "madown" : "maup", +m[1]);
+    else if ((m = t.match(/\b(?:to|at|of) (\d{1,3}) ?ma\b/)) || (m = t.match(/\b(?:ma|current|output|milliamps?)(?: to| at| of| is)? (\d{1,3})\b(?! ?(?:ppm|bpm|joules|j\b))/))) add("ma", +m[1]);
+    else if ((m = t.match(/\b(increase|raise|bump|turn up|crank up|crank|go up|bring up|up|more|decrease|lower|reduce|turn down|drop|go down|bring down|back off|down|less)( on)?( the)? (ma|current|output|milliamps)\b(?:.*?\bby (\d{1,2}))?/)) || (m = t.match(/\b(ma|current|output) (up|down)\b(?:.*?\bby (\d{1,2}))?/))) {
+      const up = /increase|raise|bump|up|more|crank/.test(m[1] + " " + (m[2] || "")); const by = t.match(/\bby (\d{1,2})\b/); add(up ? "maup" : "madown", by ? +by[1] : 10); }
+    else if ((m = t.match(/\b(\d{1,3}) ?ma\b/))) add("ma", +m[1]);
+    else if ((m = t.match(/\bstart(?: it| him| her| the output| out)? at (\d{1,3})\b(?! ?(?:ppm|bpm|joules|j\b))/)) && !/\b(pac(e|ing|er)|tcp) at\b/.test(t)) add("startat", +m[1]);
+    else if ((paceCtx || /\bma\b/.test(t)) && /\b(increase|turn (it )?up|go up|bump (it )?up|crank (it )?up)\b/.test(t) && !/rate/.test(t)) add("maup", (t.match(/\bby (\d{1,2})\b/) || [0, 10])[1] * 1);
+    // synchronized cardioversion / defib
+    const unsync = /\bunsynchronized\b|\bno synchronized\b|synchronized off|turn off (the )?synchronized|disable (the )?synchronized|take (it )?off synchronized/.test(t);
+    if (/cardiover/.test(t) && !unsync) { const j = t.match(/\b(\d{2,3}) ?(joules|j)\b/) || t.match(/\b(?:at|to|with) (\d{3})\b(?! ?(?:ma|ppm|bpm))/); add("cardiovert", j && +j[1] >= 50 && +j[1] <= 360 ? +j[1] : null); }
+    else if (unsync) add("sync", false);
+    else if (/\bsynchronized\b/.test(t)) add("sync", true);
+    if (!ops.some(o => o.op === "cardiovert")) {
+      if ((m = t.match(/\b(\d{2,3}) ?(joules|j)\b/)) || (m = t.match(/\b(?:energy|charge|charging|dial(?: up)?|set)(?: it)?(?: to| at| of)? (\d{2,3})\b(?! ?(?:ma|ppm|bpm))/)) || (m = t.match(/\benergy\b.*?\b(?:to|at) (\d{2,3})\b(?! ?(?:ma|ppm|bpm))/))) add("energy", +m[1]);
+    }
+    if (/\bcharg(e|ing)\b/.test(t) && !/\b(in|who'?s) charge\b|charge nurse|no charge/.test(t)) add("charge");
+    if (/\beveryone clear\b|\b(all|stand|stay|i'?m|you'?re|we'?re|everyone'?s|everybody'?s|oxygen'?s|o2'?s) clear\b|^ ?clear ?$|^ ?clear (everyone|everybody|all|now|back|for (the )?shock)\b|^ ?(i'?m )?clear[,!.]? (shocking|everyone|everybody|you'?re clear)|\bhands off\b|\bstep back\b|\beveryone back\b|\bclear (of|from) (the )?(patient|bed|gurney|stretcher)\b|\bclear\b.*\bshock/.test(t)) add("clear");
+    if (/\b(oxygen|o2|the bag|bvm|mask|nrb|nonrebreather|cannula)('?s| is)? (away|off the chest|clear|out of the way)\b|\b(move|take|get|pull|put)( the)? (oxygen|o2|bag|bvm|mask|nonrebreather|nrb)( off| away| clear)( from (the|his|her) chest)?/.test(t)) add("o2away");
+    if (/\b(disarm|dump (the )?(charge|energy)|cancel (the )?charge)\b/.test(t)) add("disarm");
+    if ((/\bshock(ing|ed)?\b/.test(t) && !/\b(in|into|going into|signs of|compensated|decompensated|septic|cardiogenic|hypovolemic|anaphylactic|spinal|neurogenic|for|of) shock\b|shock (index|position)|shocked (him|her) (twice|once|before)|shocked \w+ times/.test(t)) || /\bdefibrillat(e|ing)\b|\bdeliver(ing)? (the |a )?(shock|energy)\b|\bdefib (him|her|now)\b|^ ?defib\b/.test(t)) add("shock");
+    // reading capture off the strip
+    if (!/check|confirm|\bis (he|she|it|the pacer)|do we have|are we/.test(t)) {
+      if (/\b(don'?t|do not|can'?t|cannot) see (any |a )?(electrical )?capture\b|not seeing (any )?capture|\bno (electrical )?capture\b|not capturing|(loss|lost) of capture|lost capture|failure to capture|isn'?t capturing|aren'?t capturing|no qrs after/.test(t)) add("ecap", false);
+      else if (/\b(we('?ve| have)?|i('?ve)?|got|have|there'?s|we got|i see|i've got)( got| a| an)? (good |full |100 percent )?(electrical )?capture\b|\belectrical capture\b|\bcapturing( now)?\b|capture (now|achieved)|(wide|a) qrs after (each|every) spike|\bwith capture\b/.test(t)) add("ecap", true);
+    }
+    return ops;
+  }
   function parseCore(text) {
     let t = normalize(text);
     // wake word: "Partner, get me a set of vitals" (strong router); "Partner" alone = partner answers "Yeah?" and takes the next utterance
@@ -1617,6 +1961,19 @@ const NLU = (() => {
     if (out.tx.some(x => x.id === "skintoskin") || out.assess.includes("broselow")) out.assess = out.assess.filter(a => a !== "skin");
     if (out.tx.some(x => x.id === "smr")) out.assess = out.assess.filter(a => a !== "back" && a !== "trauma");
     if (out.assess.includes("recheck")) out.assess = out.assess.filter(a => !["vitals", "bp", "spo2"].includes(a));
+    { const ops = deviceParse(t, out); if (ops.length) { out.device = ops;
+        const only = ops.some(o => ["ma", "maup", "madown", "startat", "rate", "rateup", "ratedown", "energy", "charge", "clear", "o2away", "disarm", "sync", "ecap"].includes(o.op));
+        if (only) { out.questions = out.questions.filter(q => !["severity", "time", "orient", "consent", "onset", "radiation", "provocation"].includes(q)); out.assess = out.assess.filter(a => !["lungs", "airway", "pulse", "rr", "work", "skin"].includes(a) || (a === "pulse" && /pulse|femoral|carotid|radial/.test(t))); }
+        if (ops.some(o => o.op === "o2away")) out.tx = out.tx.filter(x => !["o2", "nrb", "nc", "bvm", "cpap"].includes(x.id));
+        if (ops.some(o => o.op === "ecap")) out.tx = out.tx.filter(x => x.id !== "pace");
+        if (ops.some(o => o.op === "sync" && o.val === false)) out.tx = out.tx.filter(x => x.id !== "cardiovert");
+        if (ops.some(o => o.op === "cardiovert")) out.tx = out.tx.filter(x => x.id !== "defib");
+        if (ops.some(o => o.op === "disarm")) { out.device = ops.filter(o => !["charge", "shock"].includes(o.op)); out.tx = out.tx.filter(x => !["defib", "cardiovert"].includes(x.id)); }
+        if (ops.some(o => ["charge", "energy", "shock", "disarm"].includes(o.op)) && !/\b(on|to|hook|apply|attach|put)\b.*\bmonitor\b|\bmonitor (him|her|them)\b/.test(t)) out.assess = out.assess.filter(a => a !== "monitor");
+      } }
+    if (out.tx.some(x => ["midaz", "fentanyl", "morphine", "ketamine"].includes(x.id)) && /\b(for|before|from|during|with|while)( the| we| he'?s| she'?s| him| her| his| we'?re)? (synchronized )?(pac(e|ing|er)|tcp|cardiover\w*|(the )?shock)\b/.test(t)) out.tx = out.tx.filter(x => !["pace", "cardiovert", "defib"].includes(x.id));
+    if (out.assess.includes("mechcap")) out.assess = out.assess.filter(a => a !== "pulsecheck" && a !== "monitor" && (a !== "pulse" || /femoral|carotid|radial/.test(t)));
+    if (/\b(do|does|did|have|has) (you|he|she|they) (have|got|had)\b.*\bpacer\b/.test(t)) out.tx = out.tx.filter(x => x.id !== "pace");
     // ---- partner routing ----
     const all = [...out.assess, ...out.tx.map(x => x.id)];
     const inScope = k => PARTNER_A.has(k) || PARTNER_T.has(k);
@@ -1708,6 +2065,7 @@ const EFFECTS = { // onset s, plateau s
   diphen: [120, 1200], ondansetron: [300, 1800], amio: [60, 900], atropine: [30, 300], aspirin: [600, 99999], adenosine: [8, 20], vagal: [10, 20], cardiovert: [2, 99999], pace: [10, 99999], calcium: [60, 600], bicarb: [60, 600], removepatch: [480, 99999], removeheat: [600, 99999], cooling: [300, 99999], fowler: [30, 99999], cpap: [60, 99999],
 };
 function E(st, key) {
+  if (key === "pace" && st.x && st.x.dv) return st.x.dv.ramp || 0; // TCP effect = mechanical capture (DEVICE)
   let sum = 0;
   for (const e of st.eff) if (e.k === key) {
     const dt = st.t - e.t0, on = e.onset, du = e.dur;
@@ -1742,11 +2100,12 @@ const SIM = (() => {
   function addEffect(k, onsetOverride) { const d = EFFECTS[k]; if (!d) return; st.eff.push({ k, t0: st.t, onset: onsetOverride || d[0], dur: d[1] }); }
   function computeTargets(snap) {
     let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
+    if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
     // human factors: reassurance calms (small, fading), painful procedures spike HR/RR transiently
     if (tg.hr && tg.pulse !== false && !st.x.arrest) {
       const calm = st.x.calmT != null ? Math.max(0, 1 - (st.t - st.x.calmT) / 240) * Math.min(1, 0.6 + 0.2 * (st.x.calmN || 1)) : 0;
       const pain = st.x.painT != null ? Math.max(0, 1 - (st.t - st.x.painT) / 90) * (st.x.painMag || 1) : 0;
-      tg.hr = tg.hr - 5 * calm + 10 * pain; if (tg.rr) tg.rr = tg.rr - 1.5 * calm + 3 * pain; if (tg.sbp) tg.sbp = tg.sbp - 3 * calm + 8 * pain;
+      if (tg.rhythm !== "paced") tg.hr = tg.hr - 5 * calm + 10 * pain; if (tg.rr) tg.rr = tg.rr - 1.5 * calm + 3 * pain; if (tg.sbp) tg.sbp = tg.sbp - 3 * calm + 8 * pain;
     }
     st.tg = tg;
     const v = st.v;
@@ -1765,6 +2124,7 @@ const SIM = (() => {
     if (sc.drift) st.sev = clamp(st.sev + (sc.drift(st) || 0) * dt / 60, 0, 1);
     if (sc.tickExtra) sc.tickExtra(st, dt, H);
     if (typeof COURSE !== "undefined") { COURSE.tick(st, sc, mental(), { rec, event }); }
+    if (typeof DEVICE !== "undefined" && st.x.dv) DEVICE.tick(devC());
     computeTargets(false);
     if (typeof INTERP !== "undefined") ipTick();
     if (typeof RADIO !== "undefined") radioTick();
@@ -1789,7 +2149,33 @@ const SIM = (() => {
   function event(text, kind = "sys") { log(kind === "warn" ? "warn" : "find", text); ui.say([{ speaker: kind === "warn" ? "warn" : "find", text }]); }
   function log(kind, text) { st.log.push({ t: st.t, kind, text }); }
   function rec(key) { if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb"); (st.events[key] = st.events[key] || []).push(st.t); st.evOrder = st.evOrder || {}; if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1); }
-  function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); log("warn", `${level.toUpperCase()}: ${text} [Ref. ${ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [LA County Ref. ${ref}]` }; }
+  function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); const safety = /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
+  // device (monitor/defibrillator) context
+  function devC() { return { st, sc, mental, treat: tx => treat(tx), dev: (t, r, l) => dev(t, r, l), devQuiet: (t, r, l) => { dev(t, r, l); }, rec, log, event: (t, k) => event(t, k),
+    say: l => { l.filter(x => x.speaker === "patient").forEach(x => log("patient", x.text)); ui.say(l); }, partner: t => ui.say([pSay(t)]) }; }
+  const DEV_TX = new Set(["pace", "cardiovert", "defib"]);
+  function deviceOps(parsed) {
+    if (typeof DEVICE === "undefined") return null;
+    let ops = (parsed.device || []).slice();
+    const txs = parsed.tx.filter(x => DEV_TX.has(x.id));
+    if (!ops.length && !txs.length) return null;
+    const J = x => { const d = (x.doses || []).find(d => d.u === "J"); return d ? d.v : null; };
+    for (const x of txs) {
+      if (x.id === "pace" && !ops.some(o => ["pace", "rate", "ma", "maup", "madown", "paceoff", "rateup", "ratedown", "startat", "ecap"].includes(o.op))) ops.push({ op: "pace" });
+      if (x.id === "cardiovert" && !ops.some(o => ["cardiovert", "sync", "shock", "charge", "energy"].includes(o.op))) ops.push({ op: "cardiovert", val: J(x) });
+      if (x.id === "defib" && !ops.some(o => o.op === "shock")) ops.push({ op: "shock", val: J(x) });
+    }
+    parsed.tx = parsed.tx.filter(x => !DEV_TX.has(x.id));
+    return ops;
+  }
+  function deviceTap(op, val) {
+    if (!st || st.ended || typeof DEVICE === "undefined") return [];
+    const label = { pace: "PACER on", paceoff: "PACER off", rateup: "Rate +10", ratedown: "Rate −10", maup: "mA +" + (val || 10), madown: "mA −" + (val || 10), sync: val === false ? "SYNC off" : "SYNC on", energy: `Energy ${val} J`, charge: "CHARGE", clear: "\"Clear!\"", o2away: "O2 away", shock: "SHOCK", disarm: "Disarm" }[op] || op;
+    log("me", `[monitor] ${label}`); lastInteraction = st.t;
+    const lines = op === "pads" ? treat({ id: "pads", doses: [], route: null, raw: "" }) : DEVICE.run(devC(), [{ op, val }], { tap: true });
+    lines.filter(l => l.speaker === "patient").forEach(l => log("patient", l.text));
+    computeTargets(false); ui.render(); return lines;
+  }
 
   // ---------- assessments ----------
   const vitalStr = () => ({ hr: Math.round(st.v.hr), bp: `${Math.round(st.v.sbp)}/${Math.round(st.v.dbp)}` });
@@ -1919,7 +2305,8 @@ const SIM = (() => {
         out.push(`12-lead acquired (rate ${Math.round(st.v.hr)}). What's your 12-lead interpretation?`); break;
       case "bp": if (arrest || !st.v.sbp) { R("bp", "--/--"); out.push("NIBP: unable to obtain."); } else { R("bp", vitalStr().bp); out.push(`BP ${vitalStr().bp} mmHg.` + (tg.bpNote ? " " + tg.bpNote : "")); } break;
       case "spo2": st.rev.spo2 = { t: st.t }; out.push(st.v.spo2 == null ? "SpO2: no reliable waveform." : `SpO2 ${Math.round(st.v.spo2)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : "room air"}).`); break;
-      case "pulse": R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(EXAM.pulses(sc, st, lastText, mental(), lastSites)); break;
+      case "pulse": { const pc = typeof DEVICE !== "undefined" && !arrest ? DEVICE.pulseCheck(devC(), lastSites, /match|capture/.test(lastText)) : null; R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(pc || EXAM.pulses(sc, st, lastText, mental(), lastSites)); break; }
+      case "mechcap": { const pc = typeof DEVICE !== "undefined" ? DEVICE.pulseCheck(devC(), lastSites.length ? lastSites : ["femoral"], true) : null; out.push(pc || "The pacer isn't running, so there's no capture to check."); break; }
       case "pulsecheck": out.push(tg.pulse === false || arrest ? (ipKnown() ? `Pulse check: NO PULSE. Monitor shows ${tg.rhythmName}.` : "Pulse check: NO PULSE. What's the rhythm on the monitor?") : `Pulse check: carotid pulse present, rate ~${Math.round(st.v.hr)}.`); rec("a:monitor"); st.rev.monitor = st.rev.monitor || { t: st.t }; break;
       case "rr": R("rr", Math.round(st.v.rr)); out.push(`Respiratory rate ${Math.round(st.v.rr)}/min${st.v.rr < 10 ? ", shallow" : st.v.rr > 24 ? ", labored" : ""}.`); break;
       case "etco2": st.rev.etco2 = { t: st.t }; out.push(`Capnography applied: EtCO2 ${Math.round(st.v.etco2)} mmHg${tg.capno === "shark" ? ", shark-fin waveform" : ""}.`); break;
@@ -2044,12 +2431,12 @@ const SIM = (() => {
       case "amio": narr = "Amiodarone " + (n(st, "amio") ? "150 mg" : "300 mg") + " IV/IO"; if (!st.x.arrest) notes.push(dev("Amiodarone here is outside the cardiac arrest protocol context.", "1210")); else if ((st.x.shocks || 0) < 3) notes.push(dev("Amiodarone is given after defibrillation x3.", "1210 #12", "caution")); break;
       case "defib": {
         const r = st.tg.rhythm;
-        if (!st.x.arrest || !["vf", "vt"].includes(r)) { notes.push(dev(`Defibrillation of a non-shockable rhythm / patient with a pulse (${st.tg.rhythmName}).`, "1210 #8")); }
+        if (!tx.quiet && (!st.x.arrest || !["vf", "vt"].includes(r))) { notes.push(dev(`Defibrillation of a non-shockable rhythm / patient with a pulse (${st.tg.rhythmName}).`, "1210 #8")); }
         if (!st.rev.monitor) notes.push(dev("Shock delivered without confirming the rhythm on the monitor.", "1210 #6", "caution"));
         st.rev.monitor = st.rev.monitor || { t: st.t };
         const j = doseOf(tx, "J"); narr = `Defibrillation ${j || 200} J biphasic`; break; }
-      case "cardiovert": { const j = doseOf(tx, "J"); narr = `Synchronized cardioversion ${j || 120} J`; if ((!sc.allow || !sc.allow.cardiovert) && !(typeof COURSE !== "undefined" && COURSE.allowed(st, "cardiovert"))) notes.push(dev("Synchronized cardioversion is for tachycardia with poor perfusion and ALOC (or per Base). Not indicated for this rhythm/patient.", "1213")); else { if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with cardioversion.", "1213 #12/#17", "note")); if (["alert", "anxious"].includes(m) && !n(st, "midaz")) notes.push(dev("Consider sedation (midazolam 5 mg IV/IM/IN) prior to cardioversion in an awake patient.", "1213", "note")); } if (st.x.arrest) notes.push(dev("Pulseless rhythm: DEFIBRILLATE (unsynchronized), don't cardiovert.", "1210 #8")); break; }
-      case "pace": narr = "Transcutaneous pacing initiated (rate 70, mA titrated to capture)"; if (!(st.v.hr <= 45 && st.v.sbp < 100)) notes.push(dev("TCP is for HR ≤ 40 with continued poor perfusion.", "1212 #9")); if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with initiation of TCP.", "1212 #9", "note")); if (["alert", "anxious"].includes(m) && !n(st, "midaz")) notes.push(dev("Consider sedation/analgesia for TCP in an awake patient (midazolam 5 mg).", "1212 #9", "note")); break;
+      case "cardiovert": { const j = doseOf(tx, "J"); narr = `Synchronized cardioversion ${j || 120} J`; if ((!sc.allow || !sc.allow.cardiovert) && !(typeof COURSE !== "undefined" && COURSE.allowed(st, "cardiovert"))) notes.push(dev("Synchronized cardioversion is for tachycardia with poor perfusion and ALOC (or per Base). Not indicated for this rhythm/patient.", "1213")); else { if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with cardioversion.", "1213 #12/#17", "note")); } if (st.x.arrest) notes.push(dev("Pulseless rhythm: DEFIBRILLATE (unsynchronized), don't cardiovert.", "1210 #8")); break; }
+      case "pace": { const dv = st.x.dv && st.x.dv.pace; narr = `Transcutaneous pacing started (A/P pads, rate ${dv ? dv.rate : 70}, ${dv ? dv.mA : 0} mA)`; const uh = (st.x.dvU && st.x.dvU.hr) || st.v.hr; if (!(uh <= 45 && st.v.sbp < 100) && !(typeof COURSE !== "undefined" && COURSE.allowed(st, "pace"))) notes.push(dev("TCP is for HR ≤ 40 with continued poor perfusion.", "1212 #9")); if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with initiation of TCP.", "1212 #9", "note")); break; }
       case "cpr":
         if (!st.x.arrest && st.tg.pulse !== false) notes.push(dev("CPR on a patient with a pulse.", "1210"));
         st.flags.cpr = true; st.x.noCpr = 0; narr = "High-quality CPR: 100-120/min, 2 in depth, full recoil"; break;
@@ -2077,11 +2464,21 @@ const SIM = (() => {
         break; }
       case "midaz": {
         const mg = doseOf(tx, "mg"), route = tx.route || (st.flags.iv ? "IV" : "IM");
+        const dvs = st.x.dv, sedCtx = mental() !== "seizing" && (!!(dvs && (dvs.pace.on || dvs.sync || dvs.charged || dvs.charging)) || ["1212", "1213"].includes(sc.protocol) || (typeof COURSE !== "undefined" && (COURSE.allowed(st, "pace") || COURSE.allowed(st, "cardiovert"))));
+        if (sedCtx) { // procedural sedation for TCP / cardioversion (1212 #9, 1213)
+          narr = `Midazolam ${mg || 5} mg ${route} (sedation)`;
+          if (mg && mg !== 5) notes.push(dev(`Sedation dose for TCP/cardioversion is midazolam 5 mg slow IV/IO or IM/IN, may repeat once in 5 min (you said ${mg} mg).`, "1212 #9 / 1213", "note"));
+          if ((st.v.rr != null && st.v.rr < 10) || ["unresponsive", "arrest"].includes(mental())) notes.push(dev("Sedation is contraindicated with RR < 10 or unresponsiveness.", "MCG 1365 #2"));
+          if ((route === "IV" || route === "IO") && !st.flags.iv) { const cv = sc.protocol === "1213" || (st.x.dv && st.x.dv.sync); notes.push(dev(`IV midazolam needs IV access. Use IM/IN, and don't delay ${cv ? "cardioversion" : "TCP"} for access.`, cv ? "1213 #12" : "1212 #6", "caution")); }
+          if (st.last.midaz != null && st.t - st.last.midaz < 285) notes.push(dev("Midazolam sedation repeat is in 5 min prn x1.", "1212 #9 / 1213", "caution"));
+          st.x.midazTotal = (st.x.midazTotal || 0) + (mg || 5); if (st.x.midazTotal > 10 && !st.events["t:base"]) notes.push(dev("Max 10 mg midazolam before Base contact.", "1212 #9 / 1213"));
+        } else {
         narr = `Midazolam ${mg || (route === "IV" || route === "IO" ? 5 : 10)} mg ${route}`;
         if (mental() !== "seizing") notes.push(dev("Midazolam (seizure) is for active seizure witnessed by EMS.", "1231 #6"));
         if (mg && (((route === "IM" || route === "IN") && mg !== 10) || ((route === "IV" || route === "IO") && mg !== 5))) notes.push(dev(`Midazolam dose per 1231: 10 mg IM/IN or 5 mg IV/IO (you said ${mg} mg ${route}).`, "1231 #6", "note"));
         if ((route === "IV" || route === "IO") && !st.flags.iv) notes.push(dev("IV midazolam only with existing access. Give 10 mg IM/IN instead of delaying.", "1231 #6", "caution"));
         st.x.midazTotal = (st.x.midazTotal || 0) + (mg || 10); if (st.x.midazTotal > 10 && !st.events["t:base"]) notes.push(dev("Max 10 mg midazolam before Base contact.", "1231 #6"));
+        }
         addEffect("midaz", route === "IV" || route === "IO" ? 45 : 150); st.count.midaz = (st.count.midaz || 0) + 1; st.last.midaz = st.t; rec("t:midaz");
         break; }
       case "ondansetron": narr = "Ondansetron 4 mg ODT/IV"; { const mg = doseOf(tx, "mg"); if (mg && mg !== 4) notes.push(dev(`Ondansetron dose is 4 mg (you said ${mg}).`, "1211 #9", "note")); } break;
@@ -2095,7 +2492,7 @@ const SIM = (() => {
       case "morphine": narr = `Morphine ${doseOf(tx, "mg") || 4} mg ${tx.route || "IV"}`; if (sbp < 90) notes.push(dev("Opioid analgesia with SBP < 90.", "MCG 1345")); break;
       case "ketorolac": if (["stemi", "cardiac"].includes(sc.base)) notes.push(dev("Do NOT give ketorolac for cardiac chest pain.", "1211 ❺")); narr = `Ketorolac ${doseOf(tx, "mg") || (tx.route === "IM" ? 30 : 15)} mg ${tx.route || "IV"}`; break;
       case "diphen": narr = "Diphenhydramine 50 mg slow IV"; if (sc.base === "anaph" && !n(st, "epi")) notes.push(dev("Diphenhydramine does not treat anaphylaxis. Epinephrine is the first priority.", "1219 ❸")); break;
-      case "atropine": narr = "Atropine 1 mg IV/IO"; if (!(st.v.hr < 60 && sbp < 100)) notes.push(dev("Atropine is for bradycardia with poor perfusion.", "1212 #8")); if (!st.flags.iv) notes.push(dev("Atropine IV/IO requires access. If no IV, proceed to TCP.", "1212 #8", "caution")); if (n(st, "atropine") >= 3) notes.push(dev("Atropine max 3 mg.", "1212 #8")); if (sc.chb && st.v.hr <= 40) notes.push(dev("3rd-degree / 2nd-degree type II block with HR ≤ 40: proceed immediately to TCP.", "1212 #8", "note")); break;
+      case "atropine": narr = "Atropine 1 mg IV/IO"; if (!(st.v.hr < 60 && sbp < 100)) notes.push(dev("Atropine is for bradycardia with poor perfusion.", "1212 #8")); if (!st.flags.iv) notes.push(dev("Atropine IV/IO requires access. If no IV, proceed to TCP.", "1212 #8", "caution")); if (n(st, "atropine") >= 3) notes.push(dev("Atropine max 3 mg.", "1212 #8")); if (sc.chb && st.v.hr <= 40 && !(st.x.dv && st.x.dv.pace.on)) notes.push(dev("3rd-degree / 2nd-degree type II block with HR ≤ 40: atropine is unlikely to help; proceed immediately to TCP and don't delay it for atropine.", "1212 #8, ❸", "note")); break;
       case "adenosine": narr = "Adenosine 12 mg rapid IV push + NS flush"; if (!sc.allow || !sc.allow.adenosine) notes.push(dev("Adenosine is for regular narrow-complex SVT (or regular monomorphic WCT); not indicated for this rhythm (e.g., irregular AFib or sinus tach).", "1213")); if (!st.flags.iv) notes.push(dev("Adenosine requires IV access (antecubital preferred).", "1213", "caution")); { const mg = doseOf(tx, "mg"); if (mg && mg !== 12) notes.push(dev(`LA County adenosine dose is 12 mg (you said ${mg} mg).`, "1213 #10", "note")); } break;
       case "vagal": narr = "Modified Valsalva maneuver"; if (!sc.allow || !sc.allow.adenosine) notes.push(dev("Valsalva is for SVT with adequate perfusion.", "1213 #10", "note")); break;
       case "cooling": narr = "Passive cooling measures"; break;
@@ -2311,12 +2708,22 @@ const SIM = (() => {
     if (parsed.questions.includes("reassure") && ["alert", "anxious", "confused", "aphasic"].includes(mental())) { st.x.calmT = st.t; st.x.calmN = (st.x.calmN || 0) + 1; }
     log("me", text);
     parsed.questions.forEach(q => rec("q:" + q));
+    let devOps = null;
+    { const ops = deviceOps(parsed);
+      if (ops && ops.length) {
+        const P = parsed.partner || {};
+        const mine = P.explicit ? ops.filter(o => o.op === "o2away") : ops;
+        if (P.explicit && mine.length < ops.length && !pOut.lines.length) pOut.lines.push(pSay("The monitor's your call, medic. I'll keep the pads and the airway ready."));
+        if (mine.length) { devOps = mine; parsed.deviceHandled = true; }
+        if (mine.some(o => o.op === "ecap")) parsed.interp = null;
+      } }
     const find = []; st.x.preLines = [];
     parsed.assess.forEach(a => find.push(...assess(a)));
     const pre = (st.x.preLines || []).map(t => ({ speaker: "patient", text: t })); st.x.preLines = [];
     pre.forEach(p => log("patient", p.text));
     let reactions = [];
     parsed.tx.forEach(tx => reactions.push(...treat(tx)));
+    if (devOps) { reactions.push(...DEVICE.run(devC(), devOps, { interp: parsed.interp })); computeTargets(false); }
     const out = [...pOut.lines, ...pre];
     if (find.length) out.push({ speaker: "find", text: (parsed.byCrew ? "Your partner reports: " : "") + find.join("\n") });
     const ctx = { utterance: text, parsed, scenario: sc, state: st, mental: mental(), reactions, history: ui.history(), complied: pre.length > 0 };
@@ -2386,7 +2793,7 @@ const SIM = (() => {
   function setPI(code) { st.pi = code; st.piT = st.t; log("pi", `Provider Impression selected: ${code} – ${(PROVIDER_IMPRESSIONS[code] || [code])[0]}`); }
   function end() { st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() }; }
 
-  return { start, stop, handle, end, event, mental, setPI, flow, approach, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false };
+  return { start, stop, handle, end, event, mental, setPI, flow, approach, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -2452,7 +2859,7 @@ const COURSE = (() => {
       if (["anaph", "anaph_gi"].includes(id)) return !(st.count.epi > 0);
       if (id === "bb_od") return !(st.count.calcium > 0) && (st.v.sbp || 100) < 85;
       return true; }
-    if (k === "rhythm") return !(RHYTHM[sid(sc)] === "chb" && (st.count.pace > 0));
+    if (k === "rhythm") return !(RHYTHM[sid(sc)] === "chb" && (st.count.pace > 0 || PACED(st)));
     if (k === "seizure") return m !== "seizing" && !(st.count.midaz > 0);
     if (k === "vomit") return true;
     return true;
@@ -2491,9 +2898,9 @@ const COURSE = (() => {
       return Object.assign({}, tg, { hr: 108 - 6 * tr, sbp, dbp: sbp * 0.62, rr: vent ? 10 : 7, spo2: 90 + 7 * O2(st), etco2: 40, gcs: [1, 1, 3], pain: null, rhythm: "sinus", rhythmName: "Sinus tachycardia (post-ROSC)", pulse: true, skin: "Pale, cool", airway: st.flags.sga ? "i-gel in place" : "Needs ventilatory support" });
     }
     if (cb.k === "rhythm") {
-      if (cb.to === "chb") { const paced = (st.count.pace > 0); return Object.assign({}, tg, paced ? { hr: 70, sbp: Math.max(tg.sbp || 0, 96), rhythm: "paced", rhythmName: "Paced rhythm with capture" } : { hr: 34, sbp: 74, dbp: 44, rhythm: "chb", rhythmName: "Third-degree (complete) AV block", skin: "Grey, cool, diaphoretic" }); }
+      if (cb.to === "chb") { return Object.assign({}, tg, { hr: 34, sbp: 74, dbp: 44, rhythm: "chb", rhythmName: "Third-degree (complete) AV block" }, PACED(st) ? {} : { skin: "Grey, cool, diaphoretic" }); } // TCP capture/BP: DEVICE.overlay
       if (cb.to === "afib") return Object.assign({}, tg, { hr: 148, sbp: Math.max(92, (tg.sbp || 120) - 14), rhythm: "afib", rhythmName: "Atrial fibrillation with RVR" });
-      if (cb.to === "vt") { const cv = (st.events["t:cardiovert"] || []).some(t => t >= cb.t); if (cv) return tg; return Object.assign({}, tg, { hr: 178, sbp: 82, dbp: 50, rhythm: "vt", rhythmName: "Monomorphic ventricular tachycardia (with a pulse)", skin: "Pale, cool, diaphoretic" }); }
+      if (cb.to === "vt") { const cv = st.x.dv ? st.x.dv.convT != null && st.x.dv.convT >= cb.t : (st.events["t:cardiovert"] || []).some(t => t >= cb.t); if (cv) return tg; return Object.assign({}, tg, { hr: 178, sbp: 82, dbp: 50, rhythm: "vt", rhythmName: "Monomorphic ventricular tachycardia (with a pulse)", skin: "Pale, cool, diaphoretic" }); }
     }
     if (cb.k === "seizure" && !cb.done) return Object.assign({}, tg, { hr: (tg.hr || 90) + 30, rr: 6, spo2: Math.max(78, (tg.spo2 || 95) - 12), gcs: [1, 1, 3], airway: "Clenched jaw, secretions", artifact: true });
     return tg;
@@ -2501,7 +2908,7 @@ const COURSE = (() => {
   function mental(m, st) { const cb = st.x.cb; if (!cb || !cb.on) return m;
     if (cb.k === "arrest") return st.x.arrest ? "arrest" : "unresponsive";
     if (cb.k === "seizure" && !cb.done) return "seizing";
-    if (cb.k === "rhythm" && cb.to === "chb" && !(st.count.pace > 0)) return ["alert", "anxious"].includes(m) ? "confused" : m;
+    if (cb.k === "rhythm" && cb.to === "chb" && !PACED(st)) return ["alert", "anxious"].includes(m) ? "confused" : m;
     return m; }
   function onTreat(id, st, sc) { const cb = st.x.cb; if (!cb || !cb.on || cb.k !== "arrest") return;
     if (id === "defib" && st.x.arrest && ["vf", "vt"].includes(st.x.rhythm)) { cb.shocks++; if (!cb.roscNext) setTimeout(() => {}, 0); }
@@ -3890,7 +4297,7 @@ addS(G({
   vit: { good: { hr: 52, sbp: 104, dbp: 64, rr: 18, spo2: 95, etco2: 34 }, bad: { hr: 38, sbp: 76, dbp: 44, rr: 22, spo2: 91, etco2: 30 } },
   txResp: { atropine: { hr: 22, sbp: 16, drift: -0.02 }, ns: { sbp: 14, drift: -0.01 }, nitro: { sbp: -28, drift: 0.05 }, pace: { drift: -0.04, onset: 10 } },
   flagResp: { supine: { sbp: 6 }, fowler: { sbp: -6 } },
-  special: (st, v) => st.count.pace ? { hr: 70, sbp: Math.max(v.sbp, 98), rhythm: "sinus", rhythmName: "Paced rhythm (100% capture) w/ ST elevation" } : {},
+  tcp: { thr: 60, sbp: 26 },
   rhythm: "brady", rhythmName: (st, v) => v.hr < 45 ? "Sinus bradycardia w/ ST elevation (2nd-degree AV block, Wenckebach)" : "Sinus bradycardia w/ ST elevation",
   skin: [[0.5, "Pale, cool, diaphoretic"], [1, "Gray, cold, clammy; cap refill 4 sec"]], lungs: "Clear bilaterally",
   mentalBands: [[0.75, "anxious"], [9, "confused"]],
@@ -4275,7 +4682,7 @@ addS(G({
   vit: { good: { hr: 54, sbp: 98, dbp: 58, rr: 16, spo2: 97, etco2: 36 }, bad: { hr: 36, sbp: 68, dbp: 38, rr: 12, spo2: 94, etco2: 38 } },
   txResp: { atropine: { hr: 6, sbp: 4, drift: -0.005 }, ns: { sbp: 10, drift: -0.01 }, calcium: { sbp: 14, hr: 8, drift: -0.04 }, glucagon: { hr: 10, sbp: 8, drift: -0.03 }, pace: { drift: -0.03, onset: 10 } },
   flagResp: { supine: { sbp: 5 } },
-  special: (st, v) => st.count.pace ? { hr: 70, sbp: Math.max(v.sbp, 86), rhythm: "sinus", rhythmName: "Paced rhythm (capture)" } : {},
+  tcp: { thr: 85, mech: 95, sbp: 10 }, // drug toxicity: high threshold, weak mechanical response
   rhythm: "brady", rhythmName: (st, v) => v.hr < 45 ? "Junctional bradycardia" : "Sinus bradycardia", skin: [[0.5, "Pale, cool, dry"], [1, "Pale, cold, mottled knees"]],
   mentalBands: [[0.6, "anxious"], [0.9, "confused"], [9, "unresponsive"]], pupils: "4 mm, equal, sluggish",
   twelve: (st, v) => ({ st: {}, text: `${v.hr < 45 ? "Junctional" : "Sinus"} bradycardia ${Math.round(v.hr)}, PR 0.22, QRS 0.10. No ST elevation.` }),
@@ -4564,10 +4971,10 @@ addS(clone("vf", {
 const bradyBase = {
   refs: ["1212"], protocol: "1212", base: "brady", chb: false, rhythm: "brady",
   txResp: { atropine: { hr: 0, sbp: 0 }, ns: { sbp: 6, drift: -0.005 } },
-  special: (st, v) => n(st, "pace") ? { hr: 70, sbp: v.sbp + 26 * E(st, "pace"), dbp: v.dbp + 14 * E(st, "pace"), rhythm: "paced", rhythmName: "Ventricular paced rhythm (100% capture), rate 70" } : {},
+  tcp: { thr: 60, sbp: 26 }, // capture/BP response handled by DEVICE (MCG 1365)
 };
 addS(G(Object.assign({}, bradyBase, {
-  id: "chb", difficulty: "Advanced", chb: true, rhythm: "chb", rhythmName: "Third-degree (complete) AV block",
+  id: "chb", difficulty: "Advanced", chb: true, tcp: { thr: 70, mech: 80, sbp: 28 }, rhythm: "chb", rhythmName: "Third-degree (complete) AV block",
   dispatchTitle: "79 y/o male, weak and dizzy", dispatchShort: "Lakewood home, wife calling.",
   dispatch: "Engine 45 / RA 45, respond to a residence on Del Amo Blvd, Lakewood. 79-year-old male, weakness and dizziness. Time of call 1018.",
   scene: "Scene safe. The patient is sitting on the edge of the bed, pale, sweaty, holding his head. He nearly fell trying to stand.",
@@ -4582,21 +4989,21 @@ addS(G(Object.assign({}, bradyBase, {
     greet: "Hello... sorry, I'm a bit woozy.", name: "Henry Nakamura.", age: "Seventy-nine.", cc: "I feel faint, so weak. I almost fell.", onset: "Since yesterday on and off. Worse this morning.",
     dizzy: "Like I'm going to pass out when I stand.", chestpain: "No pain. Maybe a little pressure.", sob: "A bit short of breath.", allergies: "Penicillin.", meds: "Amlodipine, a water pill, aspirin.",
     history: "Blood pressure. They said my heart has a 'block' last year, but it didn't need anything then.", lastoral: "Toast at eight.", events: "Got up for breakfast and nearly passed out.",
-    syncope: "I think I blacked out for a second at the table.", feelnow: st => n(st, "pace") ? "Better. That thing pinches though!" : "Still faint.", pde5: "No.",
+    syncope: "I think I blacked out for a second at the table.", feelnow: st => PACED(st) ? (DEVICE.sedation(st) > 0.5 ? "Better... sleepy... it still thumps." : "Better. But that thing HURTS every time it beats!") : "Still faint.", pde5: "No.",
   },
   bystanderAnswers: { cc: "He got up and went gray, and slumped in the chair for a few seconds. His pulse was so slow when I felt it.", history: "Blood pressure, and the doctor mentioned a heart block." },
   checklist: [
     { label: "Cardiac monitor + 12-lead (3rd-degree block)", keys: ["a:12lead"], ref: "1212 #2", critical: true },
     { label: "Supine", keys: ["t:supine"], ref: "1212 #5" },
     { label: "Vascular access", keys: ["t:iv", "t:io"], ref: "1212 #6" },
-    { label: "Transcutaneous pacing (3rd-degree, HR ≤ 40, poor perfusion): proceed immediately", keys: ["t:pace"], ref: "1212 #8-9", critical: true },
-    { label: "Base contact with TCP", keys: ["t:base"], ref: "1212 #9", critical: true },
-    { label: "Sedation/analgesia consideration (midazolam / fentanyl)", keys: ["t:midaz", "t:fentanyl"], ref: "1212 #9", optional: true },
+    // 1212 #8 + ❸: 3rd-degree / 2nd-degree type II with HR ≤ 40 → proceed immediately to TCP; atropine is NOT expected (not graded).
+    { label: "Transcutaneous pacing (3rd-degree, HR ≤ 40, poor perfusion): proceed immediately, no atropine needed first", keys: ["t:pace"], ref: "1212 #8-9, ❸", critical: true },
+    { label: "Base contact concurrent with TCP", keys: ["t:base"], ref: "1212 #9", critical: true }, // 1212 #9 "CONTACT BASE concurrent with initiation of TCP"
   ],
   pi: { correct: "DYSR", accept: [], differential: ["DYSR", "SYNC", "CPSC"],
     clues: { DYSR: "HR 30s with P waves dissociated from wide QRS = complete heart block causing poor perfusion.", SYNC: "The near-syncope is a symptom of the bradycardia; Dysrhythmia is the primary PI.", CPSC: "Only mild pressure; no ST elevation. Ischemia can cause CHB, but the rhythm is the treatment target." },
     explain: "1212: for 3rd-degree or 2nd-degree type II block with HR ≤ 40 and poor perfusion, go immediately to TCP (atropine is unlikely to work in infranodal block) and contact Base.", keyFindingKeys: ["a:12lead", "a:bp", "a:skin"] },
-  expected: "Symptomatic complete heart block. Monitor/12-lead, supine, IV, IMMEDIATE TCP + Base contact, consider sedation. Atropine is usually ineffective here.",
+  expected: "Symptomatic complete heart block. Monitor/12-lead, supine, IV, IMMEDIATE TCP (start 40 mA, titrate to electrical + mechanical capture, then +10 mA) + Base contact. Atropine is not needed first (1212 ❸: unlikely to work in infranodal block).",
 })));
 
 addS(G(Object.assign({}, bradyBase, {
@@ -4666,6 +5073,41 @@ addS(G(Object.assign({}, bradyBase, {
     clues: { DYSR: "Monitor: 2:1 Mobitz II with RBBB, rate ~40. Recurrent exertional/standing syncope without prodrome.", SYNC: "She did faint, but the cause is an infranodal conduction block (high risk for complete heart block).", TRMA: "Minor occipital bump only; add Traumatic Injury as a secondary PI if documenting." },
     explain: "Syncope in the elderly with a conduction block is high risk. Mobitz II can progress to complete heart block. Atropine is often ineffective; prepare TCP and contact Base.", keyFindingKeys: ["a:12lead", "a:monitor", "q:syncope"] },
   expected: "Mobitz II with syncope. Supine, monitor/12-lead, IV, trauma check, Base contact, TCP pads on and pace if perfusion worsens/HR ≤ 40. Discourage refusal.",
+})));
+
+/* 1212 #8 + ❸: symptomatic 2nd-degree type II block with HR ≤ 40 and poor perfusion → proceed IMMEDIATELY to TCP (MCG 1365);
+ * atropine is unlikely to help and is not expected. 1212 #9: CONTACT BASE concurrent with TCP. */
+addS(G(Object.assign({}, bradyBase, {
+  id: "mobitz2_unstable", difficulty: "Advanced", chb: true, tcp: { thr: 65, mech: 75, sbp: 30 }, rhythmName: "Second-degree AV block, type II (2:1), wide QRS",
+  dispatchTitle: "68 y/o male, dizzy and sweaty at work", dispatchShort: "Torrance warehouse, coworker calling.",
+  dispatch: "Engine 92 / RA 92, respond to a warehouse office on Del Amo Circle, Torrance. 68-year-old male, dizzy and sweating, nearly passed out. Time of call 1340.",
+  scene: "Scene safe. The patient is slumped in an office chair, gray and sweaty. A coworker is fanning him.",
+  patient: { name: "Walter Simmons", age: 68, sex: "M" }, bystander: { name: "Luis", role: "coworker", sex: "M" },
+  personality: "Gruff, slow to answer, keeps saying he's 'just overheated'.",
+  allergies: [], startSev: 0.55, drift0: 0.04, pain: [0, 0], bgl: 141, temp: 98.0,
+  vit: { good: { hr: 36, sbp: 80, dbp: 46, rr: 20, spo2: 94, etco2: 31 }, bad: { hr: 28, sbp: 60, dbp: 34, rr: 24, spo2: 90, etco2: 25 } },
+  txResp: { atropine: { hr: 1 }, ns: { sbp: 5 }, pace: { drift: -0.08 } }, flagResp: { supine: { sbp: 4 }, fowler: { sbp: -6 } },
+  skin: [[0.5, "Gray, cool, diaphoretic"], [1, "Gray, cold, clammy"]], lungs: "Clear", mentalBands: [[0.5, "anxious"], [0.8, "confused"], [9, "unresponsive"]],
+  twelve: { st: {}, text: "Second-degree AV block type II, 2:1 conduction: atrial rate ~72, ventricular rate ~36, constant PR on conducted beats, wide QRS (LBBB, 0.14 s). No ST elevation." },
+  answers: {
+    greet: "Yeah... hey. I'm just... overheated.", name: "Walt. Walter Simmons.", age: "Sixty-eight.", cc: "Dizzy... everything goes gray when I stand up. Sweating like crazy.", onset: "After lunch. Getting worse.",
+    dizzy: "Like I'm gonna black out.", chestpain: "No... maybe a little heavy.", sob: "Little winded.", allergies: "None.", meds: "Blood pressure pill... lisinopril. And a statin.",
+    history: "Blood pressure. Cholesterol. Doc said something about a bundle branch thing on my EKG.", lastoral: "Sandwich at noon.", events: "Stood up from the desk and almost hit the floor.",
+    syncope: "Didn't go all the way out. Close.", feelnow: st => PACED(st) ? "Better... clearer. That thing kicks every beat though." : "Bad... dizzy.", pde5: "No.",
+  },
+  bystanderAnswers: { cc: "He stood up and went white, grabbed the desk. He's been sweating and confused for 20 minutes.", meds: "He takes something for blood pressure." },
+  checklist: [
+    { label: "Cardiac monitor + 12-lead (2nd-degree type II, 2:1)", keys: ["a:12lead"], ref: "1212 #3", critical: true }, // 1212 #3 monitoring + 12-lead (MCG 1308 #3b dysrhythmia)
+    { label: "Recognize poor perfusion (BP, skin, mental status)", keys: ["a:bp", "a:skin", "q:orient"], ref: "1212 #8 / MCG 1355" },
+    { label: "Supine", keys: ["t:supine"], ref: "1212 #5" },
+    { label: "Vascular access (don't delay TCP for it)", keys: ["t:iv", "t:io"], ref: "1212 #6" },
+    { label: "Transcutaneous pacing immediately (2nd-degree type II, HR ≤ 40, poor perfusion): no atropine needed first", keys: ["t:pace"], ref: "1212 #8-9, ❸", critical: true },
+    { label: "Base contact concurrent with TCP", keys: ["t:base"], ref: "1212 #9", critical: true },
+  ],
+  pi: { correct: "DYSR", accept: [], differential: ["DYSR", "SYNC", "CPSC"],
+    clues: { DYSR: "Ventricular rate 36 with dropped beats after non-conducted P waves (2:1), wide QRS, hypotension and diaphoresis = symptomatic infranodal block.", SYNC: "The near-syncope is from the bradycardia; Dysrhythmia is the primary PI.", CPSC: "Only vague heaviness and no ST elevation; the rhythm is the treatment target." },
+    explain: "1212 #8: for 2nd-degree type II or 3rd-degree block with HR ≤ 40 and poor perfusion, proceed immediately to TCP (❸: atropine is unlikely to help, don't delay TCP for it). Contact Base concurrent with TCP.", keyFindingKeys: ["a:12lead", "a:bp", "a:skin"] },
+  expected: "Unstable Mobitz II (HR 36, SBP 80, diaphoretic). Monitor/12-lead, supine, pads, IMMEDIATE TCP: rate 70, start 40 mA and titrate to electrical capture, confirm mechanical capture with a femoral pulse, then +10 mA. Base concurrent with TCP. Atropine not needed first.",
 })));
 
 /* ---------- Ref. 1213 Tachycardia ---------- */
@@ -4755,7 +5197,8 @@ addS(G({
   mentalBands: [[0.5, "anxious"], [0.85, "confused"], [9, "unresponsive"]], skin: "Gray, cool, diaphoretic", lungs: "Fine crackles at the bases",
   twelve: { st: {}, text: "Regular wide-complex tachycardia at ~180, QRS 0.16 s, AV dissociation, northwest axis: monomorphic VT." },
   init(st) { st.x.converted = false; },
-  onTreat(id, st) { if (id === "cardiovert" && !st.x.converted && n(st, "cardiovert") >= 1) { st.x.converted = true; st.sev = Math.min(st.sev, 0.35); setTimeout(() => SIM.event("Cardioversion successful: sinus rhythm at ~96 with frequent PVCs. Patient is waking up: 'What happened?'", "find"), 1500); } },
+  sync: { convertJ: 150, after: "Converted: sinus rhythm at ~96 with frequent PVCs. He's waking up: \"What... what happened?\"" },
+  onTreat(id, st) { if (id === "cardiovert" && !st.x.converted && (!st.x.dv || st.x.dv.lastOK)) { st.x.converted = true; st.sev = Math.min(st.sev, 0.35); } },
   special: (st, v) => st.x.converted ? { hr: 96, sbp: 104, dbp: 66, rr: 18, rhythm: "sinus", rhythmName: "Sinus rhythm with PVCs", twelve: { st: {}, text: "Sinus rhythm 96, Q waves in II, III, aVF (old inferior MI). No acute ST elevation. Frequent PVCs." } } : {},
   mentalFn: st => st.x.converted ? "alert" : band([[0.5, "anxious"], [0.85, "confused"], [9, "unresponsive"]], st.sev),
   answers: {
@@ -4769,14 +5212,54 @@ addS(G({
     { label: "Recognize poor perfusion (SBP < 90, ALOC)", keys: ["a:bp", "a:gcs", "q:orient"], ref: "1213 #3", critical: true },
     { label: "Synchronized cardioversion", keys: ["t:cardiovert"], ref: "1213 #17", critical: true },
     { label: "Base contact (WCT; concurrent with cardioversion)", keys: ["t:base"], ref: "1213 #17", critical: true },
-    { label: "Sedation if time permits", keys: ["t:midaz"], ref: "1213", optional: true },
     { label: "Post-conversion 12-lead", keys: ["a:12lead#2"], ref: "1213" },
     { label: "No defibrillation (has a pulse)", keys: ["!t:defib"], ref: "1210 #8" },
   ],
   pi: { correct: "DYSR", accept: [], differential: ["DYSR", "CPSC", "CHFF"],
     clues: { DYSR: "Regular WCT at ~180 with a pulse, hypotension, ALOC, in a patient with prior MI/low EF = unstable VT.", CPSC: "Chest pressure is from the tachycardia/ischemia; no STEMI after conversion.", CHFF: "Basilar crackles from low output; the rhythm is the primary problem." },
     explain: "Unstable wide-complex tachycardia with a pulse → synchronized cardioversion per 1213 with Base contact.", keyFindingKeys: ["a:12lead", "a:bp", "q:history"] },
-  expected: "Unstable monomorphic VT with a pulse (hypotension + ALOC). Monitor/12-lead, pads, synchronized cardioversion (sedate if time allows), Base contact. Post-conversion 12-lead.",
+  expected: "Unstable monomorphic VT with a pulse (hypotension + ALOC). Monitor/12-lead, pads, synchronized cardioversion (SYNC on, 120 → 150 → 200 J, clear before each shock, re-enable SYNC after each shock), Base contact. Post-conversion 12-lead.",
+}));
+
+/* Ref. 1213 #12: SVT with poor perfusion AND altered LOC -> synchronized cardioversion (120/150/200 J, may repeat x2), Base concurrent with initial cardioversion. */
+const CONV = st => !!(st.x.dv && st.x.dv.convT != null);
+addS(G({
+  id: "svt_unstable", protocol: "1213", refs: ["1213"], base: "svt_unstable", difficulty: "Advanced", allow: { cardiovert: true, adenosine: true },
+  dispatchTitle: "71 y/o female, racing heart, now confused", dispatchShort: "Pico Rivera home, husband calling.",
+  dispatch: "Engine 25 / RA 25, respond to a residence on Rosemead Blvd, Pico Rivera. 71-year-old female, palpitations, now confused. Time of call 1652.",
+  scene: "Scene safe. The patient is half-sitting on the kitchen floor against a cabinet, gray and sweaty, mumbling. Her husband is holding her up.",
+  patient: { name: "Rosa Delgado", age: 71, sex: "F" }, bystander: { name: "Frank", role: "husband", sex: "M" },
+  personality: "Confused and slow; keeps saying her heart is 'going a hundred miles an hour'.",
+  allergies: [], startSev: 0.6, drift0: 0.045, pain: [3, 4], bgl: 132, temp: 98.1,
+  vit: { good: { hr: 208, sbp: 78, dbp: 50, rr: 24, spo2: 94, etco2: 28 }, bad: { hr: 218, sbp: 58, dbp: 36, rr: 28, spo2: 89, etco2: 22 } },
+  rhythm: "svt", rhythmName: "Narrow-complex regular tachycardia (SVT) at ~210",
+  sync: { convertJ: 120, after: "Converted: sinus rhythm at ~88 on the monitor. She takes a deep breath and her eyes focus: \"Frank? What... what happened?\"" },
+  init(st) { st.x.converted = false; },
+  preTreat(id, st, tx, H) { if (id === "adenosine" && !CONV(st)) return { notes: [H.devQuiet("Poor perfusion WITH altered LOC: 1213 #12 is synchronized cardioversion. Adenosine (#11) is for ALERT patients with poor perfusion; don't delay the shock.", "1213 #11-12", "caution") && { speaker: "warn", text: "Instructor note (caution): Poor perfusion WITH altered LOC: 1213 #12 is synchronized cardioversion. Adenosine (#11) is for ALERT patients with poor perfusion; don't delay the shock. [LA County Ref. 1213 #11-12]" }] }; },
+  tickExtra(st, dt, H) { if (n(st, "adenosine") && !st.x.adeMsg && st.t - st.last.adenosine > 8) { st.x.adeMsg = true; if (!CONV(st)) H.event("Monitor: a 2-second pause... then the SVT comes right back at ~210.", "find"); } },
+  special: (st, v) => CONV(st) ? { hr: 88, sbp: 112, dbp: 70, rr: 18, spo2: 96, rhythm: "sinus", rhythmName: "Normal sinus rhythm", pain: 1, skin: "Pale, warm, drying", twelve: { st: {}, text: "Sinus rhythm 88. Normal intervals, no pre-excitation (no delta wave), no ST elevation." } } : {},
+  mentalFn: st => CONV(st) ? "alert" : band([[0.5, "anxious"], [0.8, "confused"], [9, "unresponsive"]], st.sev),
+  skin: "Gray, cool, diaphoretic", lungs: "Faint crackles at both bases",
+  twelve: { st: {}, text: "Regular narrow-complex tachycardia at ~210, no visible P waves, QRS 0.08 s. Diffuse rate-related ST depression. No ST elevation." },
+  answers: {
+    greet: "...hi... my heart...", name: "Rosa.", age: "...seventy... one.", cc: "My heart... it's going a hundred miles an hour... I feel so weak.", onset: "...this afternoon... I don't know.",
+    history: "...my heart races... sometimes. Pressure.", meds: "...the little white pill... for my heart.", allergies: "No...", chestpain: "...tight... a little.", sob: "...yes...", dizzy: "...everything's spinning...",
+    feelnow: st => CONV(st) ? "Oh... much better. What happened?" : "...bad...", pde5: "No.", syncope: "...I sat down... on the floor...",
+  },
+  bystanderAnswers: { cc: "Her heart started racing about an hour ago. She sat down on the floor and now she's not making sense.", meds: "Metoprolol and lisinopril. She's been taking them.", history: "She's had episodes of fast heartbeat before, they stopped on their own. And high blood pressure.", onset: "About an hour ago, all of a sudden." },
+  checklist: [
+    { label: "Monitor + 12-lead / rhythm strip (regular narrow-complex)", keys: ["a:monitor", "a:12lead"], ref: "1213 #3", critical: true },
+    { label: "Recognize poor perfusion WITH altered LOC (BP, mental status)", keys: ["a:bp", "a:gcs", "q:orient"], ref: "1213 #12 / MCG 1355", critical: true },
+    { label: "Pads on", keys: ["t:pads"], ref: "standard practice*", critical: true }, // 1213 is silent on pad placement: standard practice*
+    { label: "Synchronized cardioversion (SYNC on, 120 J)", keys: ["t:cardiovert"], ref: "1213 #12", critical: true },
+    { label: "Base contact concurrent with cardioversion", keys: ["t:base"], ref: "1213 #12", critical: true },
+    { label: "Post-conversion 12-lead", keys: ["a:12lead#2"], ref: "1213" },
+    { label: "No unsynchronized shock (she has a pulse)", keys: ["!t:defib"], ref: "1213 / 1210 #8", critical: true },
+  ],
+  pi: { correct: "DYSR", accept: [], differential: ["DYSR", "HOTN", "PALP"],
+    clues: { DYSR: "Regular narrow-complex tachycardia at ~210 with hypotension and new confusion = unstable SVT.", HOTN: "The hypotension is caused by the rate; treat the rhythm.", PALP: "Palpitations is for the sensation without a dysrhythmia; here the monitor shows SVT." },
+    explain: "SVT with poor perfusion and ALOC: synchronized cardioversion per 1213 #12 (120 J, may repeat at 150/200 J), Base concurrent with the initial cardioversion.", keyFindingKeys: ["a:monitor", "a:bp", "q:orient"] },
+  expected: "Unstable SVT (~210, SBP 78, confused). Monitor, pads, SYNC on, 120 J synchronized cardioversion with a clear call (re-enable SYNC and escalate to 150/200 J if needed), Base concurrent. Post-conversion 12-lead.",
 }));
 
 /* ---------- Ref. 1233 Syncope ---------- */
@@ -5437,7 +5920,7 @@ addS(G({
 
 /* Ref. 1212: symptomatic bradycardia from pacemaker failure to capture. */
 addS(G(Object.assign({}, bradyBase, {
-  id: "pacer_fail", difficulty: "Advanced", rhythm: "chb", rhythmName: "Paced rhythm with FAILURE TO CAPTURE: pacer spikes at 70, most not followed by a QRS; wide escape ~36",
+  id: "pacer_fail", difficulty: "Advanced", chb: true, tcp: { thr: 75, sbp: 24 }, rhythm: "chb", rhythmName: "Paced rhythm with FAILURE TO CAPTURE: pacer spikes at 70, most not followed by a QRS; wide escape ~36",
   dispatchTitle: "81 y/o female, dizzy and weak", dispatchShort: "Bellflower home, husband calling.",
   dispatch: "RA 162, respond to a residence on Bellflower Blvd, Bellflower. 81-year-old female, dizzy and weak, nearly fainted. Time of call 1344.",
   scene: "Scene safe. The patient is sitting in an armchair, pale and clammy, eyes half closed. Her husband is holding her hand. A walker is beside the chair.",
@@ -5455,7 +5938,7 @@ addS(G(Object.assign({}, bradyBase, {
     onset: "This morning... I've felt off since yesterday.", dizzy: "Yes... worse when I sit up.", chestpain: "No, no pain.", sob: "A little winded.",
     allergies: "Sulfa.", meds: "Lisinopril, a baby aspirin, and my thyroid pill.", history: "I have a pacemaker... they put it in about six years ago for a slow heart. And my thyroid.",
     lastoral: "Some oatmeal at eight.", events: "I stood up from the table and everything went gray.", syncope: "I think I blacked out for a second.",
-    feelnow: st => n(st, "pace") ? "Better... but that thing pinches." : "Still so woozy.", pde5: "No.",
+    feelnow: st => PACED(st) ? (DEVICE.sedation(st) > 0.5 ? "Better... so drowsy..." : "Better... but that thing hurts every beat.") : "Still so woozy.", pde5: "No.",
   },
   bystanderAnswers: { cc: "She stood up, went gray and slumped against the counter for a few seconds. Her pulse was so slow.", history: "She's got a pacemaker, about six years now, for a slow heart. The device clinic called last month; her check was overdue.", meds: "Lisinopril, baby aspirin, levothyroxine." },
   checklist: [
@@ -5463,14 +5946,13 @@ addS(G(Object.assign({}, bradyBase, {
     { label: "Implanted pacemaker identified (chest exposed / ID bracelet / history)", keys: ["a:exposed", "a:medalert", "q:history"], ref: "1212 #3 / 1200.3" },
     { label: "Supine", keys: ["t:supine"], ref: "1212 #5" },
     { label: "Vascular access (don't delay TCP)", keys: ["t:iv", "t:io"], ref: "1212 #6" },
-    { label: "Transcutaneous pacing for HR ≤ 40 with poor perfusion (atropine first if it won't delay TCP)", keys: ["t:pace"], ref: "1212 #8-9", critical: true },
+    { label: "Transcutaneous pacing for HR ≤ 40 with poor perfusion (proceed immediately; atropine not required)", keys: ["t:pace"], ref: "1212 #8-9", critical: true },
     { label: "Base contact (required for symptomatic bradycardia; concurrent with TCP)", keys: ["t:base"], ref: "1212 #9", critical: true },
-    { label: "Sedation/analgesia consideration for TCP", keys: ["t:midaz", "t:fentanyl"], ref: "1212 #9", optional: true },
   ],
   pi: { correct: "DYSR", accept: [], differential: ["DYSR", "FAIL", "SYNC"],
     clues: { DYSR: "HR in the 30s with poor perfusion; pacer spikes without capture on the monitor.", FAIL: "Ref. 1200.3: Medical Device Malfunction – Fail is for a failed device, but for SYMPTOMATIC patients use the PI related to the symptoms (here, symptomatic bradycardia → Dysrhythmia).", SYNC: "The near-syncope is a symptom of the bradycardia; Dysrhythmia is the primary PI." },
     explain: "Pacemaker failure to capture: the device fires, but the heart doesn't respond, leaving a slow escape rhythm. Treat per 1212 (TCP for HR ≤ 40 with poor perfusion; Base contact). Per 1200.3, use the symptom-based PI (Dysrhythmia) rather than Device Malfunction.", keyFindingKeys: ["a:12lead", "a:bp", "a:exposed"] },
-  expected: "Symptomatic bradycardia (HR ~38, SBP 86) from pacemaker failure to capture. Expose the chest (pacemaker under the left clavicle), monitor/12-lead, supine, IV. Atropine 1 mg is unlikely to help; proceed to TCP for HR ≤ 40 with poor perfusion, with Base contact. Consider sedation for TCP.",
+  expected: "Symptomatic bradycardia (HR ~38, SBP 86) from pacemaker failure to capture. Expose the chest (pacemaker under the left clavicle), monitor/12-lead, supine, IV. Atropine is not needed first; proceed immediately to TCP for HR ≤ 40 with poor perfusion (1212 #8), with Base contact concurrent (1212 #9).",
 })));
 
 /* ===== scx_40_approach.js ===== */
@@ -5523,6 +6005,8 @@ const APPROACH = {
   mobitz2: ["Scene is safe: a church aisle. An elderly woman is lying on the floor with her feet raised by ushers. She looks pale but is breathing comfortably, and she seems embarrassed. A rosary is still in her hand. Her granddaughter is with her.", "Eyes open, and she tracks you as you walk up the aisle."],
   svt: ["Scene is safe: a coffee shop. A woman in her late 20s is sitting at a table with her hand on her chest. She looks pale and visibly anxious but is breathing without difficulty. An iced coffee is in front of her.", "Eyes open, and she tracks you the moment you walk in."],
   afib_rvr: ["Scene is safe: a living room. A man in his 70s is sitting upright on the couch, breathing a little fast, with his hand on his chest. He looks pale. Several prescription bottles are on the coffee table. His son is with him.", "Eyes open, and he tracks you as you approach."],
+  mobitz2_unstable: ["Scene is safe: a warehouse office. A man in his late 60s is slumped in an office chair, gray and sweaty. He's breathing a little fast. A coworker is fanning him.", "Eyes open; he tracks you, but slowly."],
+  svt_unstable: ["Scene is safe: a kitchen. An older woman is half-sitting on the floor against a cabinet. She looks gray and sweaty and is breathing fast. Her husband is holding her up.", "Eyes open, but she tracks you slowly and keeps losing focus."],
   vt_pulse: ["Scene is safe: a dining room. A man in his early 60s is slumped in a dining chair. He looks gray and sweaty. He's breathing fast. His wife is panicking beside him.", "Eyes open, but he tracks you slowly and inconsistently, and is slow to look up at you."],
   vasovagal: ["Scene is safe: a blood-drive hall on campus. A young woman in her early 20s is lying on a donor cot with her legs raised. She looks pale and sweaty but is breathing comfortably. Blood-bank staff are with her.", "Eyes open, and she tracks you as you walk over."],
   orthostatic: ["Scene is safe: a small bathroom; the floor is slippery. An elderly woman is sitting on the floor. She looks pale and frail but is breathing comfortably. There's evidence of diarrhea in the bathroom. A neighbor is with her.", "Eyes open, and she tracks you as you come in."],
@@ -5535,6 +6019,37 @@ const APPROACH = {
   pacer_fail: ["Scene is safe: a living room. An elderly woman is sitting in an armchair, pale and clammy, eyes half closed. She's breathing without difficulty. A walker is beside the chair, and her husband is holding her hand.", "When you speak she opens her eyes and tracks you, but she's slow and tired."],
 };
 SCENARIOS.forEach(sc => { const a = APPROACH[sc.id]; if (a && !sc.approach) sc.approach = { see: a[0], track: a[1] }; });
+
+/* ===== scx_45_device.js ===== */
+/* =====================================================================
+ * Monitor/defibrillator checklist items (DEVICE): added to every scenario
+ * that expects TCP (t:pace) or synchronized cardioversion (t:cardiovert).
+ * ===================================================================== */
+SCENARIOS.forEach(sc => {
+  const L = sc.checklist || []; if (!L.length) return;
+  const pi = L.findIndex(c => c.keys.includes("t:pace"));
+  if (pi >= 0 && !L.some(c => c.keys.includes("x:ecap"))) {
+    const base = L[pi], f = { critical: base.critical, optional: base.optional };
+    L.splice(pi + 1, 0,
+      // MCG 1365 #5: start 40 mA, increase slowly until electrical + mechanical capture; 1212 ❹ electrical capture = QRS + T after each spike
+      Object.assign({ label: "TCP: electrical capture (each spike followed by a wide QRS); mA titrated up from the start setting", keys: ["x:ecap"], ref: "MCG 1365 #5" }, f),
+      // 1212 ❹ / MCG 1365 #5: mechanical capture = palpable pulse correlating with the paced rate
+      Object.assign({ label: "Mechanical capture confirmed: femoral pulse matches the paced rate", keys: ["a:mechcap"], ref: "1212 ❹ / MCG 1365 #5" }, f),
+      // MCG 1365 #5: "Once capture is noted increase the mAs by 10mAs"
+      { label: "Output set 10 mA above the capture threshold", keys: ["x:margin"], ref: "MCG 1365 #5", optional: true });
+    // Sedation/analgesia (1212 #9, MCG 1365 #2/#4, MCG 1317.25) is deliberately NOT graded (Adrian's instruction).
+  }
+  if (pi < 0 && sc.tcp && !L.some(c => c.keys.includes("a:mechcap"))) L.push(
+    { label: "If you pace: electrical capture, then mechanical capture confirmed by a femoral pulse at the paced rate", keys: ["x:ecap", "a:mechcap"], all: true, ref: "MCG 1365 #5", optional: true });
+  const ci = L.findIndex(c => c.keys.includes("t:cardiovert") && !c.keys.some(k => k.startsWith("!")));
+  if (ci >= 0 && !L.some(c => c.keys.includes("x:converted"))) {
+    L.splice(ci + 1, 0,
+      // 1213 #12/#16/#17/#19: "Synchronized Cardioversion per manufacturer's guidelines, may repeat x2, or at 120J, 150J, 200J"
+      { label: "Rhythm converted (escalate 120 → 150 → 200 J, re-enable SYNC each time)", keys: ["x:converted"], ref: "1213", critical: true },
+      // 1213 is silent on clear calls / O2 away: standard practice* (defibrillator safety)
+      { label: "\"Clear\" called before every shock", keys: ["t:cardiovert", "!x:noclear"], all: true, ref: "standard practice* (defibrillator safety)" });
+  }
+});
 
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
@@ -5698,7 +6213,7 @@ const RuleBasedPatient = (() => {
       const desc = mental === "seizing" ? "Patient is actively seizing and cannot respond." : mental === "arrest" ? "Patient is pulseless and apneic." : "No response. Patient is unresponsive.";
       if (!out.some(o => o.speaker === "narrator" && o.text.includes("respon"))) out.unshift({ speaker: "narrator", text: desc });
     }
-    if (parsed.partnerHandled && !qs.length) return out;
+    if ((parsed.partnerHandled || parsed.deviceHandled) && !qs.length) return out;
     if (!qs.length && !parsed.tx.length && !parsed.assess.length) {
       if (talk) out.push({ speaker: "patient", nu: true, text: mental === "confused" ? pick(sc.confusedAnswers || CONFUSED) : clarify(sc, mental, st) });
       else if (parsed.toBystander) out.push({ speaker: "bystander", text: "I... I don't know. Please just help him!".replace("him", sc.patient.sex === "F" ? "her" : "him") });
@@ -5791,6 +6306,8 @@ const Monitor = (() => {
   const g = (x, c, w) => Math.exp(-((x - c) * (x - c)) / (2 * w * w));
   let ch = {}, t0 = performance.now() / 1000, simT = 0, lastFrame = 0, beat = { last: -10, next: 0, rr: 1 }, breath = { start: 0, period: 4 };
   let beepOn = false, audio = null, getState = null;
+  // device: pacer spike schedule, separate mechanical (pleth) beat schedule, sync marks, shock artifact
+  let pace = { last: -10, next: 0 }, pb = { last: -10, next: 0, rr: 1 }, markAt = null, shockSeen = 0, shockT = -10;
 
   // ---------- waveform math ----------
   function sinusBeat(tau, rr, stOff = 0, wide = false, amp = 1) {
@@ -5824,17 +6341,22 @@ const Monitor = (() => {
       else if (r === "afib") v = (tau < 0.6 ? sinusBeat(tau, beat.rr, s.stOff) - 0.12 * g(tau, 0.08, 0.022) : 0) + 0.05 * Math.sin(2 * Math.PI * 6.2 * t) + 0.03 * Math.sin(2 * Math.PI * 8.9 * t);
       else if (r === "pea") v = sinusBeat(tau, beat.rr, 0, true, 0.6);
       else if (r === "chb") { const pp = 0.8, pt = ((t % pp) + pp) % pp; v = 0.12 * g(pt, 0.08, 0.022) + (tau < 1.2 ? sinusBeat(tau, 1.2, 0, true, 0.9) - 0.12 * g(tau, 0.08 * Math.min(1, Math.sqrt(1.2 / 0.85)), 0.022) : 0); }
+      else if (s.shape === "m2") { const k = Math.max(0.55, Math.min(1, Math.sqrt(beat.rr / 0.85))); v = (tau < 0.9 ? sinusBeat(tau, beat.rr, 0, true, 0.9) : 0) + 0.12 * g(tau - beat.rr / 2, 0.08 * k, 0.022); }
       else if (r === "svt") v = tau < 0.6 ? sinusBeat(tau, beat.rr, s.stOff) - 0.12 * g(tau, 0.08 * Math.max(0.55, Math.min(1, Math.sqrt(beat.rr / 0.85))), 0.022) : 0;
-      else if (r === "paced") v = (tau < 0.012 ? 1.4 : 0) + (tau < 0.9 ? sinusBeat(tau, beat.rr, 0, true, 1) - 0.12 * g(tau, 0.08 * Math.max(0.55, Math.min(1, Math.sqrt(beat.rr / 0.85))), 0.022) : 0);
+      else if (r === "paced") v = tau < 0.012 ? 1.4 : (tau < 1.0 ? 0.95 * g(tau, 0.075, 0.028) - 0.45 * g(tau, 0.15, 0.03) - 0.32 * g(tau, 0.36, 0.075) : 0); // spike, wide QRS, discordant T
       else v = tau < 0.9 ? sinusBeat(tau, beat.rr, s.stOff) : 0;
     }
+    if (s.spikes && r !== "paced") { const tp = t - pace.last; if (tp >= 0 && tp < 0.012) v += 1.4; else if (tp >= 0.012 && tp < 0.08) v -= 0.12 * Math.exp(-(tp - 0.012) / 0.02); }
+    if (t - shockT < 0.7) { const ts = t - shockT; v = ts < 0.06 ? 1.38 : ts < 0.12 ? -0.85 : v * Math.min(1, (ts - 0.12) / 0.5) + 0.6 * Math.exp(-(ts - 0.12) / 0.15); }
     if (s.cpr) v += 0.9 * Math.pow(Math.abs(Math.sin(Math.PI * t * 110 / 60)), 3) - 0.3;
     if (s.artifact) v += (Math.random() - 0.5) * 0.5 + 0.2 * Math.sin(2 * Math.PI * 9 * t);
     return v + (Math.random() - 0.5) * 0.012;
   }
   function plethSample(t, s) {
     if (!s.spo2On || s.spo2 == null || s.arrest) return s.spo2On ? (s.cpr ? 0.15 * Math.pow(Math.abs(Math.sin(Math.PI * t * 110 / 60)), 2) : 0) : null;
-    const x = (t - beat.last - 0.18) / Math.max(0.35, beat.rr);
+    const B = s.plethRate != null ? pb : beat;
+    if (s.plethRate === 0) return 0.02 * Math.sin(t);
+    const x = (t - B.last - 0.18) / Math.max(0.35, B.rr);
     const amp = Math.max(0.25, Math.min(1, (s.sbp - 50) / 80));
     const ph = ((x % 1) + 1) % 1;
     const v = ph < 0.18 ? Math.sin((ph / 0.18) * Math.PI / 2) : Math.max(0, Math.exp(-(ph - 0.18) * 4.5) + 0.12 * g(ph, 0.42, 0.05));
@@ -5866,7 +6388,7 @@ const Monitor = (() => {
     const dpr = window.devicePixelRatio || 1, r = o.c.getBoundingClientRect();
     o.w = Math.max(50, Math.floor(r.width)); o.h = Math.max(20, Math.floor(r.height));
     o.c.width = o.w * dpr; o.c.height = o.h * dpr; o.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    o.buf = new Array(o.w).fill(null); o.x = 0;
+    o.buf = new Array(o.w).fill(null); o.x = 0; if (o.marks) o.marks = [];
   }
   function draw(o) {
     const { ctx, w, h, buf, x } = o;
@@ -5880,6 +6402,7 @@ const Monitor = (() => {
       if (!pen) { ctx.moveTo(i, y); pen = true; } else ctx.lineTo(i, y);
     }
     ctx.stroke();
+    if (o.marks) { ctx.fillStyle = "#ffffff"; for (let i = 0; i < w; i++) if (o.marks[i] && !(i > x && i < x + 14)) { ctx.beginPath(); ctx.moveTo(i - 4, 3); ctx.lineTo(i + 4, 3); ctx.lineTo(i, 10); ctx.closePath(); ctx.fill(); } }
     if (buf.every(v => v == null)) { ctx.fillStyle = "#3a4656"; ctx.font = "12px ui-monospace,monospace"; ctx.fillText(o.offText || "", 8, h / 2 + 4); }
   }
   function beep() {
@@ -5909,7 +6432,16 @@ const Monitor = (() => {
             if (s.rhythm === "afib") rr *= 0.65 + Math.random() * 0.7;
             beat.rr = rr; beat.next = tt + rr;
             if (s.monitor && ["sinus", "brady", "afib", "vt", "pea", "chb", "svt", "paced"].includes(s.rhythm)) beep();
+            if (s.sync && s.monitor && !["vf", "asystole"].includes(s.rhythm)) markAt = tt + (s.rhythm === "vt" ? beat.rr * 0.22 : 0.2 * Math.max(0.55, Math.min(1, Math.sqrt(rr / 0.85))));
           } else if (rate <= 0) beat.next = tt + 0.2;
+          if (s.spikes && s.paceRate > 0 && tt >= pace.next) { pace.last = tt; pace.next = tt + 60 / s.paceRate; }
+          if (!s.spikes) pace.next = tt;
+          if (s.plethRate > 0 && tt >= pb.next) { pb.last = tt; pb.rr = 60 / s.plethRate; pb.next = tt + pb.rr; }
+          if (s.shockN > shockSeen) { shockSeen = s.shockN; shockT = tt; }
+          if (s.shockN < shockSeen) shockSeen = s.shockN;
+          o.marks = o.marks || [];
+          o.marks[(o.x + 1) % o.w] = false;
+          if (markAt != null && tt >= markAt) { o.marks[(o.x + 1) % o.w] = true; markAt = null; }
         }
         const v = key === "ecg" ? ecgSample(tt, s) : key === "pleth" ? plethSample(tt, s) : co2Sample(tt, s);
         o.x = (o.x + 1) % o.w; o.buf[o.x] = v;
@@ -6518,6 +7050,7 @@ const Semantic = (() => {
     ["Look / expose", ["Open your mouth, checking the airway", "Lift his shirt, what do I see?", "Check pupils", "Expose the patient / Look at his legs / Check his back"]],
     ["History (SAMPLE / OPQRST)", ["Any allergies? Medications? Medical history?", "When did it start? What makes it worse?", "Does it go anywhere? Zero to ten?"]],
     ["Read the monitor / 12-lead out loud", ["Looks like sinus tach / A-fib with RVR / third-degree block / V-fib", "Inferior STEMI, elevation in II, III and aVF / Sinus rhythm, no STEMI", "(The label stays '?' until you call it; the instructor confirms, hints once, then reveals)"]],
+    ["Pacing (TCP) and cardioversion (or tap the monitor buttons)", ["Partner, put the pads on / Pads on", "Start pacing at 70, start at 40 milliamps / Pace at 70", "Increase the mA / Go up by 10 / Set the mA to 80 / Rate 80", "I have electrical capture / Check a femoral pulse / Does the pulse match the paced rate?", "Sync on / Synchronized cardioversion at 120 joules / Energy 150 / Charge", "Oxygen away, everybody clear / Shock / Disarm / Sync off / Pacer off"]],
     ["Radio report and handoff", ["Base, this is Medic 12... (age/sex, complaint, mental status, vitals, findings, treatment + response, ETA, request) ... over", "Ready to give you report... (at the ED) ... that's all", "Cancel the report"]],
     ["OB / newborn", ["How far apart are your contractions? / Did your water break? / Do you feel the urge to push? / How many weeks?", "Check for crowning / Open the OB kit / Deliver the baby", "Dry, warm and stimulate the baby / How's the baby? / APGAR / Clamp and cut the cord / Skin to skin", "Fundal massage / Estimate blood loss / Give magnesium 4 grams IV over 20 minutes / Give TXA 1 gram IV"]],
     ["Peds", ["Measure her with the Broselow tape (shows the MCG 1309 color; peds doses are NOT checked)"]],
@@ -6837,6 +7370,15 @@ const Semantic = (() => {
     $("#btn12").hidden = !rv.twelve;
     if (rv.twelve && rv.twelve.t !== last12) { last12 = rv.twelve.t; setTimeout(open12, 50); }
     else if (rv.twelve && $("#modal12").classList.contains("open") && st.x.ip && st.x.ip.tw && st.x.ip.tw.done && !/^Rate /.test($("#txt12").textContent)) $("#txt12").textContent = `Rate ${rv.twelve.info.rate}. ${rv.twelve.info.text}`;
+    { const dv = SIM.devMon ? SIM.devMon() : null, d = dv || { pads: !!st.flags.pads, rate: 70, mA: 0, energy: 200 };
+      const set = (id, txt, cls) => { const e = $(id); e.textContent = txt; e.className = cls || ""; };
+      set("#dvPads", d.pads ? "PADS ON" : "PADS OFF", d.pads ? "on" : "");
+      set("#dvPace", d.pacerOn ? `PACER ${d.rate}/min ${d.mA} mA${d.cap === "mech" || d.cap === "elec" ? " · CAPTURE" : d.cap === "inhibited" ? " · INHIBITED" : d.mA ? " · NO CAPTURE" : ""}` : "PACER OFF", d.pacerOn ? (d.cap === "mech" || d.cap === "elec" ? "cap" : "on") : "");
+      set("#dvSync", d.sync ? "SYNC ◆" : "SYNC OFF", d.sync ? "sync" : "");
+      set("#dvEnergy", d.charging ? `CHARGING ${d.energy} J…` : d.charged ? `CHARGED ${d.energy} J` : `${d.energy || 200} J`, d.charging || d.charged ? "chg" : "");
+      $("#dvPacerBtn").classList.toggle("act", !!d.pacerOn); $("#dvSyncBtn").classList.toggle("act", !!d.sync); $("#dvShockBtn").classList.toggle("armed", !!d.charged);
+      if (d.energy && document.activeElement !== $("#dvJ") && [120, 150, 200, 360].includes(d.energy)) $("#dvJ").value = String(d.energy);
+      if (dv && dv.pacing && (dv.cap === "elec" || dv.cap === "mech") && rv.monitor) setNum("hr", String(dv.rate), false, false, "bpm (paced)"); }
     // treatment chips
     const chips = Object.keys(st.count).filter(k => st.count[k] && !["base", "notify", "transport", "stopcpr"].includes(k)).map(k => `<span class="chip">${esc(({ removepatch: "PATCH OFF", removeheat: "HEAT OFF" }[k] || k).toUpperCase())}${st.count[k] > 1 ? " ×" + st.count[k] : ""}</span>`);
     if (st.flags.o2) chips.unshift(`<span class="chip">O₂: ${st.flags.o2.toUpperCase()}</span>`);
@@ -6847,7 +7389,10 @@ const Semantic = (() => {
     const st = SIM.state; if (!st || !st.tg) return null;
     const tg = st.tg, v = st.v;
     const rate = tg.rhythm === "vf" || tg.rhythm === "asystole" ? 0 : tg.rhythm === "pea" ? (tg.peaRate || 40) : (tg.rhythm === "vt" && tg.pulse === false) ? (tg.vtRate || 180) : v.hr || 0;
-    return { monitor: !!st.rev.monitor, rhythm: tg.rhythm, rateForBeats: rate, stOff: tg.twelve && tg.twelve.st ? ((tg.twelve.st.II || 0) + (tg.st === "anterior" ? 0.18 : 0)) * 1.6 : 0,
+    const dv = SIM.devMon ? SIM.devMon() : null, pacing = !!(dv && dv.pacing && dv.cap !== "inhibited");
+    const ecgRate = pacing && (dv.cap === "elec" || dv.cap === "mech") ? dv.rate : rate;
+    return { monitor: !!st.rev.monitor, rhythm: tg.rhythm, rateForBeats: ecgRate, spikes: pacing, paceRate: pacing ? dv.rate : 0, plethRate: pacing && dv.cap === "elec" ? ((dv.under && dv.under.hr) || 0) : null,
+      sync: !!(dv && dv.sync && dv.pads), shape: tg.rhythm !== "paced" && /type II/i.test(tg.rhythmName || "") ? "m2" : null, shockN: dv ? dv.shockN : 0, stOff: tg.twelve && tg.twelve.st ? ((tg.twelve.st.II || 0) + (tg.st === "anterior" ? 0.18 : 0)) * 1.6 : 0,
       cpr: !!tg.cpr, artifact: !!tg.artifact, fineVF: /fine/.test(tg.rhythmName || ""), spo2On: !!st.rev.spo2, spo2: v.spo2, sbp: v.sbp || 0, arrest: tg.pulse === false,
       etco2On: !!st.rev.etco2, rr: v.rr, etco2: v.etco2 || 0, shark: tg.capno === "shark" };
   }
@@ -6899,7 +7444,10 @@ const Semantic = (() => {
     const devs = st.devs.length ? st.devs.map(d => `<div class="dev"><b>${fmtT(d.t)} · ${esc(d.level.toUpperCase())}</b>: ${esc(d.text)} <small>[Ref. ${esc(d.ref)}]</small></div>`).join("") : "<p>No protocol deviations flagged. 👍</p>";
     const missedCrit = checklist.filter(c => c.critical && !c.done);
     const partnerBox = st => { const P = st.log.filter(l => l.kind === "partner" && /^(ORDER|DECLINED)/.test(l.text)); if (!P.length) return ""; const rows = P.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc(l.text)}</td></tr>`).join(""); return `<div class="db-box" style="margin-top:1em"><h3>Partner (EMT) orders</h3><p class="fine">${P.filter(l => /^ORDER/.test(l.text)).length} order(s), ${P.filter(l => /^DECLINED/.test(l.text)).length} declined as ALS (your call). Partner tasks count toward the checklist exactly as if you did them.</p><table class="log">${rows}</table></div>`; };
-    const logHtml = st.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc({ me: "🗣 You", patient: "🧑 Patient", bystander: "👥 Bystander", partner: "🚑 Partner", radio: "📻 Radio", assess: "🔎 Assess", tx: "💉 Treat", warn: "⚠️", find: "📟", sys: "•", pi: "🩺 PI" }[l.kind] || l.kind)}</td><td>${esc(l.text)}</td></tr>`).join("");
+    const deviceBox = st => { const d = typeof DEVICE !== "undefined" && st.x.dv ? DEVICE.summary(st) : null; if (!d || !d.log.length) return "";
+      const facts = [d.paceT0 != null ? `Pacing started ${fmtT(d.paceT0)}` : "", d.ecapT != null ? `electrical capture ${fmtT(d.ecapT)}` : "", d.mechT != null ? `mechanical capture ${fmtT(d.mechT)}` : "", d.mechConfT != null ? `pulse confirmed ${fmtT(d.mechConfT)}` : (d.mechT != null ? "mechanical capture NOT confirmed by a femoral pulse" : ""), d.shocks.length ? `${d.shocks.length} shock(s): ${d.shocks.map(x => `${x.J} J ${x.sync ? "sync" : "UNSYNC"}${x.clear ? "" : " (no clear call)"}`).join(", ")}` : "", d.convT != null ? `converted ${fmtT(d.convT)}` : ""].filter(Boolean);
+      return `<div class="db-box" style="margin-top:1em"><h3>⚡ Monitor / defibrillator log</h3><p class="fine">${esc(facts.join(" · "))}</p><table class="log">${d.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc(l.text)}</td></tr>`).join("")}</table></div>`; };
+    const logHtml = st.log.map(l => `<tr><td>${fmtT(l.t)}</td><td>${esc({ me: "🗣 You", patient: "🧑 Patient", bystander: "👥 Bystander", partner: "🚑 Partner", radio: "📻 Radio", assess: "🔎 Assess", tx: "💉 Treat", warn: "⚠️", find: "📟", sys: "•", pi: "🩺 PI", device: "⚡ Monitor" }[l.kind] || l.kind)}</td><td>${esc(l.text)}</td></tr>`).join("");
     const sum = DEBRIEF.summary(sc, st, checklist, score, g ? g.ok : null);
     if (!st.x.histSaved) { st.x.histSaved = true; DEBRIEF.save(DEBRIEF.entry(sc, st, sum, st.x.mode)); }
     const drill = st.x.mode === "primary", timedHtml = drill ? drillBox() : timedBox(sum, sc);
@@ -6917,6 +7465,7 @@ const Semantic = (() => {
       </div>`}
       ${flowHtml()}
       ${partnerBox(st)}
+      ${deviceBox(st)}
       <div class="db-box" style="margin-top:1em"><h3>Time-stamped log</h3><table class="log">${logHtml}</table></div>
       <p class="fine">Education only. Doses and steps are from the LA County EMS Agency Prehospital Care Manual as retrieved Oct 20, 2026; always use the current official protocols and medical direction.</p>`;
     currentDebrief.text = debriefText(sc, st, checklist, g, score);
@@ -6956,6 +7505,7 @@ const Semantic = (() => {
       if (sm.interp.log.length) { L.push("", "INTERPRETATION:"); sm.interp.log.forEach(x => L.push(`${fmtT(x.t)} ${x.kind}: you said ${x.said}; ${x.ok ? "correct" : "actual " + x.act}`)); }
       if (sm.meds.length) { L.push("", "MEDS:"); sm.meds.forEach(m => L.push(`${fmtT(m.t)} ${m.name} ${[m.dose, m.route].filter(Boolean).join(" ")}${m.ok ? "" : " !! " + m.notes.join(" ")}`)); }
       sm.radio.forEach(r => { L.push("", `${r.mode === "base" ? "BASE REPORT" : "HANDOFF"} ${r.g.score}%:`); r.g.items.forEach(i => L.push(`${i.ok ? "[x]" : "[ ]"} ${i.label}${i.note ? " (" + i.note + ")" : ""}`)); }); }
+    if (typeof DEVICE !== "undefined" && st.x.dv && st.x.dv.log.length) { L.push("", "MONITOR / DEFIBRILLATOR:"); DEVICE.summary(st).log.forEach(l => L.push(`${fmtT(l.t)} ${l.text}`)); }
     L.push("", "CHECKLIST:"); checklist.forEach(c => L.push(`${c.done ? "[x]" : c.optional ? "[-]" : "[ ]"} ${c.label} (Ref. ${c.ref})`));
     { const f = SIM.flow(); L.push("", "ASSESSMENT FLOW:"); f.steps.forEach((s, i) => L.push(`${s.na ? "[n/a]" : s.done ? "[x]" : "[ ]"} ${i + 1}. ${s.label}${s.done && !s.na ? " @" + fmtT(s.t) : ""}${s.note && !s.na ? " (" + s.note + ")" : ""}`)); f.flags.forEach(x => L.push("ORDER: " + x)); L.push("Sequence: " + f.seq.join(" > ")); }
     L.push("", "DEVIATIONS:"); st.devs.forEach(d => L.push(`${fmtT(d.t)} ${d.level}: ${d.text} [${d.ref}]`)); if (!st.devs.length) L.push("none");
@@ -6968,7 +7518,7 @@ const Semantic = (() => {
     const sc = SIM.scenario; const reveal = SIM.state && SIM.state.ended;
     const refs = Object.keys(PROTOCOLS).filter(r => /^12/.test(r));
     $("#protoBody").innerHTML = `<h2>LA County Treatment Protocols (quick reference)</h2><p class="fine">During the call this shows every protocol, so it doesn't give away the scenario. Source PDFs: dhs.lacounty.gov / file.lacounty.gov, retrieved 2026-10-20.</p>` +
-      refs.concat(["1302", "1309", "1315", "1345"]).map(r => { const p = PROTOCOLS[r]; return `<details class="proto-sec"><summary><b>Ref. ${r} · ${esc(p.title)}</b> <small>rev. ${p.revised}</small></summary><ul>${p.keyPoints.map(k => `<li>${esc(k)}</li>`).join("")}</ul><a href="${p.url}" target="_blank" rel="noopener">Official PDF ↗</a></details>`; }).join("");
+      refs.concat(["1302", "1309", "1315", "1345", "1365"]).map(r => { const p = PROTOCOLS[r]; return `<details class="proto-sec"><summary><b>Ref. ${r} · ${esc(p.title)}</b> <small>rev. ${p.revised}</small></summary><ul>${p.keyPoints.map(k => `<li>${esc(k)}</li>`).join("")}</ul><a href="${p.url}" target="_blank" rel="noopener">Official PDF ↗</a></details>`; }).join("");
     $("#protoBody").innerHTML += `<details class="proto-sec"><summary><b>Broselow / MCG 1309 color reference</b> <small>(weight, length, normal vitals, i-gel; reference only, NO doses here)</small></summary><table class="log"><tr><th>Color</th><th>kg</th><th>Length cm</th><th>Typical age</th><th>HR</th><th>RR</th><th>SBP</th><th>i-gel</th></tr>${BROSELOW.T.map(b => `<tr><td><span class="bros bros-${b.color.toLowerCase()}">${b.color}</span></td><td>${b.kg[0]}–${b.kg[b.kg.length - 1]}</td><td>${b.len[0]}–${b.len[1]}</td><td>${esc(b.age || "")}</td><td>${b.hr}</td><td>${b.rr}</td><td>${b.sbp}</td><td>${b.igel}</td></tr>`).join("")}</table><p class="fine">Peds drug doses: use the MCG 1309 color page. This sim does not check pediatric doses.</p></details>`;
     $("#modalProto").classList.add("open");
   }
@@ -7039,6 +7589,14 @@ const Semantic = (() => {
     $("#btnSaveSettings").onclick = saveSettings;
     $("#btnBeep").onclick = () => { $("#btnBeep").textContent = Monitor.toggleBeep() ? "🔊" : "🔇"; };
     $("#btn12").onclick = open12;
+    $("#devBtns").onclick = e => { const b = e.target.closest("button[data-op]"); if (!b || !SIM.state || SIM.state.ended) return; let op = b.dataset.op, val;
+      const dv = SIM.devMon() || {};
+      if (op === "pacer") op = dv.pacerOn ? "paceoff" : "pace";
+      if (op === "sync") val = !dv.sync;
+      if (op === "charge" && dv.energy !== +$("#dvJ").value) say(SIM.device("energy", +$("#dvJ").value));
+      addMsg({ speaker: "me", text: "[monitor] " + (op === "charge" ? `Charge ${$("#dvJ").value} J` : b.textContent.trim() === "+" ? b.title : b.textContent.trim()), tap: true });
+      say(SIM.device(op, val)); };
+    $("#dvJ").onchange = () => { if (SIM.state && !SIM.state.ended) say(SIM.device("energy", +$("#dvJ").value)); };
     document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".modal.open").forEach(m => m.classList.remove("open")); });
     $$(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("open"); }));
     $("#btnCopy").onclick = () => { navigator.clipboard && navigator.clipboard.writeText(currentDebrief.text); $("#btnCopy").textContent = "Copied ✓"; setTimeout(() => $("#btnCopy").textContent = "Copy report", 1500); };
