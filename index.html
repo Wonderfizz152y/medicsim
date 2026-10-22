@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.9.2-nailbed 37be65daef">
+<meta name="medicsim-version" content="2.10-combo dac68232ad">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -468,6 +468,8 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;lett
 .next-all,.next-ae{flex:none;font-size:.74em;padding:.3em .7em;border-radius:6px;background:#132131;border:1px solid #2b4560;color:#cfe3f7;font-weight:600;min-height:30px}
 .next-ae{background:#1d1630;border-color:#5b3f99;color:#dccbff}
 .next-chips{display:flex;gap:.4em;overflow-x:auto;scrollbar-width:none;padding-bottom:.1em}
+.next-chips.wrap{flex-wrap:wrap;overflow-x:visible}
+.chip-sep{flex:none;width:2px;align-self:stretch;margin:.15em .1em;background:#2c4a48;border-radius:2px}
 .next-chips button{flex:none;font-size:.82em;padding:.45em .85em;min-height:36px;border-radius:8px;background:#102a2a;border:1px solid #1f6b66;color:#c9fff7;font-weight:600;white-space:nowrap}
 .next-chips button.c-meds{background:#2a1a10;border-color:#8a5426;color:#ffd9b8}
 .next-chips button.c-monitor{background:#2a1015;border-color:#8a2636;color:#ffc9d2}
@@ -834,7 +836,10 @@ const PROTOCOLS = {
     keyPoints: ["Target SpO2 94-98% (COPD 88-92%)", "Mild hypoxia: NC 2-6 L/min", "High-flow 15 L/min (NRB/BMV/CPAP) for resp arrest, cardiac arrest, shock, CO, pneumothorax, hypoxia not corrected by NC"]},
   "1315": { title: "MCG 1315 CPAP", revised: "06-01-18",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040595_1315-CPAP.pdf",
-    keyPoints: ["Contraindications: arrest, can't protect airway, can't follow commands, SBP < 90, tracheostomy, vomiting, suspected pneumothorax, traumatic respiratory distress"]},
+    keyPoints: ["Criteria: longer than the length-based tape, awake, cooperative, follows commands", "Contraindications: arrest, can't protect airway, can't follow commands, SBP < 90, tracheostomy, vomiting, suspected pneumothorax, traumatic respiratory distress", "Worsening or not tolerated: discontinue CPAP, O2 per MCG 1302, be ready to BMV"]},
+  "1317.3": { title: "MCG 1317.3 Albuterol", revised: "01-01-26",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1053949_1317.3-Albuterol2018-07-01.pdf",
+    keyPoints: ["Adult respiratory distress / bronchospasm: 5 mg (6 mL) via neb or 4 puffs via MDI; may repeat x2 prn wheezing (3 doses)", "Pediatric: < 4 y 2.5 mg (3 mL) neb or 2 puffs MDI; ≥ 4 y 5 mg (6 mL) or 4 puffs; repeat x2 prn, max 3 total doses before Base contact", "Hyperkalemia: 5 mg via neb continuously until hospital arrival", "TP 1237 #12 / ❺: may be given in-line with CPAP for moderate or severe distress", "Adverse effects: tachycardia, tremor; beta-blockers may blunt the effect"]},
   "1365": { title: "MCG 1365 Transcutaneous Pacing", revised: "04-01-24",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040604_1365-TCP.pdf",
     keyPoints: ["Indication: symptomatic bradycardia with poor perfusion (TP 1212); NOT for asystole", "Awake patient: sedation/analgesia (midazolam 5 mg; pain per MCG 1345) unless RR < 10 or unresponsive", "Pads anterior/posterior (or per manufacturer); monitor leads on", "Rate 70/min (100/min for children < 12 months)",
@@ -1613,7 +1618,7 @@ const NLU = (() => {
     [/\bpace ?maker\b/g, "pacemaker"], [/\bheating (pat|pads|path)\b/g, "heating pad"], [/\b(expo's|expos|ex pose|x pose)\b/g, "expose"], [/\brole (him|her|them) (over|on)\b/g, "roll $1 $2"],
     [/\b(you vula|uvular|you vela|you view la)\b/g, "uvula"], [/\bpen ?lite\b/g, "penlight"], [/\btrans ?dermal\b/g, "transdermal"], [/\bport a ?cath?\b|\bport cath\b/g, "port a cath"],
     [/\bnight ?(row|roe|rose|road)\b/g, "nitro"], [/\bnitro ?gl[a-z]*\b/g, "nitroglycerin"], [/\bnitrogen\b(?! gas)/g, "nitro"], [/\bneighbor (tro|throw)\b/g, "nitro"],
-    [/\b(al|el|all) ?(but|bute|butte|beauty|bu) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol)\b/g, "albuterol"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
+    [/\b(al|el|all|ol) ?(but|bute|butte|beauty|bu|bute) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol|oral|orol|eral|aral|or ?al)\b/g, "albuterol"], [/\bin[ -]line\b/g, "inline"], [/\bchick ?skin\b/g, "check skin"], [/\bneb(ulizer)? (by )?it ?self\b/g, "neb by itself"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
     [/\b(see|sea|c|si) ?pap\b/g, "cpap"], [/\bbye? ?pap\b/g, "bipap"], [/\bc ?pop\b/g, "cpap"],
     [/\bb ?g ?l\b/g, "bgl"], [/\bc ?b ?g\b/g, "cbg"], [/\bg ?c ?s\b/g, "gcs"], [/\bb ?p\b/g, "bp"], [/\bs ?p ?o ?(2|two|to)\b/g, "spo2"], [/\bo ?(2|two|to) sat/g, "o2 sat"],
     [/\b(e ?t|end ?tidal|and ?tidal|in ?tidal|end title|and title) ?c ?o ?(2|two|to)\b/g, "etco2"], [/\b(and|in|an) tidal\b/g, "end tidal"], [/\bc ?o ?(2|two)\b/g, "co2"], [/\bcapno\w*/g, "capnography"],
@@ -1968,6 +1973,9 @@ const NLU = (() => {
     if (/\bpatch(es)?\b|duragesic|heating pad/.test(t)) ["fentanyl", "nitro", "transport"].forEach(drop);
     if (ids.includes("removeheat") && ids.includes("removepatch") && !/patch/.test(t)) drop("removepatch");
     if (ids.includes("o2") && ["nrb", "nc", "cpap", "bvm"].some(x => ids.includes(x))) drop("o2");
+    // v2.10 albuterol delivery: "neb mask with oxygen" is how the neb is driven, not a separate O2 order; "in line with the bag" = BVM
+    if (ids.includes("albuterol") && ids.includes("o2") && /\bneb(ulizer)?\b[^.]{0,20}\b(oxygen|o2)\b|\bmask\b[^.]{0,10}\b(oxygen|o2)\b/.test(t)) drop("o2");
+    if (ids.includes("albuterol") && !ids.includes("bvm") && /\b(inline|through|via|with|on)\b[^.]{0,12}\bthe bag\b(?! (of|valve mask))/.test(t)) { out.tx.push({ id: "bvm" }); ids = out.tx.map(x => x.id); }
     if (ids.includes("nrb") && ids.includes("nc")) drop("nc");
     if (ids.includes("pushepi")) drop("epi");
     if (ids.includes("pads") && ids.includes("defib") && !/shock|defibrillate\b|deliver|joules|\d+ ?j\b|clear/.test(t)) drop("defib");
@@ -2429,12 +2437,21 @@ const EFFECTS = { // onset s, plateau s
   albuterol: [150, 600], naloxone: [180, 2400], midaz: [180, 1800], d10: [60, 240], glucagon: [600, 600], oralglucose: [300, 300],
   diphen: [120, 1200], ondansetron: [300, 1800], amio: [60, 900], atropine: [30, 300], aspirin: [600, 99999], adenosine: [8, 20], vagal: [10, 20], cardiovert: [2, 99999], pace: [10, 99999], calcium: [60, 600], bicarb: [60, 600], removepatch: [480, 99999], removeheat: [600, 99999], cooling: [300, 99999], fowler: [30, 99999], cpap: [60, 99999],
 };
+function albMode(t) {
+  t = t || "";
+  if (/\b(cpap|bipap)\b/.test(t) && /(in ?line|through|thru|via|with|into|on|plus|and)\b[^.]{0,20}\b(cpap|bipap)\b|\b(cpap|bipap)\b[^.]{0,25}\b(in ?line|neb|albuterol)/.test(t)) return "cpap";
+  if (/\b(bvm|bmv|bag valve|bag)\b/.test(t) && /(in ?line|through|thru|via|with|into)\b[^.]{0,15}\b(bvm|bmv|bag)/.test(t)) return "bvm";
+  if (/\bmdi\b|\bpuffs?\b|inhaler|spacer/.test(t)) return "mdi";
+  if (/non ?rebreather|\bnrb\b|neb(ulizer)? mask|mask neb|face ?mask|with (the )?(oxygen|o2)\b/.test(t)) return "mask";
+  if (/by (it|him|her)sel[fv]|\balone\b|hand ?held|\bhhn\b|mouth ?piece|just (the )?(neb|albuterol)|only albuterol|albuterol only/.test(t)) return "hhn";
+  return null;
+}
 function E(st, key) {
   if (key === "pace" && st.x && st.x.dv) return st.x.dv.ramp || 0; // TCP effect = mechanical capture (DEVICE)
   let sum = 0;
   for (const e of st.eff) if (e.k === key) {
     const dt = st.t - e.t0, on = e.onset, du = e.dur;
-    sum += dt < 0 ? 0 : dt < on ? dt / on : dt < on + du ? 1 : dt < on + du + 120 ? 1 - (dt - on - du) / 120 : 0;
+    sum += (e.w == null ? 1 : e.w) * (dt < 0 ? 0 : dt < on ? dt / on : dt < on + du ? 1 : dt < on + du + 120 ? 1 - (dt - on - du) / 120 : 0);
   }
   return Math.min(1, sum);
 }
@@ -2462,7 +2479,7 @@ const SIM = (() => {
     timer = setInterval(() => tick(1), 1000);
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
-  function addEffect(k, onsetOverride) { const d = EFFECTS[k]; if (!d) return; st.eff.push({ k, t0: st.t, onset: onsetOverride || d[0], dur: d[1] }); }
+  function addEffect(k, onsetOverride) { const d = EFFECTS[k]; if (!d) return; const w = k === "albuterol" && st.x.albW != null ? st.x.albW : 1; st.eff.push({ k, t0: st.t, onset: onsetOverride || d[0], dur: d[1], w }); }
   function computeTargets(snap) {
     let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
     if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
@@ -2866,6 +2883,7 @@ const SIM = (() => {
         if (sbp < 90) notes.push(dev("CPAP with SBP < 90 mmHg is contraindicated.", "MCG 1315"));
         if (!alert) notes.push(dev("CPAP requires an alert patient who can follow commands.", "MCG 1315"));
         if (sc.base === "anaph") notes.push(dev("CPAP held for upper airway edema/obstruction.", "1237 #8"));
+        if (sc.peds) notes.push(dev("CPAP is for patients longer than the length-based tape.", "MCG 1315"));
         st.flags.cpap = true; st.flags.o2 = "cpap"; rec("t:o2any"); narr = "CPAP applied (titrated per manufacturer)"; break;
       case "bvm": st.flags.o2 = "bvm"; rec("t:o2any"); narr = st.x.hypervT === st.t ? "" : "BMV with 15 L/min O2 at 10 breaths/min"; if (alert && st.v.rr > 10) notes.push(dev("BMV on an alert patient with adequate respirations.", "MCG 1302", "caution")); break;
       case "sga": st.flags.sga = true; st.flags.o2 = "bvm"; rec("t:o2any"); st.rev.etco2 = { t: st.t }; narr = "i-gel placed, ventilating; waveform capnography confirmed"; if (alert || m === "confused") notes.push(dev("Advanced airway in a patient with a gag reflex/responsive.", "MCG 1302")); break;
@@ -2898,7 +2916,23 @@ const SIM = (() => {
         if (sc.base === "chf") notes.push(dev("Fluid bolus in pulmonary edema worsens volume overload.", "1214"));
         else if (sbp >= 100 && !st.x.arrest && !["hypo"].includes(sc.base)) notes.push(dev("NS 1 L rapid infusion is indicated for poor perfusion. Is this patient poorly perfused?", "MCG 1355", "note"));
         narr = "Normal saline 1 L IV rapid infusion (reassess every 250 mL)"; break; }
-      case "albuterol": narr = "Albuterol 5 mg (6 mL) via nebulizer" + (st.flags.cpap ? " in-line with CPAP" : ""); if (n(st, "albuterol") >= 3) notes.push(dev("Albuterol beyond 3 doses requires Base contact.", "1219 #8 / 1237", "caution")); if (sc.base === "chf" && !st.flags.cpap) notes.push(dev("In pulmonary edema, albuterol is for wheezing that persists despite CPAP.", "1214 #9", "note")); break;
+      case "albuterol": {
+        // Delivery mode (TP 1237 #12 / ❺, MCG 1317.3, MCG 1315). Severe distress = poor tidal volume → handheld/MDI deliver less drug.
+        const mode = albMode(lastText || "") || (st.flags.cpap ? "cpap" : st.flags.o2 === "bvm" || st.flags.sga ? "bvm" : st.flags.o2 === "nrb" || st.flags.o2 === "nc" ? "mask" : "hhn");
+        const severe = st.v.rr >= 30 || st.v.spo2 < 90 || st.sev >= 0.6 || !["alert"].includes(m);
+        const W = { cpap: 1, bvm: 0.9, mask: severe ? 0.75 : 1, hhn: severe ? 0.6 : 1, mdi: severe ? 0.35 : 0.9 };
+        st.x.albW = W[mode]; st.x.albMode = mode; rec("x:alb_" + mode);
+        const mgS = doseOf(tx, "mg"), dS = mgS ? mgS + " mg" + (mgS === 5 ? " (6 mL)" : mgS === 2.5 ? " (3 mL)" : "") : sc.peds && sc.patient && sc.patient.age < 4 ? "2.5 mg (3 mL)" : "5 mg (6 mL)";
+        narr = { cpap: `Albuterol ${dS} nebulized in-line with CPAP`, bvm: `Albuterol ${dS} nebulized in-line with the BMV`, mask: `Albuterol ${dS} via neb mask driven by O2 at 6-8 L/min`, hhn: `Albuterol ${dS} via handheld nebulizer (mouthpiece)`, mdi: "Albuterol 4 puffs via MDI with spacer" }[mode];
+        if (mode === "mask" && /non ?rebreather|\bnrb\b/.test(lastText || "")) narr += "; NRB back on between treatments";
+        const cpapOk = sbp >= 90 && alert && sc.base !== "anaph" && !sc.trauma && !sc.peds && !st.x.ptx;
+        if (n(st, "albuterol") >= 3) notes.push(dev("Albuterol is 5 mg, may repeat x2 (3 doses total); a 4th dose needs a Base order.", "1237 #12 / MCG 1317.3"));
+        if (severe && cpapOk && !st.flags.cpap && mode !== "cpap" && mode !== "bvm" && (sc.copd || sc.id === "asthma" || sc.base === "copd")) notes.push(dev(sc.copd || sc.base === "copd" ? "Moderate/severe distress: give albuterol in-line with CPAP (CPAP is the treatment of choice in COPD)." : "Moderate/severe distress: albuterol may be given in-line with CPAP; CPAP is strongly considered regardless of SpO2.", "1237 #8, #12, ❺", "note"));
+        if (mode === "mdi" && severe) notes.push(dev("MDI needs a good inspiratory effort; in severe distress use a nebulizer (in-line with CPAP).", "MCG 1317.3 / 1237 ❽", "note"));
+        if (mode === "bvm") notes.push(dev("In-line albuterol through the BMV isn't specified in TP 1237 or MCG 1317.3; it's standard practice* for a patient you're already bagging.", "standard practice* (in-line neb via BMV)", "note"));
+        if (mode === "cpap" && !cpapOk) notes.push(dev("Albuterol in-line requires CPAP; CPAP is contraindicated here (SBP < 90, not alert, airway edema, pneumothorax or trauma).", "MCG 1315"));
+        if (sc.base === "chf" && !st.flags.cpap && mode !== "cpap") notes.push(dev("In pulmonary edema, albuterol is for wheezing that persists despite CPAP.", "1214 #9", "note"));
+        break; }
       case "epi": {
         const mg = doseOf(tx, "mg"), route = tx.route;
         if (st.x.arrest) {
@@ -3211,6 +3245,9 @@ const SIM = (() => {
     if (typeof RADIO !== "undefined") { const rl = radioIn(text); if (rl) { ui.render(); return rl; } }
     const parsed = await NLU.parseAsync(text); parsed.tx.forEach(t => t.raw = parsed.norm);
     lastText = parsed.norm; lastSites = parsed.pulseSites || []; lastParsed = parsed;
+    if (parsed.tx.some(t => t.id === "albuterol")) { // "albuterol in-line with CPAP/BVM" or "with the NRB" when that device is already on = delivery mode, not a re-order
+      const pend = id => (st.pq || []).some(q => q.id === id), on = { cpap: !!st.flags.cpap || pend("cpap"), bvm: st.flags.o2 === "bvm" || !!st.flags.sga || pend("bvm"), nrb: st.flags.o2 === "nrb" || pend("nrb") };
+      parsed.tx = parsed.tx.filter(t => !on[t.id]); }
     AEIOU.forEach(a => { if (a.rx.test(parsed.norm || "")) rec("x:aeiou:" + a.id); });
     (sc.recognize || []).forEach(([k, rx]) => { if (rx.test(parsed.norm || "")) rec(k); }); // spoken recognition (e.g. "widening pulse pressure", "tamponade")
     const pOut = partnerRoute(parsed, text);
@@ -3326,7 +3363,9 @@ const COURSE = (() => {
     const v = st.v, P = { spo2: 0, perf: 0, rr: 0, ment: MENT[m] || 0, bgl: 0 };
     if (v.spo2 != null) P.spo2 = Math.max(0, (94 - v.spo2) / 25);
     if (v.sbp != null) P.perf += Math.max(0, (90 - v.sbp) / 40) + Math.max(0, (v.sbp - 200) / 80);
-    if (v.hr != null) P.perf += Math.max(0, (45 - v.hr) / 30) + Math.max(0, (v.hr - 130) / 60);
+    // expected beta-agonist tachycardia (MCG 1317.3 adverse effects; epi) isn't hypoperfusion
+    const drugHr = typeof E === "function" && st.eff ? 12 * E(st, "albuterol") + 15 * E(st, "epi") + 15 * E(st, "pushepi") : 0;
+    if (v.hr != null) P.perf += Math.max(0, (45 - v.hr) / 30) + Math.max(0, (v.hr - drugHr - 130) / 60);
     if (v.rr != null) P.rr = Math.max(0, (10 - v.rr) / 10) + Math.max(0, (v.rr - 28) / 20);
     if (v.bgl != null) P.bgl = Math.max(0, (60 - v.bgl) / 40);
     return P;
@@ -4225,7 +4264,7 @@ SCENARIOS.push({
 
 /* ===== sc4_asthma.js ===== */
 SCENARIOS.push({
-  id: "asthma", title: "Severe Asthma Exacerbation", tag: "RESPIRATORY", refs: ["1237", "1302"],
+  id: "asthma", title: "Severe Asthma Exacerbation", tag: "RESPIRATORY", refs: ["1237", "1302", "1315", "1317.3"],
   summary: "19 y/o male, wheezing at a basketball court, inhaler empty.",
   dispatch: "Engine 66 and RA 66, respond to Rancho Cienega Park, South LA. 19-year-old male, difficulty breathing, history of asthma. Wildfire smoke advisory in effect. Time of call 1617.",
   scene: "Scene safe. Hazy, smoky air. Patient is sitting on a bench in tripod position with audible wheezing, using his neck muscles to breathe. A friend is holding an empty inhaler.",
@@ -4289,6 +4328,7 @@ SCENARIOS.push({
     { label: "SpO2 assessed + O2", keys: ["a:spo2"], ref: "MCG 1302" },
     { label: "Albuterol 5 mg (6 mL) neb / 4 puffs MDI", keys: ["t:albuterol"], ref: "1237 #12", critical: true },
     { label: "Repeat albuterol (may repeat x2)", keys: ["t:albuterol#2"], ref: "1237 #12" },
+    { label: "Albuterol in-line with CPAP (moderate/severe distress)", keys: ["x:alb_cpap"], ref: "1237 #12, ❺", optional: true },
     { label: "Capnography (shark-fin waveform)", keys: ["a:etco2"], ref: "1237 #9" },
     { label: "CPAP considered for moderate/severe distress", keys: ["t:cpap"], ref: "1237 #8" },
     { label: "Epinephrine 0.5 mg IM for deterioration / severe asthma", keys: ["t:epi"], ref: "1237 #12", critical: true },
@@ -5094,7 +5134,7 @@ addS(G({
 
 /* ---------- Ref. 1237 Respiratory Distress variants ---------- */
 addS(G({
-  id: "copd", protocol: "1237", refs: ["1237", "1302", "1315"], base: "copd", copd: true, epiIM: false, difficulty: "Intermediate",
+  id: "copd", protocol: "1237", refs: ["1237", "1302", "1315", "1317.3"], base: "copd", copd: true, epiIM: false, difficulty: "Intermediate",
   dispatchTitle: "71 y/o male, difficulty breathing", dispatchShort: "Pico Rivera home, on home oxygen.",
   dispatch: "Engine 40 / RA 40, respond to a residence on Rosemead Blvd, Pico Rivera. 71-year-old male, difficulty breathing, on home oxygen. Time of call 0921.",
   scene: "Scene safe. The patient is sitting forward on the edge of the bed, pursed-lip breathing, with a home O2 concentrator at 2 L by cannula. Ashtray on the nightstand.",
@@ -5118,6 +5158,7 @@ addS(G({
     { label: "Lung sounds (wheezes/rhonchi)", keys: ["a:lungs"], ref: "1201", critical: true },
     { label: "Albuterol 5 mg neb (may repeat x2, in-line with CPAP)", keys: ["t:albuterol"], ref: "1237 #12", critical: true },
     { label: "CPAP (treatment of choice in COPD exacerbation)", keys: ["t:cpap"], ref: "1237 #8 ❺", critical: true },
+    { label: "Albuterol in-line with CPAP (moderate/severe distress)", keys: ["x:alb_cpap"], ref: "1237 #12, ❺", optional: true },
     { label: "Capnography", keys: ["a:etco2"], ref: "1237 #9" },
     { label: "O2 titrated to SpO2 88-92% (COPD)", keys: ["a:spo2"], ref: "MCG 1302" },
     { label: "Position of comfort", keys: ["t:fowler"], ref: "1237 #3" },
@@ -8158,6 +8199,32 @@ const NEXT = (() => {
     opa: ["OPA", "Partner, insert an OPA"], suction: ["Suction", "Partner, suction the airway"], recovery: ["Recovery position", "Partner, roll him into the recovery position"],
     fowler: ["Sit up", "Sit him up, position of comfort"], supine: ["Lay flat", "Lay him flat"], removepatch: ["Remove patch", "Remove the patch"], hypervent: ["Hyperventilate", "Hyperventilate him"],
     chestseal: ["Chest seal", "Apply a vented chest seal"], sga: ["i-gel", "Partner, insert an i-gel"], defib: ["Shock 200 J", "Defibrillate at 200 joules"],
+    // v2.10 albuterol delivery modes (TP 1237 #12 / ❺, MCG 1317.3, MCG 1315)
+    alb_cpap: ["Albuterol in-line CPAP", "Albuterol 5 milligrams in line with CPAP"], alb_hhn: ["Albuterol neb alone", "Albuterol 5 milligrams by itself, handheld neb"],
+    alb_nrb: ["Albuterol + NRB", "Albuterol 5 milligrams with the nonrebreather"], cpap_neb: ["CPAP + in-line neb", "Set up CPAP with an in-line neb"],
+    alb_bvm: ["Albuterol in-line BVM", "Albuterol 5 milligrams in line with the BVM"], alb_rep: ["Repeat albuterol", "Repeat albuterol 5 milligrams"],
+  };
+  // chip id -> treatment event it satisfies (variants map to the base drug/device)
+  const BASE_ID = { alb_cpap: "albuterol", alb_hhn: "albuterol", alb_nrb: "albuterol", alb_bvm: "albuterol", cpap_neb: "cpap", alb_rep: "albuterol#2" };
+  /* Protocol treatment order (slots) per LA County TP. Each slot = one decision point in protocol sequence.
+   * Slot chips = the scenario's correct item(s) + same-slot alternatives/distractors, shuffled inside the slot,
+   * so the protocol sequence is visible but the right choice isn't always the first chip. */
+  const SLOTS = {
+    "1237": [["fowler", "nrb", "nc"], ["alb_cpap", "alb_hhn", "alb_nrb", "albuterol"], ["cpap_neb", "cpap", "nitro"], ["epi", "diphen", "pushepi"], ["alb_rep"], ["iv", "ns"]],
+    "1237-P": [["fowler", "nrb", "nc"], ["alb_hhn", "alb_nrb", "albuterol"], ["alb_rep"], ["epi", "diphen"], ["iv", "ns"]],
+    "1214": [["fowler", "supine", "nrb"], ["cpap", "nc"], ["nitro", "aspirin"], ["alb_cpap", "albuterol"], ["iv", "ns"]],
+    "1211": [["nc", "nrb", "fowler"], ["aspirin", "nitro"], ["iv"], ["fentanyl", "morphine", "ns"]],
+    "1219": [["epi", "diphen"], ["nrb", "supine", "fowler"], ["iv", "ns"], ["albuterol", "pushepi"]],
+    "1219-P": [["epi", "diphen"], ["nrb", "supine", "fowler"], ["iv", "ns"], ["albuterol", "pushepi"]],
+    "1241": [["opa", "suction", "bvm", "nrb", "recovery"], ["naloxone", "midaz"], ["iv", "ns"], ["d10", "oralglucose"]],
+    "1203": [["oralglucose", "d10", "glucagon"], ["iv", "ns"]],
+    "1231": [["recovery", "suction", "nrb"], ["midaz", "naloxone"], ["d10", "oralglucose"], ["iv"]],
+    "1231-P": [["recovery", "suction", "nrb"], ["midaz", "naloxone"], ["d10", "oralglucose"], ["cooling"]],
+    "1232": [["nc", "nrb", "supine", "fowler"], ["iv"], ["d10", "oralglucose"]],
+    "1213": [["nrb", "nc"], ["iv"], ["vagal", "adenosine", "cardiovert"], ["amio", "pace", "atropine"]],
+    "1204": [["nrb", "nc"], ["iv", "ns"], ["cooling", "blanket"]],
+    "1233": [["supine", "nc", "fowler"], ["iv", "ns"]],
+    "1244": [["tourniquet", "bandage", "needle", "chestseal", "pelvicbinder", "smr"], ["nrb", "bvm", "hypervent"], ["iv", "ns", "txa"], ["fentanyl", "morphine"], ["blanket"]],
   };
   const DISTRACT = ["aspirin", "nitro", "epi", "albuterol", "naloxone", "d10", "ns", "ondansetron", "fentanyl", "diphen", "midaz", "atropine", "cpap", "nc", "nrb", "fowler", "txa", "tourniquet", "smr", "glucagon", "pushepi", "ketorolac"];
   const AE_SAY = { A: ["Smell of alcohol?", "Any smell of alcohol on his breath?"], E: ["Seizure history?", "Any seizure history?"], I: ["Blood sugar", "Check a blood sugar"],
@@ -8181,7 +8248,7 @@ const NEXT = (() => {
     ["Monitor", [["Monitor", "Partner, put him on the monitor"], ["Pads", "Partner, apply the pads"], ["12-lead", "Get a 12-lead"], ["Capnography", "Put capnography on"], ["Blood sugar", "Check a blood sugar"],
       ["Temperature", "Check a temperature"], ["Rhythm check", "Rhythm check"], ["Pulse check", "Pulse check"], ["Shock 200 J", "Defibrillate at 200 joules"], ["Sync cardioversion", "Synchronized cardioversion"],
       ["Pace", "Transcutaneous pacing"], ["Vector change", "Change pad position to anterior posterior"]]],
-    ["Meds", ["iv", "io", "aspirin", "nitro", "fentanyl", "ondansetron", "albuterol", "epi", ["Epi 1 mg IV/IO", "Epinephrine 1 milligram IV push"], "pushepi", ["Amiodarone 300 mg", "Amiodarone 300 milligrams IV push"], "amio",
+    ["Meds", ["iv", "io", "aspirin", "nitro", "fentanyl", "ondansetron", "albuterol", "alb_cpap", "alb_hhn", "alb_nrb", "cpap_neb", "alb_bvm", "epi", ["Epi 1 mg IV/IO", "Epinephrine 1 milligram IV push"], "pushepi", ["Amiodarone 300 mg", "Amiodarone 300 milligrams IV push"], "amio",
       "adenosine", "atropine", "naloxone", "d10", "glucagon", "oralglucose", "diphen", "midaz", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
       .map(x => Array.isArray(x) ? x : TXSAY[x])],
     ["Transport / Radio", [["Transport", "Let's transport, load and go"], ["Contact Base", "Base, this is Medic 12, how copy?"], ["Notify hospital", "Notify the receiving hospital"],
@@ -8214,7 +8281,7 @@ const NEXT = (() => {
   function suggest(sim) {
     const st = sim.state, sc = sim.scenario; if (!st || !sc) return null;
     const F = sc.patient && sc.patient.sex === "F", ev = st.events;
-    const fin = (step, title, chips) => ({ step, title, chips: chips.slice(0, 6).map(c => ({ ...c, say: pron(c.say, F), label: c.label })) });
+    const fin = (step, title, chips) => ({ step, title, chips: chips.slice(0, step === "tx" ? 12 : 6).map(c => ({ ...c, say: pron(c.say, F), label: c.label })) });
     const cs = sim.code && sim.code();
     if (st.x.arrest || (cs && cs.roscT != null && !cs.roscRecT)) return fin("code", st.flags.cpr ? "Code: CPR running" : "Code: cardiac arrest", codeChips(sim));
     const f = sim.flow(), step = f.steps.find(s => !s.done && !s.na) || { id: "radio" };
@@ -8232,32 +8299,67 @@ const NEXT = (() => {
       if (!done("intro")) top.push(C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"));
       return fin(done("avpu") ? "abc" : "avpu", done("avpu") ? "Not tracking: ABCs / pulses" : "Not tracking: AVPU + ABCs", top);
     }
-    switch (step.id) {
-      case "track": return fin("track", "Approach", [C("Is he tracking me?", "Is he tracking me as I walk up?"), C("Scene safe?", "Is the scene safe?"), C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?")]);
-      case "intro": return fin("intro", "Introduce + consent", [C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"), C("Radial + carotid", "Checking radial and carotid pulses"), C("Skin / forehead", "Feeling the forehead, checking skin signs")]);
-      case "pulses": return fin("pulses", "Pulses", [C("Radial + carotid", "Checking radial and carotid pulses"), C("Skin / forehead", "Feeling the forehead, checking skin signs"), C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate")]);
-      case "skin": return fin("skin", "Skin signs", [C("Skin / forehead", "Feeling the forehead, checking skin signs"), C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"), C("Chief complaint", "What's bothering you today?")]);
-      case "partner": return fin("partner", "Partner vitals", [C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"), C("Chief complaint", "What's bothering you today?"), C("Monitor", "Partner, put him on the monitor")]);
-      case "cc": return fin("cc", "Chief complaint", [C("Chief complaint", "What's bothering you today?"), C("What happened?", "What happened today?"), C("Is he alert?", "Is he alert?")]);
-      case "avpu": return fin("avpu", "AVPU", [C("Is he alert?", "Is he alert?"), C("Can you hear me?", "Can you hear me? Open your eyes"), C("Nail bed pressure", "Nail bed pressure")]);
-      case "abc": { const pool = ["nrb", "bvm", "opa", "suction", "recovery", "nc"]; if (sc.tag === "TRAUMA") pool.push("bandage", "tourniquet", "needle", "smr");
-        return fin("abc", "ABCs / life threats", [C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"), ...shuffle(pool, sc.id).slice(0, 5).map(k => C(TXSAY[k][0], TXSAY[k][1]))]); }
-      case "ao": return fin("ao", "A&O", [C("A&O ×4", "What's your name, where are we, what year is it, and what happened today?"), C("Name", "What's your name?"), C("Where are we?", "Where are we right now?"), C("What year?", "What year is it?"), C("What happened?", "What happened today?")]);
-      case "why": { const ae = sim.aeiou(); const left = ae.items.filter(i => !i.done && AE_SAY[i.id]);
-        return fin("why", `Why altered? AEIOU-TIPS ${ae.n}/${ae.total}`, left.slice(0, 5).map(i => C(AE_SAY[i.id][0], AE_SAY[i.id][1], "aeiou"))); }
-      case "hx": { const q = [["History", "Any medical history?", "q:history"], ["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"],
-          ["Onset", "When did this start?", "q:onset"], ["Provokes", "Does anything make it better or worse?", "q:provocation"], ["Quality", "What does it feel like?", "q:quality"], ["Radiates", "Does it go anywhere?", "q:radiation"],
-          ["Severity", "Rate it 0 to 10", "q:severity"], ["Time", "How long has it been going on?", "q:time"], ["Pertinent negatives", "Any chest pain, shortness of breath, nausea or dizziness?", "q:sob"]];
-        return fin("hx", "History / OPQRST", q.filter(x => !ev[x[2]]).map(x => C(x[0], x[1]))); }
-      case "tx": { const ids = new Set(); (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^!?t:(\w+)/); if (m && TXSAY[m[1]] && !ev["t:" + m[1]]) ids.add(m[1]); }));
-        const want = [...ids].slice(0, 3), dist = shuffle(DISTRACT.filter(k => !ids.has(k) && !ev["t:" + k]), sc.id + ((st.t / 600) | 0)).slice(0, 6 - want.length - 1);
-        return fin("tx", "Treatment (protocol options)", [...shuffle([...want, ...dist], sc.id).map(k => C(TXSAY[k][0], TXSAY[k][1], "meds")), C("Transport", "Let's transport, load and go", "radio")]); }
-      default: return fin("radio", "Transport / radio", [C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Notify hospital", "Notify the receiving hospital", "radio"), C("Recycle BP", "Partner, recycle the BP"), C("Reassess", "Partner, get BP, SpO2 and resp rate"), C("Pain 0-10", "Rate it 0 to 10")]);
+    // ---- v2.10: chips are ORDERED in Adrian's call sequence (group order fixed; done items drop off) ----
+    const sd = id => { const x = f.steps.find(y => y.id === id); return !x || x.done || x.na; };
+    const GROUPS = {
+      track: () => [C("Is he tracking me?", "Is he tracking me as I walk up?")],
+      intro: () => [C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?")],
+      pulses: () => [C("Radial + carotid", "Checking radial and carotid pulses")],
+      skin: () => [C("Skin / forehead", "Feeling the forehead, checking skin signs")],
+      partner: () => [C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate", "partner")],
+      cc: () => [C("Chief complaint", "What's bothering you today?")],
+      avpu: () => [C("Is he alert?", "Is he alert?")],
+      abc: () => { const pool = ["nrb", "bvm", "opa", "suction", "recovery", "nc"]; if (sc.tag === "TRAUMA") pool.push("bandage", "tourniquet", "needle", "smr");
+        const o2 = !st.flags.o2 && !st.flags.cpap ? ["nrb"] : [], rest = shuffle(pool.filter(k => k !== "nrb" && !ev["t:" + k]), sc.id).slice(0, 3 - o2.length);
+        return [C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"), ...shuffle([...o2, ...rest], sc.id + "abc").map(k => C(TXSAY[k][0], TXSAY[k][1], "partner"))]; },
+      ao: () => [C("A&O ×4", "What's your name, where are we, what year is it, and what happened today?")],
+      why: () => { const ae = sim.aeiou(); return ae.items.filter(i => !i.done && AE_SAY[i.id]).map(i => C(AE_SAY[i.id][0], AE_SAY[i.id][1], "aeiou")); },
+      hx: () => HX.filter(x => !ev[x[2]]).map(x => C(x[0], x[1])),
+    };
+    const HX = [["History", "Any medical history?", "q:history"], ["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"],
+      ["Onset", "When did this start?", "q:onset"], ["Provokes", "Does anything make it better or worse?", "q:provocation"], ["Quality", "What does it feel like?", "q:quality"], ["Radiates", "Does it go anywhere?", "q:radiation"],
+      ["Severity", "Rate it 0 to 10", "q:severity"], ["Time", "How long has it been going on?", "q:time"], ["Pertinent negatives", "Any chest pain, shortness of breath, nausea or dizziness?", "q:sob"]];
+    const TITLE = { track: "Approach", intro: "Introduce + consent", pulses: "Pulses", skin: "Skin signs", partner: "Partner vitals", cc: "Chief complaint", avpu: "AVPU", abc: "ABCs / life threats", ao: "A&O", why: "Why altered? AEIOU-TIPS", hx: "History / OPQRST" };
+    if (step.id !== "tx" && step.id !== "radio") {
+      const order = f.steps.map(x => x.id), i0 = order.indexOf(step.id), out = [];
+      for (const id of order.slice(i0)) { if (id === "tx") break; if (id !== step.id && sd(id)) continue; if (GROUPS[id]) out.push(...GROUPS[id]().map(c => ({ ...c, grp: id }))); if (out.length >= 6) break; }
+      if (out.length < 4) out.push(...txChips(sim, ev).slice(0, 6 - out.length)); // sequence continues into treatment (group order kept)
+      let title = TITLE[step.id] || step.id; if (step.id === "why") { const ae = sim.aeiou(); title += ` ${ae.n}/${ae.total}`; }
+      return fin(step.id, title, out);
     }
+    if (step.id === "tx") return fin("tx", "Treatment (protocol order)", txChips(sim, ev));
+    return fin("radio", "Transport / radio", [C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Notify hospital", "Notify the receiving hospital", "radio"), C("Recycle BP", "Partner, recycle the BP"), C("Reassess", "Partner, get BP, SpO2 and resp rate"), C("Pain 0-10", "Rate it 0 to 10")]);
+  }
+  // Treatment group: protocol slots in order; inside a slot, correct + plausible alternatives are shuffled (seeded) so position is no giveaway.
+  function txChips(sim, ev) {
+    const st = sim.state, sc = sim.scenario, proto = sc.protocol || (sc.refs || [])[0] || "";
+    const want = new Set(); (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^t:(\w+#?\d?)/); if (m) want.add(m[1]); }));
+    const done = id => !!ev["t:" + (BASE_ID[id] || id)] || (id === "cpap_neb" && !!st.flags.cpap) || (id === "alb_rep" && (!ev["t:albuterol"] || (st.count.albuterol || 0) >= 3));
+    const correct = id => want.has(BASE_ID[id] || id) || (BASE_ID[id] === "albuterol" && want.has("albuterol"));
+    let slots = SLOTS[proto];
+    if (!slots) { const seen = new Set(); slots = []; (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^t:(\w+)$/); if (m && TXSAY[m[1]] && !seen.has(m[1])) { seen.add(m[1]); slots.push([m[1]]); } })); }
+    slots = slots.map(sl => sl.filter(id => TXSAY[id] && (id !== "alb_bvm" || st.flags.o2 === "bvm")));
+    if (st.flags.o2 === "bvm" && slots.some(sl => sl.includes("alb_hhn"))) slots = slots.map(sl => sl.includes("alb_hhn") ? [...sl, "alb_bvm"] : sl);
+    const used = new Set(), dpool = shuffle(DISTRACT.filter(k => !want.has(k) && !ev["t:" + k]), sc.id + "|d"); let di = 0, out = [], prefix = [];
+    // anything still missing from history (allergies before meds) comes before treatment
+    [["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"]].forEach(([l, s2, k]) => { if (!ev[k]) prefix.push(C(l, s2)); });
+    slots.forEach((sl, si) => {
+      const live = sl.filter(id => !used.has(id) && !done(id)); if (!live.length) return;
+      if (sl.some(correct) && !live.some(correct)) return; // this protocol step is done: its alternatives drop off with it
+      const good = live.filter(correct), alts = live.filter(id => !correct(id));
+      const isAlb = good.some(id => BASE_ID[id] === "albuterol" && id !== "alb_rep");
+      let pick = isAlb ? good.filter(id => id !== "albuterol") : good.slice(0, 2);
+      if (!good.length) pick = alts.slice(0, 1); else if (!isAlb) { let alt = alts[0]; while (!alt && di < dpool.length) { const d = dpool[di++]; if (!used.has(d)) alt = d; } if (alt) pick.push(alt); }
+      pick.forEach(id => used.add(id));
+      out.push(...shuffle(pick, sc.id + "#" + si).map(id => ({ ...C(TXSAY[id][0], TXSAY[id][1], "meds"), slot: si })));
+    });
+    while (out.length < 3 && di < dpool.length) { const d = dpool[di++]; if (!used.has(d) && TXSAY[d]) { used.add(d); out.push({ ...C(TXSAY[d][0], TXSAY[d][1], "meds"), slot: 99 }); } }
+    out = out.slice(0, Math.max(4, 10 - prefix.length));
+    return [...prefix, ...out, C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Transport", "Let's transport, load and go", "radio")];
   }
   function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => ({ label: l, say: pron(s, F) }))]); }
   function aeiouChips() { return AE_SAY; }
-  return { suggest, all, aeiouChips, TXSAY, ALL };
+  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle };
 })();
 
 /* ===== ui.js ===== */
@@ -8715,7 +8817,10 @@ const NEXT = (() => {
     const sg = typeof NEXT !== "undefined" ? NEXT.suggest(SIM) : null;
     if (sg) { const sig = sg.step + "|" + sg.title + "|" + sg.chips.map(c => c.say).join("|");
       if (sig !== nextSig) { nextSig = sig; $("#nextStep").textContent = sg.title;
-        $("#nextChips").innerHTML = sg.chips.map(c => `<button type="button" class="c-${esc(c.cat || "talk")}" data-say="${esc(c.say)}" title="${esc(c.say)}">${esc(c.label)}</button>`).join(""); } }
+        // v2.10: chips are in call order; a thin divider marks each new step/protocol slot; treatment wraps so the whole sequence is visible
+        const key = c => c.slot != null ? "s" + c.slot : c.grp ? "g" + c.grp : c.cat === "radio" ? "radio" : "x";
+        $("#nextChips").classList.toggle("wrap", sg.step === "tx");
+        $("#nextChips").innerHTML = sg.chips.map((c, i) => `${i && key(c) !== key(sg.chips[i - 1]) ? '<span class="chip-sep" aria-hidden="true"></span>' : ""}<button type="button" class="c-${esc(c.cat || "talk")}" data-say="${esc(c.say)}" title="${esc(c.say)}">${esc(c.label)}</button>`).join(""); } }
     const ae = SIM.aeiou && SIM.aeiou();
     const showAe = !!(ae && ae.altered && !st.x.arrest);
     $("#btnAeiou").hidden = !showAe; if (showAe) $("#btnAeiou").textContent = `AEIOU-TIPS ${ae.n}/${ae.total}`;
