@@ -64,6 +64,45 @@ Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The servi
   - **oxy_elder:** an 81-year-old with early dementia and an accidental double dose of oxycodone ER.
     - Findings: two empty pill-organizer slots and a short OxyContin count.
     - He wakes with naloxone, then re-sedates about 8 minutes later. Repeat the dose and contact Base.
+- **Fixes from the independent v2.10.1 audit:**
+  - **H1 Negation:** "don't give / hold / no epi", "no push-dose epi", "not push dose epi, just fluids", "no pressors" and "no narcan / hold the naloxone" no longer give the drug.
+  - **H2 Small-dose IV epi:** "epinephrine 10 micrograms IV", "epi 10 mcg IV" and "epinephrine 0.01 mg/mL 1 mL IV" are push-dose epi (MCG 1317.17). They're no longer graded as a critical 10-fold overdose with a hypertensive surge.
+  - **H3 Anaphylaxis:** push-dose gives only a transient BP bump. It no longer reverses anaphylaxis, so a 10 mcg push can't outperform 0.5 mg IM. Push-dose before IM epi is a deviation (1219 #4, #7 ❶).
+  - **M1 Trauma:** a trauma call means the TRAUMA tag or TP 1244. Injury text in the exam no longer counts, which removes false "non-traumatic shock" deviations and wrong CPAP blocks on mobitz2, orthostatic, etoh, syncope_lac, postictal_etoh and focal_sz.
+  - **M2 Fluids first:** requires about 250 mL actually infused, at about 250 mL per 3 min (standard practice*), plus a BP reassessment. Ordering NS is no longer enough.
+  - **M3 No BP:** push-dose with no BP ever taken is a deviation, mirroring nitro.
+  - **M4 Duplicate orders and serial BPs:**
+    - A duplicate order while the partner is already on it gets "Already on it", and no second reading is queued.
+    - Serial BP credit needs readings at least 3 minutes apart.
+  - **M5 Mobile layout:** the next-step bar wraps whenever vitals chips are present, including the not-tracking path. At 320 px the sim header no longer widens the page to 341 px.
+  - **M6 Epi narration:** epi is narrated with the dose and route actually ordered.
+  - **L1 Base contact:** Base is contacted concurrently with the first push-dose on every call, including post-ROSC (Ref. 1200.2 #7d).
+  - **L2 bb_od:** bradycardia on this call is graded under 1212 #11.
+  - **L3 Push-dose chip:** it shows only once a BP shows SBP < 90.
+  - **L4 Busy partner:** a partner who is bagging or doing CPR says so instead of taking a BP.
+  - **L5 Parsing:**
+    - "push dose of atropine" gives atropine only.
+    - Phenylephrine, norepinephrine, vasopressin and dopamine get a "not in LA County formulary" note.
+    - "bolus of push dose epi" no longer adds NS.
+    - "pushed those epi" maps to push-dose epi.
+    - "mix 9 mL NS with 1 mL epi" doses 1 mL.
+    - "epi 0.5 IM" in arrest gets a correction note.
+  - **L6 Base report:** short drug orders are carried out consistently while a Base report is open.
+  - **L7 Rapid repeats:** the 1-minute repeat check (MCG 1317.17, every 1-5 min) is kept. Stacked pushes now saturate.
+  - **L8:**
+    - The offline banner's scenario count is dynamic.
+    - The README count is corrected.
+    - The aspirin chip is 325 mg (MCG 1317.7).
+  - **L9 Tests:**
+    - SIM.start applies the scenario base exactly like the app.
+    - tests/run_all.sh runs every intent set, including v27/v28.
+    - Browser chip taps are robust under parallel load.
+  - **Naloxone checked for the same classes of bug:**
+    - Negation is covered.
+    - Narration uses the dose and route actually ordered.
+    - The chip shows only on an altered patient with RR < 12.
+    - A rapid IN/IM repeat gets a caution (onset 2-10 min, MCG 1317.29).
+
 ### 2.10.1-vitaltaps
 - **Separate vitals taps:** Blood pressure, Resp rate and Pulse ox are now their own tap actions. They do exactly what the voice command does: the partner takes the reading, and the findings, grading credit and monitor/vitals display are the same.
   - **Next-step bar:** they sit in the vitals step (after pulses and skin), next to the combined "BP, SpO₂, RR" chip. That chip shows only until the first vital is taken.

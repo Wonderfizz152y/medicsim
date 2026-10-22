@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.2-naloxone 7f5c7f01d8">
+<meta name="medicsim-version" content="2.10.2-naloxone b7921d89b2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -505,6 +505,10 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;lett
 @media (max-width:700px){.code-panel{grid-template-columns:repeat(3,minmax(0,1fr))}.next-chips button{font-size:.8em}}
 .db-box .ae-row{display:flex;gap:.5em;align-items:baseline;font-size:.88em;padding:.15em 0}
 .code-panel[hidden],.next-bar[hidden],.aeiou-panel[hidden],.next-ae[hidden]{display:none!important}
+/* v2.10.2 M5: 320 px phones: the sim header must not widen the layout viewport (End button was pushing it to 341 px) */
+.sim-title{min-width:0;flex:1 1 auto;overflow:hidden}
+.sim-title #scTitle,.sim-title .ref{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:380px){.sim-head{gap:.2em;padding:.4em .3em;max-width:100vw;overflow-x:clip}.sim-head button.sm{padding-left:.4em;padding-right:.4em;min-width:0}.sim-head .clock{font-size:.85em}}
 
 </style>
 </head>
@@ -1629,7 +1633,7 @@ const NLU = (() => {
     [/\bpace ?maker\b/g, "pacemaker"], [/\bheating (pat|pads|path)\b/g, "heating pad"], [/\b(expo's|expos|ex pose|x pose)\b/g, "expose"], [/\brole (him|her|them) (over|on)\b/g, "roll $1 $2"],
     [/\b(you vula|uvular|you vela|you view la)\b/g, "uvula"], [/\bpen ?lite\b/g, "penlight"], [/\btrans ?dermal\b/g, "transdermal"], [/\bport a ?cath?\b|\bport cath\b/g, "port a cath"],
     [/\bnight ?(row|roe|rose|road)\b/g, "nitro"], [/\bnitro ?gl[a-z]*\b/g, "nitroglycerin"], [/\bnitrogen\b(?! gas)/g, "nitro"], [/\bneighbor (tro|throw)\b/g, "nitro"],
-    [/\b(al|el|all|ol) ?(but|bute|butte|beauty|bu|bute) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol|oral|orol|eral|aral|or ?al)\b/g, "albuterol"], [/\bin[ -]line\b/g, "inline"], [/\bchick ?skin\b/g, "check skin"], [/\b(pushed|posh|post|pus|push to|pushy) dose (?=epi|epinephrine|pressor)/g, "push dose "], [/\bpush (those|does|dos|toes|doze) (?=epi|epinephrine|pressor)/g, "push dose "], [/\bpush-dose\b/g, "push dose"], [/\b(dirty epi|epi spritzer|spritzer)\b/g, "push dose epi"], [/\bneb(ulizer)? (by )?it ?self\b/g, "neb by itself"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
+    [/\b(al|el|all|ol) ?(but|bute|butte|beauty|bu|bute) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol|oral|orol|eral|aral|or ?al)\b/g, "albuterol"], [/\bin[ -]line\b/g, "inline"], [/\bchick ?skin\b/g, "check skin"], [/\b(pushed|posh|post|pus|push to|pushy) dose (?=epi|epinephrine|pressor)/g, "push dose "], [/\b(?:push|pushed|posh|pushing) (those|does|dos|toes|doze|dose|those) (?=epi|epinephrine|pressor)/g, "push dose "], [/\bpush-dose\b/g, "push dose"], [/\b(dirty epi|epi spritzer|spritzer)\b/g, "push dose epi"], [/\bneb(ulizer)? (by )?it ?self\b/g, "neb by itself"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
     [/\b(see|sea|c|si) ?pap\b/g, "cpap"], [/\bbye? ?pap\b/g, "bipap"], [/\bc ?pop\b/g, "cpap"],
     [/\bb ?g ?l\b/g, "bgl"], [/\bc ?b ?g\b/g, "cbg"], [/\bg ?c ?s\b/g, "gcs"], [/\bb ?p\b/g, "bp"], [/\bs ?p ?o ?(2|two|to)\b/g, "spo2"], [/\bo ?(2|two|to) sat/g, "o2 sat"],
     [/\b(e ?t|end ?tidal|and ?tidal|in ?tidal|end title|and title) ?c ?o ?(2|two|to)\b/g, "etco2"], [/\b(and|in|an) tidal\b/g, "end tidal"], [/\bc ?o ?(2|two)\b/g, "co2"], [/\bcapno\w*/g, "capnography"],
@@ -1988,6 +1992,10 @@ const NLU = (() => {
     if (ids.includes("albuterol") && ids.includes("o2") && /\bneb(ulizer)?\b[^.]{0,20}\b(oxygen|o2)\b|\bmask\b[^.]{0,10}\b(oxygen|o2)\b/.test(t)) drop("o2");
     if (ids.includes("albuterol") && !ids.includes("bvm") && /\b(inline|through|via|with|on)\b[^.]{0,12}\bthe bag\b(?! (of|valve mask))/.test(t)) { out.tx.push({ id: "bvm" }); ids = out.tx.map(x => x.id); }
     if (ids.includes("nrb") && ids.includes("nc")) drop("nc");
+    // L5: "push dose of atropine" = atropine only; phenylephrine/neo isn't LA County formulary; "bolus of push dose epi" isn't an NS order
+    if (/\b(phenylephrine|neo ?synephrine|norepi\w*|levophed|vasopressin|dopamine)\b|push ?dose neo\b/.test(t) && !/\b(epi(nephrine)?|adrenaline)\b/.test(t.replace(/norepi\w*/g, ""))) { drop("pushepi"); drop("epi"); out.nonFormulary = (t.match(/phenylephrine|neo ?synephrine|norepi\w*|levophed|vasopressin|dopamine|\bneo\b/) || ["that drug"])[0]; }
+    if (ids.includes("pushepi") && !/\bepi(nephrine)?\b|pressor|adrenaline/.test(t) && ids.some(x => x !== "pushepi" && DRUG_IDS.includes(x))) drop("pushepi");
+    if (ids.includes("pushepi") && ids.includes("ns") && !/normal saline|\bns\b|fluid|\bliters?\b|\d{3,4} ?ml\b|saline|\blr\b|ringer/.test(t.replace(/\b9 ?ml (of )?(normal )?(saline|ns)\b/g, ""))) drop("ns");
     if (ids.includes("pushepi")) drop("epi");
     if (ids.includes("pads") && ids.includes("defib") && !/shock|defibrillate\b|deliver|joules|\d+ ?j\b|clear/.test(t)) drop("defib");
     if (ids.includes("tourniquet")) drop("bandage");
@@ -2216,9 +2224,11 @@ const NLU = (() => {
       r.questions.forEach(x => out.questions.includes(x) || out.questions.push(x));
       r.assess.forEach(x => out.assess.includes(x) || out.assess.push(x));
       r.tx.forEach(x => { if (!seenTx.has(x.id)) { seenTx.add(x.id); out.tx.push(x); } });
+      if (r.nonFormulary) out.nonFormulary = r.nonFormulary;
     }
     // whole-utterance pass catches phrases broken by the split ("better or worse")
     const whole = parseClause(t, false);
+    if (whole.nonFormulary && !out.tx.length) out.nonFormulary = whole.nonFormulary;
     whole.questions.forEach(x => out.questions.includes(x) || out.questions.push(x));
     if (!out.tx.length) whole.tx.forEach(x => { if (!seenTx.has(x.id)) { seenTx.add(x.id); out.tx.push(x); } });
     whole.assess.forEach(x => out.assess.includes(x) || out.assess.push(x));
@@ -2352,9 +2362,11 @@ const NLU = (() => {
       if (T("terminate")) dropT(["stopcpr", "cpr"]); }
     if (out.assess.includes("v4r")) { out.assess = out.assess.filter(a => a !== "12lead" && a !== "monitor"); out.tx = out.tx.filter(x => x.id !== "transport"); }
     { // v2.8: negated medication orders ("hold the nitro", "no nitro, RV infarct") must never give the drug
-      const NEG = /\b(?:hold|holding|withhold|withholding|avoid|skip|without|contraindicat\w*|(?:don'?t|do not)(?: (?:give|giving|use|push))?|no|not)(?: (?:the|any|more|his|her))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus)\b/g;
-      const map = { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "ns", fluids: "ns", bolus: "ns" };
-      let m; const neg = new Set(); while ((m = NEG.exec(t))) { const w = m[1].startsWith("nitro") ? "nitro" : m[1]; if (map[w]) neg.add(map[w]); }
+      // v2.10.2: + epi/epinephrine, push-dose/pressors, naloxone/narcan ("don't give epi", "hold the push dose", "not push dose epi, just fluids", "no narcan")
+      const NEG = /\b(?:hold(?:ing)?(?: off(?: on)?)?|withhold\w*|avoid|skip|without|contraindicat\w*|(?:don'?t|do not|let'?s not|not|no|never)(?: (?:give|giving|use|push|do|start|need|want|go with))?)(?: (?:the|any|more|his|her|a|an|that))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan)\b/g;
+      const map = { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "ns", fluids: "ns", bolus: "ns", naloxone: "naloxone", narcan: "naloxone" };
+      let m; const neg = new Set(); while ((m = NEG.exec(t))) { const w0 = m[1], w = w0.startsWith("nitro") ? "nitro" : w0;
+        if (/^push[- ]?dose|^pressor/.test(w)) neg.add("pushepi"); else if (/^epi/.test(w)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w]) neg.add(map[w]); }
       if (neg.size && !/\b(did|have|has|do|does|taken?|took|any)\b[^.?]*\?/.test(t)) out.tx = out.tx.filter(x => !neg.has(x.id)); }
     if (out.assess.includes("mechcap")) out.assess = out.assess.filter(a => a !== "pulsecheck" && a !== "monitor" && (a !== "pulse" || /femoral|carotid|radial/.test(t)));
     if (/\b(do|does|did|have|has) (you|he|she|they) (have|got|had)\b.*\bpacer\b/.test(t)) out.tx = out.tx.filter(x => x.id !== "pace");
@@ -2479,7 +2491,8 @@ const SIM = (() => {
     return { t: 0, sev: scn.startSev || 0.5, flags: { o2: null, position: null }, count: {}, last: {}, eff: [], x: {}, v: {}, rev: {}, events: {}, log: [], devs: [], lastNitroDose: 0, pi: null, piT: null, ended: false };
   }
   function start(scn, uiApi, opts) {
-    stop(); sc = scn; ui = uiApi; st = newState(scn); if (NLU.reset) NLU.reset();
+    stop(); if (scn && !scn.base) scn.base = scn.id; // L9: same base setup the app (ui.js) applies, so headless tests match the app
+    sc = scn; ui = uiApi; st = newState(scn); if (NLU.reset) NLU.reset();
     if (sc.init) sc.init(st);
     st.x.mode = (opts && opts.mode) || "call";
     if (typeof COURSE !== "undefined") COURSE.plan(st, sc, st.x.mode !== "call" ? "none" : opts && opts.curveball === "auto" ? null : (opts && opts.curveball) || "none");
@@ -2495,7 +2508,7 @@ const SIM = (() => {
     let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
     if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
     // v2.10.1 push-dose epi (MCG 1317.17: onset < 2 min, duration 5-10 min IV): transient BP/HR rise for scenarios that don't model it themselves
-    if (!st.x.arrest && tg.sbp) { const pe = (sc._pm != null ? sc._pm : (sc._pm = /pushepi/.test(String(sc.targets) + String(sc.drift)) || !!(sc.txResp && sc.txResp.pushepi))) ? 0 : E(st, "pushepi"), od = E(st, "epiod");
+    if (!st.x.arrest && tg.sbp) { const pe = (sc._pm != null ? sc._pm : (sc._pm = /pushepi/.test(String(sc.targets) + String(sc.drift)) || !!(sc.txResp && sc.txResp.pushepi))) ? 0 : Math.min(1.5, E(st, "pushepi")), od = E(st, "epiod"); // L7: rapid stacked pushes saturate (no 10x surge)
       if (pe || od) tg = Object.assign({}, tg, { sbp: tg.sbp + 18 * pe + 75 * od, dbp: (tg.dbp || tg.sbp * 0.6) + 8 * pe + 35 * od, hr: (tg.hr || 0) + 6 * pe + 40 * od }); }
     // RV infarct + nitroglycerin: preload-dependent hypotension (instructor standard, standard practice*); fluids blunt it
     st.x.rvDrop = 0;
@@ -2604,6 +2617,10 @@ const SIM = (() => {
   function log(kind, text) { st.log.push({ t: st.t, kind, text }); }
   function rec(key) { if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb"); (st.events[key] = st.events[key] || []).push(st.t); st.evOrder = st.evOrder || {}; if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1); }
   // Does this scenario's patient respond to naloxone (opioid toxidrome modeled)? Otherwise naloxone has no effect.
+  // M1: a TRAUMA call is the trauma tag or TP 1244, not any exam text that mentions an injury
+  function traumaCall() { return sc.tag === "TRAUMA" || /^1244/.test(sc.protocol || ""); }
+  // M2: NS rapid infusion ~250 mL per 3 min (standard practice*); mL infused since the first NS order
+  function nsInfused() { const t0 = (st.events["t:ns"] || [])[0]; return t0 == null ? 0 : Math.min(1000, (st.t - t0) * 250 / 180); }
   function opioidCall() { return sc.base === "opioid" || !!sc.opioid || /naloxone|nalEff|nalDoses|nalLevel/.test(String(sc.targets) + String(sc.drift) + String(sc.tickExtra) + String(sc.onTreat)); }
   function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); const own = /^standard practice\*\s*\((.+)\)$/.exec(ref || ""), safety = !own && /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${own ? "standard practice*: " + own[1] : safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${own ? "standard practice*: " + own[1] + "; LA County protocols are silent" : safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
   // device (monitor/defibrillator) context
@@ -2702,6 +2719,9 @@ const SIM = (() => {
     const who = m => m === "base" ? "📻 Base (MICN)" : "🏥 ED nurse";
     if (r && !r.done) {
       if (/^\s*(cancel( the)? (report|radio)|never ?mind|disregard)\b/.test(n)) { r.done = true; log("me", text); log("radio", "Report cancelled."); return [{ speaker: "radio", who: who(r.mode), text: r.mode === "base" ? "Copy, Base standing by." : "Okay." }]; }
+      // L6: a short direct drug/treatment order ("epi 0.5 mg IM", "naloxone 2 mg IN", "normal saline 1 liter") is carried out like any other
+      // command while the report is open (as "push dose epi" already was); report-style lines ("we gave…", "requesting…") stay in the report
+      if (n.trim().split(" ").length <= 8 && !/\b(we|gave|given|administered|request\w*|asking|orders?|patient|pt|year|male|female|minutes?|eta)\b/.test(n) && typeof NLU !== "undefined" && (() => { try { const q = NLU.parseUtterance(text); return q.tx.length > 0 && !q.questions.length && q.tx.every(x => x.id !== "base" && x.id !== "notify" && x.id !== "transport"); } catch (e) { return false; } })()) return null;
       if (!r.parts.length || (!NOT_REPORT.test(n) && (REPORTISH.test(n) || RADIO.END.test(n) || n.trim().split(" ").length >= 8))) {
         if (/^\s*(partner|parton|hartner)\b/.test(n) || (!r.parts.length && NOT_REPORT.test(n))) return null;
         log("me", text); r.parts.push(text); r.last = st.t;
@@ -2884,7 +2904,20 @@ const SIM = (() => {
 
   // ---------- treatments ----------
   const doseOf = (tx, u) => (tx.doses.find(d => d.u === u) || {}).v;
+  // H2 (v2.10.2): "epinephrine 10 micrograms IV", "epi 10 mcg IV", "epinephrine 0.01 mg/mL 1 mL IV" = push-dose epi (MCG 1317.17), not IM/arrest epi
+  function epiRoute(tx) {
+    if (tx.id !== "epi" || tx.route === "IM") return tx;
+    const d = tx.doses || [], mcg = (d.find(x => x.u === "mcg") || {}).v, mg = (d.find(x => x.u === "mg") || {}).v, raw = String(tx.raw || "");
+    const conc = /0?\.01 ?(mg|milligrams?) ?(\/|per) ?(ml|milliliter)|10 ?(mcg|micrograms?) ?(\/|per) ?(ml|milliliter)|1 ?(to|:) ?100,?000|push.?dose|pressor/i.test(raw) || (mg === 0.01 && d.some(x => x.u === "mL"));
+    const small = (mcg != null && mcg <= 20) || (mg != null && mg <= 0.02);
+    if ((small || conc) && (tx.route === "IV" || tx.route === "IO" || !tx.route || conc)) {
+      const doses = d.filter(x => !(x.u === "mg" && x.v === 0.01 && d.some(y => y.u === "mL")));
+      return Object.assign({}, tx, { id: "pushepi", doses, route: tx.route || "IV", rerouted: true });
+    }
+    return tx;
+  }
   function treat(tx) {
+    tx = epiRoute(tx);
     const id = tx.id, out = [], notes = [], m = mental(), alert = ["alert", "anxious", "aphasic"].includes(m);
     const sbp = st.v.sbp, bpKnown = st.rev.bp && st.t - st.rev.bp.t < 300;
     let narr = TX_LABEL[id] || id;
@@ -2950,7 +2983,7 @@ const SIM = (() => {
         const mgS = doseOf(tx, "mg"), dS = mgS ? mgS + " mg" + (mgS === 5 ? " (6 mL)" : mgS === 2.5 ? " (3 mL)" : "") : sc.peds && sc.patient && sc.patient.age < 4 ? "2.5 mg (3 mL)" : "5 mg (6 mL)";
         narr = { cpap: `Albuterol ${dS} nebulized in-line with CPAP`, bvm: `Albuterol ${dS} nebulized in-line with the BMV`, mask: `Albuterol ${dS} via neb mask driven by O2 at 6-8 L/min`, hhn: `Albuterol ${dS} via handheld nebulizer (mouthpiece)`, mdi: "Albuterol 4 puffs via MDI with spacer" }[mode];
         if (mode === "mask" && /non ?rebreather|\bnrb\b/.test(lastText || "")) narr += "; NRB back on between treatments";
-        const cpapOk = sbp >= 90 && alert && sc.base !== "anaph" && !sc.trauma && !sc.peds && !st.x.ptx;
+        const cpapOk = sbp >= 90 && alert && sc.base !== "anaph" && !traumaCall() && !sc.peds && !st.x.ptx;
         if (n(st, "albuterol") >= 3) notes.push(dev("Albuterol is 5 mg, may repeat x2 (3 doses total); a 4th dose needs a Base order.", "1237 #12 / MCG 1317.3"));
         if (severe && cpapOk && !st.flags.cpap && mode !== "cpap" && mode !== "bvm" && (sc.copd || sc.id === "asthma" || sc.base === "copd")) notes.push(dev(sc.copd || sc.base === "copd" ? "Moderate/severe distress: give albuterol in-line with CPAP (CPAP is the treatment of choice in COPD)." : "Moderate/severe distress: albuterol may be given in-line with CPAP; CPAP is strongly considered regardless of SpO2.", "1237 #8, #12, ❺", "note"));
         if (mode === "mdi" && severe) notes.push(dev("MDI needs a good inspiratory effort; in severe distress use a nebulizer (in-line with CPAP).", "MCG 1317.3 / 1237 ❽", "note"));
@@ -2959,14 +2992,16 @@ const SIM = (() => {
         if (sc.base === "chf" && !st.flags.cpap && mode !== "cpap") notes.push(dev("In pulmonary edema, albuterol is for wheezing that persists despite CPAP.", "1214 #9", "note"));
         break; }
       case "epi": {
-        const mg = doseOf(tx, "mg"), route = tx.route;
+        const route = tx.route, bare = (String(tx.raw || "").match(/\b(?:epi\w*|adrenaline)\s+(?:of\s+)?(0?\.\d+|\d+(?:\.\d+)?)\b(?!\s*(?:mcg|micro|ml|cc|mL))/i) || [])[1];
+        const mg = doseOf(tx, "mg") || (bare != null && +bare <= 5 ? +bare : null);
         if (st.x.arrest) {
           if (mg && mg !== 1) notes.push(dev(`Arrest epinephrine dose is 1 mg (0.1 mg/mL) IV/IO (you said ${mg} mg).`, "1210 #10"));
           if (!st.flags.iv) notes.push(dev("Epinephrine IV/IO needs vascular access. Establish IO if IV is delayed.", "1210 #9", "caution"));
           if (st.x.rhythm === "vf" && (st.x.shocks || 0) < 2) notes.push(dev("In VF, epinephrine begins after defibrillation x2.", "1210 #10", "caution"));
           if (st.last.epi != null && st.t - st.last.epi < 240) notes.push(dev("Epinephrine repeat interval is every 5 min.", "1210", "caution"));
           if (n(st, "epi") >= 3) notes.push(dev("Max epinephrine 3 mg without Base.", "1210"));
-          narr = "Epinephrine 1 mg (0.1 mg/mL) IV/IO";
+          if (route === "IM") notes.push(dev(`In cardiac arrest epinephrine is 1 mg of 0.1 mg/mL IV/IO, not IM${mg ? " " + mg + " mg" : ""} (IM 1 mg/mL is the anaphylaxis dose/route).`, "1210 #10 / MCG 1317.17"));
+          narr = route === "IM" ? `Epinephrine ${mg ? mg + " mg " : ""}IM (ordered; arrest dosing is 1 mg 0.1 mg/mL IV/IO)` : `Epinephrine ${mg || 1} mg (0.1 mg/mL) IV/IO`;
         } else {
           if ((route === "IV" || route === "IO") || (mg && mg >= 1)) { st.x.epiOd = true; notes.push(dev(`Epinephrine ${mg ? mg + " mg " : ""}${route === "IV" || route === "IO" ? route + " " : ""}in a patient with a pulse: IM-formulation/arrest-dose epi IV is a 10-fold (or worse) overdose (sudden severe hypertension, possible cerebral hemorrhage). Use 0.5 mg (1 mg/mL) IM, or push-dose epi 1 mL (10 mcg) of 0.01 mg/mL for shock.`, "MCG 1317.17 / 1219 #4", "critical")); }
           else if (mg && mg !== 0.5) notes.push(dev(`Adult IM epinephrine dose is 0.5 mg (0.5 mL of 1 mg/mL) (you said ${mg} mg).`, "1219 #4 / 1237", "note"));
@@ -2974,13 +3009,14 @@ const SIM = (() => {
           if (st.last.epi != null && st.t - st.last.epi < 540) notes.push(dev("IM epi repeat interval is every 10 min.", "1219", "caution"));
           if (!(sc.epiIM != null ? sc.epiIM : ["anaph", "asthma"].includes(sc.base))) notes.push(dev("IM epinephrine is not indicated for this presentation.", "1219 / 1237"));
           if (sc.copd) notes.push(dev("Epinephrine is unlikely to benefit COPD exacerbation.", "1237 #12", "caution"));
-          narr = "Epinephrine 0.5 mg (1 mg/mL) IM lateral thigh";
+          // M6: narrate what was actually ordered (dose + route)
+          narr = route === "IV" || route === "IO" ? `Epinephrine ${mg ? mg + " mg" : "(1 mg/mL)"} ${route} push` : `Epinephrine ${mg || 0.5} mg (1 mg/mL) IM lateral thigh`;
         }
         break; }
       case "pushepi": { // TP 1207 #11 ❺, 1219 #7, 1210 #19 (ROSC), 1212 #11, MCG 1317.17 (rev 01-01-26)
-        const rosc = st.x.roscT != null, proto = sc.protocol || (sc.refs || [])[0] || "", brady = proto === "1212" || /brady|chb|mobitz|pacer/.test(sc.id);
+        const rosc = st.x.roscT != null, proto = sc.protocol || (sc.refs || [])[0] || "", brady = proto === "1212" || /brady|chb|mobitz|pacer|bb_od/.test(sc.id) || (sc.base === "bb_od" && st.v.hr < 60); // L2: beta-blocker OD bradycardia graded under 1212 #11
         const ref = rosc ? "1210 #19" : sc.base === "anaph" || proto.startsWith("1219") ? "1219 #7" : brady ? "1212 #11" : "1207 #11";
-        const d = tx.doses || [], mL = doseOf(tx, "mL"), mcg = doseOf(tx, "mcg"), mg = doseOf(tx, "mg");
+        const d = tx.doses || [], mLs = d.filter(x => x.u === "mL").map(x => x.v), mL = mLs.length > 1 && mLs.includes(9) ? mLs.find(v => v !== 9) : mLs.length ? mLs[0] : null /* "mix 9 mL NS with 1 mL epi" = preparation, dose 1 mL */, mcg = doseOf(tx, "mcg"), mg = doseOf(tx, "mg");
         const amt = mL != null ? mL * 10 : mcg != null ? mcg : mg != null ? mg * 1000 : 10; // mcg (0.01 mg/mL = 10 mcg/mL)
         narr = sc.peds ? "Push-dose epinephrine (0.01 mg/mL) IV/IO per MCG 1309 (0.1 mL/kg, max 1 mL)" : `Push-dose epinephrine (0.01 mg/mL; 9 mL NS + 1 mL epi 0.1 mg/mL) ${+(amt / 10).toFixed(2)} mL (${+amt.toFixed(1)} mcg) IV/IO`;
         if (st.x.arrest) notes.push(dev("Push-dose epi is for hypotension WITH a pulse (post-ROSC/shock). In arrest give epinephrine 1 mg (0.1 mg/mL) IV/IO.", "1210 #10 / #19"));
@@ -2991,17 +3027,27 @@ const SIM = (() => {
           else if (Math.abs(amt - 10) > 0.01) notes.push(dev(`Push-dose epi adult dose is 1 mL (10 mcg) of 0.01 mg/mL every 1-5 min; you said ${+amt.toFixed(1)} mcg.`, "MCG 1317.17 / " + ref, amt > 10 ? "deviation" : "note"));
         }
         if (!st.x.arrest) {
-          const poorSkin = /pale|cool|cold|clammy|mottl|diaphor|cyan|ashen|gray/i.test(String(st.tg.skin || "")), trauma = !!(sc.trauma || sc.tag === "TRAUMA");
+          const poorSkin = /pale|cool|cold|clammy|mottl|diaphor|cyan|ashen|gray/i.test(String(st.tg.skin || "")), trauma = traumaCall();
           const notInd = sbp >= 140 || sbp >= 100 || (sbp >= 90 && !poorSkin);
           if (sbp >= 140) notes.push(dev(`Push-dose epi in a hypertensive patient (SBP ${Math.round(sbp)}) is not indicated and dangerous.`, ref + " / MCG 1317.17", "critical"));
           else if (notInd) notes.push(dev(`Push-dose epi is for hypotension/poor perfusion, titrated to keep SBP > 90; SBP is ${Math.round(sbp)}${poorSkin ? "" : " with adequate perfusion"}, so it isn't indicated now.`, ref));
           if (trauma) notes.push(dev("Push-dose epi is for NON-traumatic shock. Traumatic shock: hemorrhage control, NS, rapid transport to a Trauma Center.", "1207 ❺ / 1244"));
           const edema = sc.base === "chf" || (st.events["t:ns"] && /rales|crackles/i.test(String(st.tg.lungs || "")) && /chf|cardio|stemi|mi\b/.test(sc.base || "")); // 1207 #11: pulmonary edema requiring fluids to stop
-          if (!notInd && !st.events["t:ns"] && !edema && !(rosc && (st.v.hr < 60 || sbp < 70)) && !brady)
-            notes.push(dev(rosc ? "Post-ROSC SBP < 90: NS 1 L first; push-dose epi if no response after 250 mL (or worsening hypotension/bradycardia)." : "Fluids first: NS IV rapid infusion, then push-dose epi if poor perfusion persists despite fluids.", rosc ? "1210 #19" : ref === "1219 #7" ? "1219 #7" : "1207 #8, #11"));
+          // M3: no BP ever taken (mirrors nitro): push-dose is titrated to SBP > 90
+          if (!st.rev.bp && !n(st, "pushepi")) notes.push(dev("Push-dose epinephrine without any blood pressure. It's titrated to keep SBP > 90: get a BP before (and between) doses.", ref + " / MCG 1317.17"));
+          // H3: anaphylaxis: IM epinephrine first; push-dose only for persistent poor perfusion after IM epi + the initial 250 mL NS
+          const anaph = sc.base === "anaph" || proto.startsWith("1219");
+          if (anaph && !n(st, "epi")) notes.push(dev("Anaphylaxis: epinephrine 0.5 mg (1 mg/mL) IM is the first-line drug. Push-dose epi is for persistent poor perfusion AFTER IM epi and the initial 250 mL NS.", "1219 #4, #7 ❶"));
+          // M2: fluids first = ~250 mL actually infused + a reassessment, not just an NS order
+          const fluidsReq = !notInd && !edema && !(rosc && (st.v.hr < 60 || sbp < 70)) && !brady;
+          if (fluidsReq) { const t0 = (st.events["t:ns"] || [])[0], ml = nsInfused(), reass = t0 != null && ["a:bp", "a:vitals"].some(k => (st.events[k] || []).some(t => t >= t0 + 60));
+            const fref = rosc ? "1210 #19" : anaph ? "1219 #7" : "1207 #8, #11";
+            if (t0 == null) notes.push(dev(rosc ? "Post-ROSC SBP < 90: NS 1 L first; push-dose epi if no response after 250 mL (or worsening hypotension/bradycardia)." : "Fluids first: NS IV rapid infusion, then push-dose epi if poor perfusion persists despite fluids.", fref));
+            else if (ml < 250) notes.push(dev(`Fluids first: only ~${Math.round(ml / 10) * 10} mL of NS is in. Push-dose epi is for poor perfusion persisting after the initial 250 mL (reassess first).`, fref));
+            else if (!reass) notes.push(dev("Reassess (BP/perfusion) after the first 250 mL of NS before starting push-dose epi.", fref, "caution")); }
           if (brady && !st.events["t:pace"]) notes.push(dev("Bradycardia: push-dose epi is for persistent poor perfusion AFTER initiating TCP.", "1212 #11"));
           if (brady && !st.events["t:base"]) notes.push(dev("Bradycardia: push-dose epi needs a Base order.", "1212 #11"));
-          else if (!rosc && !brady && !notInd && !trauma && n(st, "pushepi") === 0 && !st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with the initial dose of push-dose epinephrine.", ref, "note"));
+          else if (!brady && !notInd && !trauma && n(st, "pushepi") === 0 && !st.events["t:base"]) notes.push(dev("CONTACT BASE concurrently with the initial dose of push-dose epinephrine" + (rosc ? " (also post-ROSC)" : "") + ".", "Ref. 1200.2 #7d / " + ref, "caution"));
         }
         break; }
       case "amio": narr = "Amiodarone " + (n(st, "amio") ? "150 mg" : "300 mg") + " IV/IO"; if (!st.x.arrest) notes.push(dev("Amiodarone here is outside the cardiac arrest protocol context.", "1210")); else if ((st.x.shocks || 0) < 3) notes.push(dev("Amiodarone is given after defibrillation x3.", "1210 #12", "caution")); break;
@@ -3067,6 +3113,7 @@ const SIM = (() => {
           st.x.nalSum = (st.x.nalSum || 0) + dose;
           if (st.x.nalSum > 8) notes.push(dev(`Naloxone maximum is 8 mg all routes (total now ${st.x.nalSum} mg).`, "1241 #4 / MCG 1317.29"));
         }
+        if (st.last.naloxone != null && st.t - st.last.naloxone < 120 && route !== "IV" && route !== "IO" && !st.x.arrest) notes.push(dev(`Naloxone repeated after ${Math.round(st.t - st.last.naloxone)} s: IN/IM onset is 2-10 min. Keep ventilating and reassess RR/tidal volume before redosing (titrate in small increments).`, "MCG 1317.29", "caution"));
         if (n(st, "naloxone") >= 1 && !st.events["t:base"] && st.v.rr < 12) notes.push(dev("Partial response with strong suspicion of opioid OD: CONTACT BASE for additional naloxone doses.", "1241 #6", "note"));
         // empiric trial on a non-opioid cause: no effect; nudge (not an error) after a few minutes
         if (!st.x.arrest && altered && !opioidCall()) { st.x.nalTrialT = st.x.nalTrialT || st.t; st.x.nalTrialNudged = false; }
@@ -3204,6 +3251,12 @@ const SIM = (() => {
     const raw = parsed.norm || "";
     for (const o of orders) {
       const busy = (st.pBusy || 0) > st.t + 2;
+      // M4: a duplicate order while the same task is still pending -> "already on it" (no second queued reading)
+      const pend = (st.pq || []).find(q => q.id === o.id || (o.kind === "a" && ["bp", "rr", "spo2"].includes(o.id) && q.id === "vitals"));
+      if (pend && o.kind === "a" && /^(bp|rr|spo2|vitals|bgl|12lead|monitor)$/.test(o.id)) { const nm = { bp: "the BP", rr: "the resp rate", spo2: "the sat", vitals: "the vitals", bgl: "the sugar", "12lead": "the 12-lead", monitor: "the monitor" }[o.id] || "that"; lines.push(pSay(`Already on it, ${nm}'s coming.`)); continue; }
+      // L4: the partner is tied up bagging or doing compressions: can't take a manual BP without stopping
+      const pVent = st.x.pTask === "bvm" && st.flags.o2 === "bvm" && !st.flags.sga, pCpr = st.x.pTask === "cpr" && st.flags.cpr;
+      if ((pVent || pCpr) && o.kind === "a" && (o.id === "bp" || o.id === "vitals")) { lines.push(pSay(pVent ? "I'm on the bag, medic. I can't take a BP without stopping ventilations. Cycle the NIBP on the monitor, or take over the bag." : "I'm on compressions, medic. There's no BP to get during CPR; check a pulse at the rhythm check.")); continue; }
       const ack = partnerAck(o, raw, P.recheckMin);
       if (o.id === "cpr" && st.tg.pulse !== false && !st.x.arrest) { lines.push(pSay(`Hold on, medic, ${he()} has a pulse. I'm not starting compressions on ${him()}.`)); continue; }
       const dur = pRand(PT_TIME[o.id] || [8, 14]), start = Math.max(st.t, st.pBusy || 0);
@@ -3279,6 +3332,7 @@ const SIM = (() => {
     }
     // treatments
     const id = o.id, tx = o.tx || { id, doses: [], route: null };
+    if (id === "bvm" || id === "cpr") st.x.pTask = id; else if (["nrb", "nc", "o2", "cpap", "sga", "stopcpr"].includes(id)) st.x.pTask = null; // L4: what the partner's hands are tied up with
     if (id === "opa" && !/\bnpa\b|nasal (airway|trumpet)|nasopharyngeal/.test(o.raw || "") && hasGag()) { say(`${He()}'s got a gag reflex, medic. ${He()} won't tolerate an OPA. Want an NPA instead?`); log("partner", "OPA not placed: gag reflex"); return out; }
     if (id === "tourniquet" && !hasBleeding()) { say("I don't see any bleeding that needs a tourniquet, medic."); return out; }
     const res = treat(tx);
@@ -3337,6 +3391,8 @@ const SIM = (() => {
     const pre = (st.x.preLines || []).map(t => ({ speaker: "patient", text: t })); st.x.preLines = [];
     pre.forEach(p => log("patient", p.text));
     let reactions = [];
+    if (parsed.nonFormulary) { const d = dev(`${parsed.nonFormulary[0].toUpperCase() + parsed.nonFormulary.slice(1)} isn't in the LA County formulary. The push-dose pressor is push-dose EPINEPHRINE 10 mcg (1 mL of 0.01 mg/mL).`, "MCG 1317.17 / 1207 #11", "note"); reactions.push({ speaker: "find", text: `Not given: ${parsed.nonFormulary} isn't carried in LA County. Push-dose epinephrine is the push-dose pressor (MCG 1317.17).` });
+      if (!parsed.tx.length && !parsed.assess.length && !parsed.questions.length) { log("find", reactions[0].text); return [...pOut.lines, ...reactions]; } }
     parsed.tx.forEach(tx => reactions.push(...treat(tx)));
     if (devOps) { reactions.push(...DEVICE.run(devC(), devOps, { interp: parsed.interp })); computeTargets(false); }
     const out = [...pOut.lines, ...pre];
@@ -3353,7 +3409,9 @@ const SIM = (() => {
   // ---------- checklist & debrief ----------
   function keyDone(k) {
     if (k.startsWith("!")) return !(st.events[k.slice(1)]);
-    const m = k.match(/^(.*)#(\d+)$/); if (m) return (st.events[m[1]] || []).length >= +m[2];
+    const m = k.match(/^(.*)#(\d+)$/);
+    if (m && /^a:(bp|vitals)$/.test(m[1])) { let c = 0, last = -1e9; for (const t of (st.events[m[1]] || [])) if (t - last >= 180) { c++; last = t; } return c >= +m[2]; } // M4: serial BP = readings >= 3 min apart
+    if (m) return (st.events[m[1]] || []).length >= +m[2];
     return !!st.events[k];
   }
   function firstTime(keys) { let t = null; keys.forEach(k => { const e = st.events[k.replace(/^!/, "").replace(/#\d+$/, "")]; if (e && !k.startsWith("!")) t = t == null ? e[0] : Math.min(t, e[0]); }); return t; }
@@ -4295,7 +4353,7 @@ SCENARIOS.push({
   ambient: st => st.sev > 0.85 ? "(stridor, patient slumping in the chair)" : st.sev > 0.5 ? pick(["(hoarse) It's getting... tighter...", "(scratching) So itchy..."]) : null,
   drift(st) {
     let d = n(st, "epi") && E(st, "epi") < 0.05 ? 0.03 : 0.065;
-    d -= 0.22 * E(st, "epi") + 0.4 * E(st, "pushepi");
+    d -= 0.22 * E(st, "epi"); // H3: push-dose = transient BP bump only (generic overlay), not lasting reversal
     d -= 0.02 * E(st, "albuterol");
     if (st.flags.cpap) d += 0.02;
     return d;
@@ -4824,6 +4882,8 @@ function flagOn(st, k) {
   return !!st.count[k];
 }
 const GCS_OF = { alert: [4, 5, 6], anxious: [4, 5, 6], aphasic: [4, 4, 6], confused: [4, 4, 6], unresponsive: [2, 2, 4], seizing: [1, 1, 1], arrest: [1, 1, 1] };
+// L7: stacked rapid pushes saturate (kept outside G so the push-dose overlay detection in sim.js, which scans scenario source, is unaffected)
+const TXR_CAP = { ["push" + "epi"]: 1.5 };
 function G(spec) {
   const sc = Object.assign({ refs: [spec.protocol], startSev: 0.5, allergies: [], pde5Hours: null, answers: {}, bystanderAnswers: {}, fallback: ["Sorry... what?", "I don't know.", "Can you ask me that again?"], drift0: 0.03, o2Gain: 6 }, spec);
   sc.drift = st => {
@@ -4836,7 +4896,7 @@ function G(spec) {
   sc.targets = st => {
     const s = st.sev, A = sc.vit.good, B = sc.vit.bad, v = {};
     for (const k of ["hr", "sbp", "dbp", "rr", "spo2", "etco2"]) v[k] = A[k] + (B[k] - A[k]) * s;
-    for (const [id, r] of Object.entries(sc.txResp || {})) { const e = E(st, id); if (e) for (const k of ["hr", "sbp", "dbp", "rr", "spo2", "etco2"]) if (r[k]) v[k] += r[k] * e; }
+    for (const [id, r] of Object.entries(sc.txResp || {})) { const e = Math.min(TXR_CAP[id] || 99, E(st, id)); if (e) for (const k of ["hr", "sbp", "dbp", "rr", "spo2", "etco2"]) if (r[k]) v[k] += r[k] * e; }
     for (const [id, r] of Object.entries(sc.flagResp || {})) if (flagOn(st, id)) for (const k of ["hr", "sbp", "dbp", "rr", "spo2", "etco2"]) if (r[k]) v[k] += r[k];
     v.spo2 = Math.min(100, v.spo2 + O2(st) * sc.o2Gain);
     if (sc.copd) v.spo2 = Math.min(v.spo2, 86 + O2(st) * 9);
@@ -5173,7 +5233,7 @@ addS(G({
   personality: "Weak, embarrassed, thinks it's food poisoning; quiet voice.",
   allergies: ["shrimp? (unknown)"], startSev: 0.55, drift0: 0.06, pain: [6, 8], bgl: 112, temp: 98.6,
   vit: { good: { hr: 96, sbp: 118, dbp: 72, rr: 18, spo2: 98, etco2: 34 }, bad: { hr: 134, sbp: 66, dbp: 38, rr: 26, spo2: 93, etco2: 26 } },
-  txResp: { epi: { drift: -0.24, hr: 8, sbp: 8 }, pushepi: { drift: -0.3, sbp: 16 }, ns: { sbp: 14, drift: -0.02 }, diphen: { drift: -0.005 } },
+  txResp: { epi: { drift: -0.24, hr: 8, sbp: 8 }, pushepi: { sbp: 16 }, ns: { sbp: 14, drift: -0.02 }, diphen: { drift: -0.005 } },
   flagResp: { supine: { sbp: 6 }, fowler: { sbp: -8 } },
   skin: [[0.3, "Mildly flushed, fading hives"], [1, "Flushed chest and face, scattered hives on the trunk (under the shirt), cool extremities"]], lungs: "Clear bilaterally",
   airway: "Patent, no lip/tongue swelling", mentalBands: [[0.8, "anxious"], [0.95, "confused"], [9, "unresponsive"]],
@@ -8435,7 +8495,7 @@ const Semantic = (() => {
  * ===================================================================== */
 const NEXT = (() => {
   const TXSAY = {
-    aspirin: ["Aspirin 324", "Give aspirin 324 milligrams chewed"], nitro: ["Nitro 0.4 SL", "Nitroglycerin 0.4 milligrams sublingual"],
+    aspirin: ["Aspirin 325", "Give aspirin 325 milligrams chewed"], nitro: ["Nitro 0.4 SL", "Nitroglycerin 0.4 milligrams sublingual"],
     fentanyl: ["Fentanyl 50 mcg", "Fentanyl 50 micrograms IV"], morphine: ["Morphine 4 mg", "Morphine 4 milligrams IV"], ketorolac: ["Ketorolac 15 mg", "Ketorolac 15 milligrams IV"],
     cpap: ["CPAP", "Partner, set up CPAP"], ns: ["NS bolus", "Normal saline 250 milliliter bolus"], epi: ["Epi IM", "Epinephrine 0.5 milligrams IM"],
     albuterol: ["Albuterol neb", "Albuterol 5 milligrams nebulized"], diphen: ["Benadryl 50 mg", "Diphenhydramine 50 milligrams IV"], d10: ["D10", "Dextrose 10 percent 125 milliliters IV"],
@@ -8616,7 +8676,8 @@ const NEXT = (() => {
     if (hypoAlt) { want.add("naloxone"); if (st.v.rr < 8 || st.v.spo2 < 90) want.add("bvm"); }
     let slots = SLOTS[proto];
     if (!slots) { const seen = new Set(); slots = []; (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^t:(\w+)$/); if (m && TXSAY[m[1]] && !seen.has(m[1])) { seen.add(m[1]); slots.push([m[1]]); } })); }
-    slots = slots.map(sl => sl.filter(id => TXSAY[id] && (id !== "alb_bvm" || st.flags.o2 === "bvm")));
+    // L3: push-dose epi only once a BP shows SBP < 90
+    slots = slots.map(sl => sl.filter(id => TXSAY[id] && (id !== "alb_bvm" || st.flags.o2 === "bvm") && (id !== "pushepi" || (!!st.rev.bp && st.v.sbp < 90))));
     if (hypoAlt) {
       if (!slots.some(sl => sl.includes("bvm")) && want.has("bvm")) slots = [["bvm"], ...slots];
       const bi = slots.findIndex(sl => sl.includes("bvm"));
@@ -9057,7 +9118,7 @@ const NEXT = (() => {
     const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     const items = [];
     if (isFile) items.push(`📄 Opened as a local file: typing and spoken replies work. <b>Voice input and offline install need the hosted/localhost version</b> (see README).`);
-    else items.push(swOk ? "✅ <b>App saved for offline use</b> (all 41 scenarios)." : "⏳ Saving app for offline use… (reload once if this persists)");
+    else items.push(swOk ? `✅ <b>App saved for offline use</b> (all ${SCENARIOS.length} scenarios).` : "⏳ Saving app for offline use… (reload once if this persists)");
     if (!isFile) items.push(vosk && hqOk ? (Speech.hqFailed ? "🎤 <b>Offline voice input ready</b> (basic recognizer: the main one couldn't run on this device)." : "🎤 <b>Offline voice input ready</b> (on-device, nothing leaves your phone).")
       : `🎤 Offline voice input: <button class="tiny" id="bnDl">Download speech recognizer (${MB(Speech.TOTAL_BYTES)}, one time)</button>${vosk ? " <span class='fine'>(the basic recognizer is used until then)</span>" : Speech.webAvailable && navigator.onLine ? " <span class='fine'>(until then, online browser speech is used)</span>" : ""}`);
     if (!navigator.onLine) items.push("📴 You're offline. Everything here runs on-device.");
@@ -9104,7 +9165,7 @@ const NEXT = (() => {
       if (sig !== nextSig) { nextSig = sig; $("#nextStep").textContent = sg.title;
         // v2.10: chips are in call order; a thin divider marks each new step/protocol slot; treatment wraps so the whole sequence is visible
         const key = c => c.slot != null ? "s" + c.slot : c.grp ? "g" + c.grp : c.cat === "radio" ? "radio" : "x";
-        $("#nextChips").classList.toggle("wrap", sg.step === "tx" || (sg.chips[0] && sg.chips[0].grp === "partner")); // vitals step wraps (max 2 rows) so BP / RR / SpO2 taps are all visible
+        $("#nextChips").classList.toggle("wrap", sg.step === "tx" || (sg.chips[0] && sg.chips[0].grp === "partner") || sg.chips.some(c => /^(Blood pressure|Resp rate|Pulse ox|BP, SpO₂, RR)$/.test(c.label))); // M5: wrap whenever vitals taps are present (not-tracking path too) // vitals step wraps (max 2 rows) so BP / RR / SpO2 taps are all visible
         $("#nextChips").innerHTML = sg.chips.map((c, i) => `${i && key(c) !== key(sg.chips[i - 1]) ? '<span class="chip-sep" aria-hidden="true"></span>' : ""}<button type="button" class="c-${esc(c.cat || "talk")}" data-say="${esc(c.say)}" title="${esc(c.say)}">${esc(c.label)}</button>`).join(""); } }
     const ae = SIM.aeiou && SIM.aeiou();
     const showAe = !!(ae && ae.altered && !st.x.arrest);
