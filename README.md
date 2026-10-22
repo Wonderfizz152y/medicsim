@@ -38,6 +38,13 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.10.4-instrcap
+- Arrest calls: the latest instructor line is pinned in a high-contrast banner under the code timers (white on navy, sky-blue bar; amber for instructor notes). It stays until a new instructor line replaces it, so partner bursts can't push it away. Tap (or Enter) for the last 12 instructor lines; the list drops over the transcript and never covers the timers, monitor or mic.
+- Instructor lines in the transcript are now full-width navy cards with a blue bar (notes: amber bar), distinct from partner and patient bubbles.
+- Phones: during a code the right column grows to fill the screen below the header, so the transcript has room again; the mic stays on screen when the code starts.
+- Fixed a 360 px overflow where a long rhythm label widened the page and clipped the End button.
+- Partner now says "Checking the capno." if capnography is already on.
+
 ### 2.10.3-holds
 - When you refuse or negate a drug, the partner acknowledges it out loud and names the drug, e.g. "Copy, holding the push-dose epi." This used to get the patient's "Can you ask me that again?".
   - It covers every drug in the negation block: nitro, NTG, aspirin, ASA, fentanyl, morphine, fluids/bolus, epi, push-dose epi, pressors, naloxone and Narcan.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.3-holds 0e8a4e13b3">
+<meta name="medicsim-version" content="2.10.4-instrcap 7bcfa72dfa">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -510,6 +510,39 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;lett
 .sim-title #scTitle,.sim-title .ref{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:380px){.sim-head{gap:.2em;padding:.4em .3em;max-width:100vw;overflow-x:clip}.sim-head button.sm{padding-left:.4em;padding-right:.4em;min-width:0}.sim-head .clock{font-size:.85em}}
 
+/* ---- v2.10.4: instructor lines readable during a code ---- */
+/* transcript: instructor = sky-blue left bar, full width, normal-size text; instructor notes = amber bar (partner bubbles stay left-aligned amber) */
+.msg.find.instr{align-self:stretch;max-width:100%;background:#0a1b2c;border:1px solid #1f4d73;border-left:4px solid #38bdf8;color:#eef7ff;font-family:inherit;font-size:.92em;border-radius:10px}
+.msg.find.instr .who{color:#7dd3fc;opacity:1}
+.msg.warn.instr{border-left:4px solid #f59e0b;background:#2b1e06;color:#fff3d6;font-size:.9em;border-radius:10px}
+/* pinned caption under the code timers: latest instructor line until replaced; tap = recent lines */
+.instr-cap{flex:none;margin:.35em .5em .3em;padding:.4em .65em .45em;border-radius:10px;background:#04192b;border:1px solid #2b6c9c;border-left:5px solid #38bdf8;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 10px rgba(0,0,0,.35);position:relative;z-index:1}
+.instr-cap[hidden]{display:none!important}
+.instr-cap:focus-visible{outline:2px solid #7dd3fc;outline-offset:2px}
+.instr-cap .ic-head{display:flex;align-items:center;gap:.5em;font-size:.7em;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#7dd3fc;line-height:1.3}
+.instr-cap .ic-ts{font:700 1em ui-monospace,SFMono-Regular,Menlo,monospace;color:#b6dcf5;letter-spacing:0}
+.instr-cap .ic-more{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:700;color:#d8eefc;background:#0f3352;border:1px solid #2b6c9c;border-radius:999px;padding:.05em .6em}
+.instr-cap .ic-txt{font-size:1em;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.instr-cap.open .ic-txt{-webkit-line-clamp:unset;display:block}
+.instr-cap.open{z-index:6;border-radius:10px 10px 0 0}
+.instr-cap.k-note .ic-hist{background:#241703;border-color:#9a6b12;border-left-color:#f59e0b}
+body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px);mask-image:linear-gradient(transparent,#000 16px)}
+.instr-cap .ic-hist{list-style:none;margin:0;padding:.5em .65em .6em;position:absolute;left:-1px;right:-1px;top:calc(100% - 4px);background:#04192b;border:1px solid #2b6c9c;border-left:5px solid #38bdf8;border-top:1px dashed #1f4d73;border-radius:0 0 10px 10px;box-shadow:0 12px 24px rgba(0,0,0,.55);max-height:40vh;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:.35em;font-size:.86em;color:#dbeaf6}
+.instr-cap .ic-hist li{padding-left:.5em;border-left:3px solid #38bdf8}
+.instr-cap .ic-hist li .ic-lbl{display:block;font-size:.78em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#7dd3fc}
+.instr-cap .ic-hist li.k-note{border-left-color:#f59e0b}.instr-cap .ic-hist li.k-note .ic-lbl{color:#fbbf24}
+.instr-cap.k-note{background:#241703;border-color:#9a6b12;border-left-color:#f59e0b}.instr-cap.k-note .ic-head{color:#fbbf24}.instr-cap.k-note .ic-ts{color:#fde3a7}.instr-cap.k-note .ic-more{background:#3a2606;border-color:#9a6b12;color:#fff1d0}
+.instr-cap.fresh{animation:icFresh 1.4s ease-out}
+@keyframes icFresh{0%{box-shadow:0 0 0 3px rgba(125,211,252,.85)}100%{box-shadow:0 2px 10px rgba(0,0,0,.35)}}
+@media (prefers-reduced-motion:reduce){.instr-cap.fresh{animation:none}}
+@media (max-width:900px){
+  body.coding .col-right{height:max(72vh,calc(100vh - var(--simHeadH,56px) - 1em));height:max(72vh,calc(100dvh - var(--simHeadH,56px) - 1em))}
+  .instr-cap{font-size:.95em}
+  /* a long PEA rhythm label made the mobile grid wider than the screen at 360 px (page zoomed out, End clipped) */
+  .sim-body{grid-template-columns:minmax(0,1fr)}.col-left,.col-right{min-width:0}
+}
+@media (max-width:380px){.sim-head #btnEnd{flex:none;min-width:max-content}}
+
 </style>
 </head>
 <body>
@@ -604,6 +637,7 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;lett
       </div>
       <div class="col-right">
         <div class="code-panel" id="codePanel" hidden aria-live="off"></div>
+        <div class="instr-cap" id="instrCap" hidden role="button" tabindex="0" aria-expanded="false" aria-live="off" title="Latest instructor line (tap for recent ones)"></div>
         <div class="transcript" id="transcript" aria-live="polite"></div>
         <div class="listen-bar off" id="listenBar" hidden><i class="dot"></i><span>🎤</span></div>
         <div class="notice" id="notice" hidden></div>
@@ -3279,7 +3313,7 @@ const SIM = (() => {
   }
   function partnerAck(o, raw, every) {
     const A = { vitals: "Copy, getting a set of vitals.", bp: "Copy, getting a BP.", spo2: "Pulse ox going on.", rr: "Copy, counting respirations.", bgl: "Copy, checking a sugar.", temp: "Getting a temp.",
-      monitor: `Putting ${him()} on the monitor.`, "12lead": "Copy, 12-lead.", etco2: "Putting capno on.", pulse: "Checking a pulse.", pulsecheck: /\brhythm\b/.test(raw) && !/\bpulse\b/.test(raw) ? "Rhythm check, keep compressing." : "Checking for a pulse.",
+      monitor: `Putting ${him()} on the monitor.`, "12lead": "Copy, 12-lead.", etco2: st.rev.etco2 ? "Checking the capno." : "Putting capno on.", pulse: "Checking a pulse.", pulsecheck: /\brhythm\b/.test(raw) && !/\bpulse\b/.test(raw) ? "Rhythm check, keep compressing." : "Checking for a pulse.",
       recheck: `Copy, vitals every ${every || 5} minutes. Starting a set now.`,
       nrb: "Copy, NRB at 15 liters.", nc: /\b([1-6]) ?(l|liters|lpm)\b/.test(raw) ? `Cannula at ${RegExp.$1} liters, copy.` : "Copy, nasal cannula at 4 liters.", o2: "Copy, oxygen going on.",
       bvm: o.capno ? "Copy, bagging with in-line capno." : "Copy, bagging.", cpap: "Copy, setting up CPAP.", opa: /\bnpa\b|nasal (airway|trumpet)|nasopharyngeal/.test(raw) ? "Copy, NPA." : "Copy, OPA.",
@@ -8785,7 +8819,7 @@ const NEXT = (() => {
   // ---------------- sim start ----------------
   function startScenario(sc, opts) {
     opts = opts || {};
-    chatHistory = []; $("#transcript").innerHTML = ""; $("#txStrip").innerHTML = "";
+    chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; document.body.classList.remove("coding"); $("#instrCap").hidden = true; $("#txStrip").innerHTML = "";
     $("#scTitle").textContent = sc.dispatchTitle;
     $("#scRef").textContent = "LA County EMS · impression & protocol: your call";
     $("#dispatch").innerHTML = `<b>DISPATCH:</b> ${esc(sc.dispatch)}<details><summary>Scene size-up</summary>${esc(sc.scene)}</details>`;
@@ -8809,8 +8843,42 @@ const NEXT = (() => {
     const d = document.createElement("div"); d.className = "msg " + cls;
     d.innerHTML = (who ? `<span class="who">${esc(who)}<span class="ts">${fmtT(st ? st.t : 0)}</span>${m.approach ? '<button type="button" class="tiny skip" data-skip>Skip ▶▶</button>' : ""}</span>` : "") + (m.html || esc(m.text));
     if (m.approach) d.querySelector("[data-skip]").onclick = e => { e.stopPropagation(); skipSpeech(); e.target.remove(); };
+    if (!m.approach && (m.speaker === "find" || m.speaker === "warn")) d.classList.add("instr");
     $("#transcript").appendChild(d); $("#transcript").scrollTop = 1e9;
+    noteInstr(m);
   }
+  // ---------------- v2.10.4: pinned instructor caption (arrest) ----------------
+  // The latest instructor line (finding or instructor note) stays pinned under the code timers until replaced,
+  // so a burst of partner lines can't scroll it away. Tap = recent history.
+  let instrHist = [], instrOpen = false, instrSig = "", codeWas = false;
+  function noteInstr(m) {
+    if (m.approach || !SIM.state) return;
+    const kind = m.speaker === "find" ? "instr" : m.speaker === "warn" ? "note" : null;
+    if (!kind) return;
+    const raw = String(m.text || ""), lv = /^Instructor note\s*\(([^)]*)\)/i.exec(raw);
+    instrHist.push({ t: SIM.state.t, kind, lvl: lv ? lv[1] : "", text: raw.replace(/^Instructor note(\s*\([^)]*\))?:\s*/i, "") });
+    if (instrHist.length > 12) instrHist.shift();
+    renderInstr(true);
+  }
+  function renderInstr(fresh) {
+    const cap = $("#instrCap"); if (!cap) return;
+    const show = !$("#codePanel").hidden && instrHist.length > 0;
+    cap.hidden = !show; if (!show) return;
+    const L = { instr: "Instructor", note: "Instructor note" };
+    const sig = instrHist.length + "|" + (instrHist.length ? instrHist[instrHist.length - 1].t : "") + "|" + instrOpen;
+    if (sig === instrSig && !fresh) return; instrSig = sig;
+    const last = instrHist[instrHist.length - 1], prev = instrHist.slice(0, -1).reverse();
+    cap.className = "instr-cap k-" + last.kind + (instrOpen ? " open" : "");
+    cap.setAttribute("aria-expanded", String(instrOpen));
+    const lbl = h => L[h.kind] + (h.lvl ? " · " + h.lvl : "");
+    cap.innerHTML = `<div class="ic-head"><span class="ic-lbl">${esc(lbl(last))}</span><span class="ic-ts">${fmtT(last.t)}</span>${prev.length ? `<span class="ic-more">${instrOpen ? "Hide ▴" : `Recent ${prev.length} ▾`}</span>` : ""}</div>`
+      + `<div class="ic-txt">${esc(last.text)}</div>`
+      + (instrOpen && prev.length ? `<ol class="ic-hist">${prev.map(h => `<li class="k-${h.kind}"><span class="ic-lbl">${esc(lbl(h))} · ${fmtT(h.t)}</span>${esc(h.text)}</li>`).join("")}</ol>` : "");
+    const hl = cap.querySelector(".ic-hist"); // history drops over the transcript / chips, never past the mic row
+    if (hl) { const cmp = document.querySelector("#sim .composer"), lim = cmp ? cmp.getBoundingClientRect().top - cap.getBoundingClientRect().bottom - 8 : 260; hl.style.maxHeight = Math.max(110, Math.min(lim, innerHeight * .5)) + "px"; }
+    if (fresh) { cap.classList.remove("fresh"); void cap.offsetWidth; cap.classList.add("fresh"); }
+  }
+  function toggleInstr() { instrOpen = !instrOpen; instrSig = ""; renderInstr(); }
   function say(list) {
     list.forEach(m => {
       addMsg(m);
@@ -9178,7 +9246,7 @@ const NEXT = (() => {
   function renderV29() {
     const st = SIM.state; const bar = $("#nextBar"); if (!bar) return;
     const live = !!(st && !st.ended);
-    bar.hidden = !live; if (!live) { $("#codePanel").hidden = true; $("#aeiouPanel").hidden = true; return; }
+    bar.hidden = !live; if (!live) { $("#codePanel").hidden = true; $("#aeiouPanel").hidden = true; $("#instrCap").hidden = true; codeWas = false; document.body.classList.remove("coding"); return; }
     const sg = typeof NEXT !== "undefined" ? NEXT.suggest(SIM) : null;
     if (sg) { const sig = sg.step + "|" + sg.title + "|" + sg.chips.map(c => c.say).join("|");
       if (sig !== nextSig) { nextSig = sig; $("#nextStep").textContent = sg.title;
@@ -9196,7 +9264,14 @@ const NEXT = (() => {
     // code panel (TP 1210): code timer, 2-min cycle, epi timer, shocks, CCF, drug log
     const cs = SIM.code && SIM.code(), cp = $("#codePanel");
     const showCode = !!(cs && (cs.active || (cs.roscT != null && !cs.roscRecT)));
+    if (showCode !== codeWas) { // mobile: the right column grows to the full screen height during a code (timers + instructor caption + transcript + mic)
+      const nearBottom = innerHeight + scrollY >= document.documentElement.scrollHeight - 80;
+      codeWas = showCode; document.body.classList.toggle("coding", showCode);
+      const hd = document.querySelector("#sim .sim-head"); if (hd) document.documentElement.style.setProperty("--simHeadH", hd.offsetHeight + "px");
+      if (showCode && nearBottom && matchMedia("(max-width:900px)").matches) requestAnimationFrame(() => scrollTo(0, document.documentElement.scrollHeight));
+    }
     cp.hidden = !showCode;
+    renderInstr();
     if (showCode) {
       const cyc = cs.cycle, left = cyc == null ? null : 120 - cyc, due = left != null && left <= 0;
       const epiLeft = cs.epiLast == null ? null : 300 - cs.epiLast, epiDue = cs.epiN > 0 && cs.epiN < 3 && epiLeft <= 0;
@@ -9516,6 +9591,7 @@ const NEXT = (() => {
     $("#btnHelp").onclick = openHelp;
     $("#nextChips").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
     $("#btnAll").onclick = openAll;
+    $("#instrCap").onclick = toggleInstr; $("#instrCap").onkeydown = e => { if (e.key === "Enter" || e.key === " " || (e.key === "Escape" && instrOpen)) { e.preventDefault(); e.stopPropagation(); toggleInstr(); } };
     $("#btnAeiou").onclick = () => { aeOpen = !aeOpen; aeSig = ""; render(); };
     $("#aeiouPanel").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
     $("#allTabs").onclick = e => { const b = e.target.closest("button[data-i]"); if (!b) return; allCat = +b.dataset.i; $$("#allTabs button").forEach(x => x.classList.toggle("on", x === b)); const sec = $(`#allBody section[data-i="${allCat}"]`); if (sec) sec.scrollIntoView({ block: "start", behavior: "smooth" }); };
