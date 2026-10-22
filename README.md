@@ -38,6 +38,16 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.10.3-holds
+- When you refuse or negate a drug, the partner acknowledges it out loud and names the drug, e.g. "Copy, holding the push-dose epi." This used to get the patient's "Can you ask me that again?".
+  - It covers every drug in the negation block: nitro, NTG, aspirin, ASA, fentanyl, morphine, fluids/bolus, epi, push-dose epi, pressors, naloxone and Narcan.
+  - It works for these forms: "don't give", "hold (off on)", "no", "let's not", "skip", "without" and "not". Lists work too: "hold the nitro and the aspirin".
+  - It works by voice, typed, hands-free and after "Partner".
+- Nothing is given and nothing is graded. Each hold is logged in the transcript and in the debrief state.
+- A positive order in the same breath is still carried out, e.g. "not push dose epi, just fluids" or "hold the nitro, give aspirin 325".
+- Fixed: "Partner, hold off on nitro" no longer gets fuzzy-matched back into "give the nitro".
+- Fixed: "no aspirin allergy" is no longer treated as a hold.
+
 ### 2.10.2-naloxone
 - **Naloxone on any call.** It's available by voice and by tap on every call where the patient is altered and hypoventilating, not only the opioid scenario.
   - **All actions › Meds:** Naloxone 2 mg IN, Naloxone 2 mg IM and Naloxone 1 mg IV.

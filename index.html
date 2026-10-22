@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.2-naloxone b7921d89b2">
+<meta name="medicsim-version" content="2.10.3-holds 0e8a4e13b3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -2365,9 +2365,18 @@ const NLU = (() => {
       // v2.10.2: + epi/epinephrine, push-dose/pressors, naloxone/narcan ("don't give epi", "hold the push dose", "not push dose epi, just fluids", "no narcan")
       const NEG = /\b(?:hold(?:ing)?(?: off(?: on)?)?|withhold\w*|avoid|skip|without|contraindicat\w*|(?:don'?t|do not|let'?s not|not|no|never)(?: (?:give|giving|use|push|do|start|need|want|go with))?)(?: (?:the|any|more|his|her|a|an|that))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan)\b/g;
       const map = { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "ns", fluids: "ns", bolus: "ns", naloxone: "naloxone", narcan: "naloxone" };
-      let m; const neg = new Set(); while ((m = NEG.exec(t))) { const w0 = m[1], w = w0.startsWith("nitro") ? "nitro" : w0;
-        if (/^push[- ]?dose|^pressor/.test(w)) neg.add("pushepi"); else if (/^epi/.test(w)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w]) neg.add(map[w]); }
-      if (neg.size && !/\b(did|have|has|do|does|taken?|took|any)\b[^.?]*\?/.test(t)) out.tx = out.tx.filter(x => !neg.has(x.id)); }
+      // v2.10.3: out.held = the drugs the medic held, named for the partner's acknowledgment ("Copy, holding the push-dose epi.")
+      const LABEL = w => /^push[- ]?dose|^pressor/.test(w) ? "push-dose epi" : /^epi/.test(w) ? "epi" : { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "fluids", fluids: "fluids", bolus: "fluids", naloxone: "naloxone", narcan: "Narcan" }[w];
+      let m; const neg = new Set(), held = []; while ((m = NEG.exec(t))) { const w0 = m[1], w = w0.startsWith("nitro") ? "nitro" : w0;
+        if (/^ ?allerg/.test(t.slice(NEG.lastIndex))) continue; // "no aspirin allergy" is history, not a hold
+        if (/^push[- ]?dose|^pressor/.test(w)) neg.add("pushepi"); else if (/^epi/.test(w)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w]) neg.add(map[w]);
+        const lb = LABEL(w); if (lb && !held.includes(lb)) held.push(lb);
+        // coordinated list: "hold the nitro and the aspirin", "no fentanyl or morphine"
+        const DR = /^(?:,? (?:and|or|nor)|,)(?: (?:the|any|his|her))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan)\b/;
+        let k; while ((k = t.slice(NEG.lastIndex).match(DR))) { NEG.lastIndex += k[0].length; const w2 = k[1].startsWith("nitro") ? "nitro" : k[1];
+          if (/^push[- ]?dose|^pressor/.test(w2)) neg.add("pushepi"); else if (/^epi/.test(w2)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w2]) neg.add(map[w2]);
+          const l2 = LABEL(w2); if (l2 && !held.includes(l2)) held.push(l2); } }
+      if (neg.size && !/\b(did|have|has|do|does|taken?|took|any)\b[^.?]*\?/.test(t)) { out.tx = out.tx.filter(x => !neg.has(x.id)); if (held.length) out.held = held; } }
     if (out.assess.includes("mechcap")) out.assess = out.assess.filter(a => a !== "pulsecheck" && a !== "monitor" && (a !== "pulse" || /femoral|carotid|radial/.test(t)));
     if (/\b(do|does|did|have|has) (you|he|she|they) (have|got|had)\b.*\bpacer\b/.test(t)) out.tx = out.tx.filter(x => x.id !== "pace");
     // ---- partner routing ----
@@ -2414,11 +2423,11 @@ const NLU = (() => {
   const SOFTWAKE = /^ ?(?:a |k |uh |um |hey )?(?:harden(?: a)?|hardner|hardener|hurtener|part or|heart(?: and| may| an| a| in)?|hurt(?: him to| in a| the| and| in| a)?|parts?(?: of| to| and| a| in)?|partly|hot ?na|pardon|carton|parked)\b/;
   function parseUtterance(text) {
     const r = parseCore(text);
-    if (r.partner.wake && !r.partner.wakeOnly && !r.questions.length && !r.assess.length && !r.tx.length) {
+    if (r.partner.wake && !r.partner.wakeOnly && !r.questions.length && !r.assess.length && !r.tx.length && !(r.held && r.held.length)) { // a hold is never fuzzy-matched back into the order
       const f = fuzzyOrder(normalize(text).replace(/^ ?partner\b/, ""));
       if (f) { const r3 = parseCore("partner " + f.canon); if (r3.assess.length || r3.tx.length) { r3.partner.fuzzy = f; r3.raw = r.raw; return r3; } }
     }
-    if (r.partner.wake || r.partner.to || r.questions.length) return r;
+    if (r.partner.wake || r.partner.to || r.questions.length || (r.held && r.held.length)) return r;
     const n = normalize(text), m = n.match(SOFTWAKE);
     if (!m || !n.slice(m[0].length).trim()) return r;
     const r2 = parseCore(" partner " + n.slice(m[0].length));
@@ -3231,6 +3240,7 @@ const SIM = (() => {
     const armed = st.x.pArm != null && st.t - st.x.pArm <= 20;
     if (P.wakeOnly) { st.x.pArm = st.t; return { only: true, lines: [pSay("Yeah?")] }; }
     const all = [...parsed.assess, ...parsed.tx.map(x => x.id)];
+    if (parsed.held && parsed.held.length && !all.length) { if (armed) st.x.pArm = null; return { only: false, lines }; } // a hold is acknowledged in handle()
     let explicit = P.explicit || (armed && all.length > 0);
     if (armed) st.x.pArm = null;
     if (!explicit && !P.implicit) {
@@ -3360,6 +3370,13 @@ const SIM = (() => {
     if (lines.length) { lines.filter(l => l.speaker === "patient").forEach(l => log("patient", l.text)); ui.say(lines); }
   }
 
+  // v2.10.3: a refused/negated drug ("don't give push dose epi", "hold the nitro", "no narcan") -> brief partner
+  // acknowledgment naming the drug; logged (st.x.held + x:held), never given, never graded
+  function heldAck(parsed) {
+    const names = parsed.held.map(d => "the " + d), list = names.length > 1 ? names.slice(0, -1).join(", ") + " and " + names[names.length - 1] : names[0];
+    (st.x.held = st.x.held || []).push({ t: st.t, drugs: parsed.held.slice() }); rec("x:held");
+    return pSay(`Copy, holding ${list}.`);
+  }
   // ---------- utterance ----------
   async function handle(text) {
     if (!st || st.ended) return [];
@@ -3373,7 +3390,7 @@ const SIM = (() => {
     AEIOU.forEach(a => { if (a.rx.test(parsed.norm || "")) rec("x:aeiou:" + a.id); });
     (sc.recognize || []).forEach(([k, rx]) => { if (rx.test(parsed.norm || "")) rec(k); }); // spoken recognition (e.g. "widening pulse pressure", "tamponade")
     const pOut = partnerRoute(parsed, text);
-    if (pOut.only) { log("me", text); parsed.questions.forEach(q => rec("q:" + q)); ui.render(); return pOut.lines; }
+    if (pOut.only) { log("me", text); parsed.questions.forEach(q => rec("q:" + q)); const ha = parsed.held && parsed.held.length ? [heldAck(parsed)] : []; ui.render(); return [...ha, ...pOut.lines]; }
     if (parsed.questions.includes("reassure") && ["alert", "anxious", "confused", "aphasic"].includes(mental())) { st.x.calmT = st.t; st.x.calmN = (st.x.calmN || 0) + 1; }
     log("me", text);
     parsed.questions.forEach(q => rec("q:" + q));
@@ -3393,6 +3410,8 @@ const SIM = (() => {
     let reactions = [];
     if (parsed.nonFormulary) { const d = dev(`${parsed.nonFormulary[0].toUpperCase() + parsed.nonFormulary.slice(1)} isn't in the LA County formulary. The push-dose pressor is push-dose EPINEPHRINE 10 mcg (1 mL of 0.01 mg/mL).`, "MCG 1317.17 / 1207 #11", "note"); reactions.push({ speaker: "find", text: `Not given: ${parsed.nonFormulary} isn't carried in LA County. Push-dose epinephrine is the push-dose pressor (MCG 1317.17).` });
       if (!parsed.tx.length && !parsed.assess.length && !parsed.questions.length) { log("find", reactions[0].text); return [...pOut.lines, ...reactions]; } }
+    if (parsed.held && parsed.held.length) { reactions.push(heldAck(parsed));
+      if (!parsed.tx.length && !parsed.assess.length && !parsed.questions.length && !parsed.interp && !devOps) { ui.render(); return [...pOut.lines, ...reactions]; } }
     parsed.tx.forEach(tx => reactions.push(...treat(tx)));
     if (devOps) { reactions.push(...DEVICE.run(devC(), devOps, { interp: parsed.interp })); computeTargets(false); }
     const out = [...pOut.lines, ...pre];
