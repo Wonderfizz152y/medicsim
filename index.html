@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.9.1-polish a3a190f9e2">
+<meta name="medicsim-version" content="2.9.2-nailbed 37be65daef">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -2746,8 +2746,16 @@ const SIM = (() => {
     if (ip.lastFam == null) ip.lastFam = FAM(ip.rhythm.cls);
     if (f !== ip.lastFam) { ip.lastFam = f; ip.changeT = st.t; R("ecg", "Rhythm changed: interpret it"); event("Rhythm change on the monitor. Read the strip again.", "find"); }
   }
+  // Adrian's system: NAIL BED PRESSURE is the only acceptable painful stimulus (sternal rub / trapezius / supraorbital are not allowed)
+  const BANNED_PAIN = /stern(al|um)? ?(rub|rob)|sterile rub|trap(ezius|s)?\b[^.]{0,12}(squeeze|pinch)|(squeeze|pinch)[^.]{0,12}trap(ezius|s)?\b|supra ?orbital/;
   function assess(id) {
     const tg = st.tg, out = [], arrest = mental() === "arrest";
+    if (id === "painresp" && BANNED_PAIN.test(lastText || "") && !/nail ?bed/.test(lastText || "")) {
+      const what = /trap/.test(lastText) ? "trapezius squeeze" : /supra ?orbital/.test(lastText) ? "supraorbital pressure" : "sternal rub";
+      rec("x:bannedpain");
+      out.push(`We don't use ${what} here; use nail bed pressure. (Not done: AVPU still needs a painful-stimulus check by nail bed pressure.)`);
+      dev(`Painful stimulus by ${what}: not allowed in this system. Use nail bed pressure only.`, "local policy* (nail bed pressure only)", "deviation");
+      return out; }
     rec("a:" + id); if (st.x.rosc) rec("a:" + id + "@rosc");
     const R = (k, val) => { st.rev[k] = { t: st.t, val }; };
     const X = key => EXAM.find(key, sc, st, lastText, mental());
@@ -2814,7 +2822,7 @@ const SIM = (() => {
       case "abdomen": out.push(X("abdomen")); break;
       case "scene": out.push(`Scene: ${sc.scene}${sc.sceneMore ? " " + sc.sceneMore : ""}`); break;
       case "tracking": { const tt = trackingText(); out.push(tt); autoAVPU("tracking", tt); break; }
-      case "painresp": case "verbalstim": { const f = X(id); if (!f) break; out.push(f); const L = (f.match(/AVPU: ([AVPU])/) || [])[1]; if (L) st.x.avpuL = L;
+      case "painresp": case "verbalstim": { const f0 = X(id); if (!f0) break; const f = id === "painresp" && !/^The patient is alert/.test(f0) ? "Nail bed pressure: " + f0.replace(/^Painful stimulus: /, "") : f0; out.push(f); const L = (f.match(/AVPU: ([AVPU])/) || [])[1]; if (L) st.x.avpuL = L;
         if (!["alert", "anxious"].includes(mental())) R("gcs", gcsStr()); break; }
       case "look": {
         // context-aware "what do I see?": re-describe the most recent inspection; at the start of the call, the arrival picture
@@ -8162,7 +8170,7 @@ const NEXT = (() => {
       ["Radiates", "Does it go anywhere?"], ["Severity", "Rate it 0 to 10"], ["Chest pain?", "Any chest pain?"], ["Short of breath?", "Any shortness of breath?"], ["Drugs / alcohol", "Did you take any drugs or alcohol today?"],
       ["Last oral intake", "When did you last eat?"], ["Can you hear me?", "Can you hear me? Open your eyes"], ["Transport consent", "Is it okay if we take you to the hospital?"]]],
     ["Assess", [["Radial + carotid", "Checking radial and carotid pulses"], ["Skin / forehead", "Feeling the forehead, checking skin signs"], ["Is he alert?", "Is he alert?"],
-      ["Sternal rub", "Sternal rub"], ["Trap squeeze", "Trapezius squeeze"], ["Nail bed", "Nail bed pressure"], ["Supraorbital", "Supraorbital pressure"], ["Pupils", "Check pupils"],
+      ["Nail bed pressure", "Nail bed pressure"], ["Pupils", "Check pupils"],
       ["Lung sounds", "Listen to lung sounds"], ["Heart sounds", "Listen to heart sounds"], ["JVD", "Check for JVD"], ["Trachea", "Check the trachea"], ["Chest rise", "Check his chest rise"],
       ["Expose chest", "Expose the chest"], ["Abdomen", "Palpate the abdomen"], ["Pelvis", "Check the pelvis"], ["Legs", "Expose the legs"], ["Head trauma?", "Any trauma to the head?"],
       ["Stroke scale", "Do a stroke scale, mLAPSS and LAMS"], ["Smell", "Any smell of alcohol on his breath?"], ["Med bottles", "Check for med bottles"], ["Cap refill", "Check capillary refill"]]],
@@ -8214,7 +8222,7 @@ const NEXT = (() => {
     const m = sim.mental ? sim.mental() : "alert", notTracking = !["alert", "anxious"].includes(m) && !st.x.avpuAuto;
     if (notTracking && ["track", "intro", "pulses", "skin", "partner", "cc", "avpu"].includes(step.id)) {
       const done = id => { const s = f.steps.find(x => x.id === id); return s && s.done; }, ch = [];
-      if (!done("avpu")) ch.push(C("Can you hear me?", "Can you hear me? Open your eyes"), C("Sternal rub", "Sternal rub"));
+      if (!done("avpu")) ch.push(C("Can you hear me?", "Can you hear me? Open your eyes"), C("Nail bed pressure", "Nail bed pressure"));
       if (!done("pulses")) ch.push(C("Radial + carotid", "Checking radial and carotid pulses"));
       if (!ev["a:airway"]) ch.push(C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"));
       if (!done("skin")) ch.push(C("Skin / forehead", "Feeling the forehead, checking skin signs"));
@@ -8231,7 +8239,7 @@ const NEXT = (() => {
       case "skin": return fin("skin", "Skin signs", [C("Skin / forehead", "Feeling the forehead, checking skin signs"), C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"), C("Chief complaint", "What's bothering you today?")]);
       case "partner": return fin("partner", "Partner vitals", [C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"), C("Chief complaint", "What's bothering you today?"), C("Monitor", "Partner, put him on the monitor")]);
       case "cc": return fin("cc", "Chief complaint", [C("Chief complaint", "What's bothering you today?"), C("What happened?", "What happened today?"), C("Is he alert?", "Is he alert?")]);
-      case "avpu": return fin("avpu", "AVPU", [C("Is he alert?", "Is he alert?"), C("Can you hear me?", "Can you hear me? Open your eyes"), C("Sternal rub", "Sternal rub"), C("Trap squeeze", "Trapezius squeeze"), C("Nail bed", "Nail bed pressure")]);
+      case "avpu": return fin("avpu", "AVPU", [C("Is he alert?", "Is he alert?"), C("Can you hear me?", "Can you hear me? Open your eyes"), C("Nail bed pressure", "Nail bed pressure")]);
       case "abc": { const pool = ["nrb", "bvm", "opa", "suction", "recovery", "nc"]; if (sc.tag === "TRAUMA") pool.push("bandage", "tourniquet", "needle", "smr");
         return fin("abc", "ABCs / life threats", [C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"), ...shuffle(pool, sc.id).slice(0, 5).map(k => C(TXSAY[k][0], TXSAY[k][1]))]); }
       case "ao": return fin("ao", "A&O", [C("A&O ×4", "What's your name, where are we, what year is it, and what happened today?"), C("Name", "What's your name?"), C("Where are we?", "Where are we right now?"), C("What year?", "What year is it?"), C("What happened?", "What happened today?")]);
