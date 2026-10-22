@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.7-torsades a39cc89ea0">
+<meta name="medicsim-version" content="2.8-rvinfarct 7bd7a8ede9">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -233,6 +233,233 @@ details summary{cursor:pointer;margin:6px 0}
 #modal12 .card{pointer-events:auto;max-height:92vh;overflow:auto}
 #cv12{display:block;max-width:100%;max-height:52vh;width:auto;height:auto;margin:0 auto}
 
+/* =====================================================================
+ * v2.8 design pass: real-monitor look (dark, color-coded parameters, tabular numerals,
+ * alarm tiles), device-style defib/pacer controls, consistent cards, mobile-first.
+ * ===================================================================== */
+:root{--bg:#090d12;--panel:#10161e;--panel2:#151d27;--line:#222d3b;--txt:#e8eef5;--mut:#8a97a8;--acc:#3ea6ff;--grn:#35f28a;--cyan:#3fe3ff;--yel:#ffd54a;--red:#ff4757;--wht:#f4f7fb;--org:#ffa53e;--r:14px;--num:"SF Mono","JetBrains Mono","Roboto Mono",ui-monospace,Menlo,Consolas,monospace}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:.005em}
+.menu-head,.sim-head{background:rgba(16,22,30,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.sim-head button.sm{min-height:38px;border-radius:10px}
+.clock{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:.04em;background:#1a1606;border:1px solid #3b3210;border-radius:8px;padding:.15em .5em}
+.dispatch{border-radius:var(--r);padding:.7em .9em;background:linear-gradient(180deg,#121a24,#0f151d)}
+.col-left{gap:.7em}
+
+/* monitor shell */
+.monitor{background:#020304;border:1px solid #1d2733;border-radius:18px;padding:.55em .6em .6em;box-shadow:0 0 0 4px #0c1117,0 10px 30px rgba(0,0,0,.45),inset 0 0 60px rgba(53,242,138,.025);transition:box-shadow .2s}
+.monitor.armed{box-shadow:0 0 0 4px #3a0c11,0 0 24px rgba(255,71,87,.35),inset 0 0 60px rgba(255,71,87,.05)}
+.mon-top{display:flex;align-items:center;gap:.6em;font-size:.72em;color:#5f6f82;padding:0 .2em .45em;border-bottom:1px solid #111a24;margin-bottom:.35em}
+.mon-brand{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em;text-transform:uppercase}
+.mon-brand b{color:#c9d5e2;font-weight:800}.mon-brand i{font-style:normal;opacity:.6;text-transform:none}
+.mon-status{font:700 1em var(--num);letter-spacing:.08em;padding:.15em .55em;border-radius:6px;background:#1b1408;border:1px solid #4a3410;color:var(--org)}
+.mon-icon{background:#0d141c;border:1px solid #1f2b39;color:#c9d5e2;width:34px;height:30px;padding:0;border-radius:8px;font-size:.95em}
+.mon-main{display:grid;grid-template-columns:minmax(0,1fr) 168px;gap:.5em}
+.waves{gap:.15em}
+.wave-row{position:relative;border-bottom:1px solid #0d141b}
+.wave-row:last-child{border-bottom:0}
+.wave-label{position:absolute;left:.35em;top:.15em;z-index:1;display:flex;gap:.5em;align-items:baseline;font:700 .7em var(--num);letter-spacing:.04em;padding:0;pointer-events:none;max-width:calc(100% - .7em);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wave-label .scale{opacity:.55;font-weight:500}
+.wave-label.ecg{color:var(--grn)}.wave-label.pleth{color:var(--cyan)}.wave-label.co2{color:var(--yel)}
+#rhythmLbl{color:#b9ffd7;margin-left:.2em;font-weight:600}
+.waves canvas{background:transparent}
+#cvECG{height:128px}#cvPleth{height:60px}#cvCO2{height:60px}
+
+/* numerics */
+.nums{display:flex;flex-direction:column;gap:.3em}
+.num{position:relative;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr;align-items:end;gap:0 .3em;border:1px solid #121c27;background:linear-gradient(180deg,#05090d,#020406);border-radius:10px;padding:.3em .55em .35em;min-height:62px;transition:background .2s,border-color .2s}
+.num label{grid-column:1;grid-row:1;align-self:start;font:800 .72em var(--num);letter-spacing:.06em}
+.num small{grid-column:2;grid-row:1;align-self:start;justify-self:end;font:600 .62em var(--num);color:#5d6b7a;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.num b{grid-column:1/3;grid-row:2;justify-self:end;font:700 2.35em/1 var(--num);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.num .heart{position:absolute;left:.55em;bottom:.45em;font-style:normal;font-size:.9em;color:var(--grn);opacity:.25}
+.num .heart.beat{animation:heart .35s ease-out}
+@keyframes heart{0%{opacity:1;transform:scale(1.25)}100%{opacity:.25;transform:scale(1)}}
+.num.hr{color:var(--grn)}.num.spo2{color:var(--cyan)}.num.rr{color:var(--yel)}.num.etco2{color:var(--yel)}
+.num.bp{color:var(--wht)}.num.bp b{font-size:1.75em}
+.num.hidden b{color:#243140}.num.hidden .heart{display:none}
+.num.alarm{background:linear-gradient(180deg,#2a070c,#16040a);border-color:#ff4757;box-shadow:0 0 0 1px rgba(255,71,87,.35),0 0 14px rgba(255,71,87,.25)}
+.num.alarm b{color:#ff5b69;animation:alarmBlink 1.1s steps(2,jump-none) infinite}
+.num.alarm label::after{content:" ▲";color:#ff5b69}
+@keyframes alarmBlink{50%{color:#fff}}
+@media (prefers-reduced-motion:reduce){.num.alarm b,.dev-btns .dv-shock.armed,.dev-read .chg{animation:none}}
+
+/* device panel */
+.dev-panel{margin-top:.5em;border:1px solid #142030;border-radius:12px;padding:.45em;background:#05080c}
+.dev-read{display:flex;flex-wrap:wrap;gap:.35em;font:700 .72em var(--num);color:#5d6b7a;padding-bottom:.45em}
+.dev-read span{padding:.2em .5em;border-radius:6px;background:#0b1119;border:1px solid #17212d}
+.dev-read .on{color:var(--org);border-color:#4a3410}.dev-read .sync{color:#fff;border-color:#5a6b80}.dev-read .chg{color:#fff;background:#5a0f17;border-color:var(--red)}.dev-read .cap{color:var(--grn);border-color:#1d5c3a}
+.dev-btns{display:grid;grid-template-columns:1fr 1fr;gap:.45em}
+.dv-group{display:flex;flex-wrap:wrap;gap:.35em;align-items:center;align-content:flex-start;padding:.4em;border:1px solid #142030;border-radius:10px;background:#070b10}
+.dv-group.safety{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr)}
+.dv-gh{width:100%;font:800 .66em var(--num);letter-spacing:.1em;text-transform:uppercase;color:#6c7c90}
+.dev-btns button,.dev-btns select{font:700 .8em var(--num);background:linear-gradient(180deg,#16202b,#0e151d);color:#d5dfe9;border:1px solid #2a394b;border-radius:9px;padding:.45em .7em;min-height:44px;min-width:44px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 1px 0 rgba(0,0,0,.6)}
+.dev-btns button:active{transform:translateY(1px);box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
+.dev-btns select{width:auto!important;flex:0 0 auto;padding-right:1.6em}
+.dev-btns button.act{border-color:var(--org);color:#ffcf8f;background:linear-gradient(180deg,#2c1d08,#1a1105)}
+#dvPadsBtn.act{border-color:#1d5c3a;color:#aef5cb;background:linear-gradient(180deg,#0f2a1c,#0a1a12)}
+.dv-step{display:inline-flex;align-items:center;gap:0;border:1px solid #2a394b;border-radius:9px;overflow:hidden;background:#0a1017}
+.dv-step .dv-sl{font:800 .66em var(--num);color:#8394a8;padding:0 .5em;letter-spacing:.06em}
+.dv-step button{border:0!important;border-radius:0!important;box-shadow:none!important;font-size:1.05em!important;min-width:42px}
+.dv-step output{min-width:2.6em;text-align:center;font:800 .95em var(--num);color:#ffcf8f;font-variant-numeric:tabular-nums;border-left:1px solid #1f2b39;border-right:1px solid #1f2b39;padding:.55em .2em}
+#dvSyncBtn{display:inline-flex;align-items:center;gap:.45em}
+.led{width:9px;height:9px;border-radius:50%;background:#2a3542;box-shadow:inset 0 0 2px #000;display:inline-block}
+#dvSyncBtn.act{color:#fff;border-color:#c9d5e2;background:linear-gradient(180deg,#222d3a,#141c26)}
+#dvSyncBtn.act .led{background:#e9f1fa}
+#dvSyncBtn.act .led.beat{animation:led .25s ease-out}
+@keyframes led{0%{background:#fff;box-shadow:0 0 10px 3px rgba(255,255,255,.9)}100%{background:#e9f1fa;box-shadow:none}}
+#dvChargeBtn{position:relative;overflow:hidden}
+#dvChargeBtn span{position:relative;z-index:1}
+.chg-bar{position:absolute;left:0;bottom:0;height:4px;width:0;background:linear-gradient(90deg,#ffb020,#ff4757);transition:width .9s linear}
+#dvChargeBtn.charging{color:#ffd98a;border-color:#8a5a12}
+#dvChargeBtn.charged{color:#fff;border-color:var(--red)}
+#dvChargeBtn.charged .chg-bar{height:100%;opacity:.25}
+.dev-btns .dv-shock{flex:1 1 auto;min-width:96px;font-size:.9em;color:#ff9aa3;border-color:#5a1a20;background:linear-gradient(180deg,#1d0b0e,#120608)}
+.dev-btns .dv-shock.armed{color:#fff;border-color:#ff7380;background:radial-gradient(circle at 50% 35%,#ff4757,#b3121f);box-shadow:0 0 0 2px rgba(255,71,87,.35),0 0 18px rgba(255,71,87,.6);animation:armed 1s ease-in-out infinite}
+@keyframes armed{50%{box-shadow:0 0 0 2px rgba(255,71,87,.2),0 0 6px rgba(255,71,87,.3)}}
+
+/* findings card */
+.findings{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:.5em}
+.assess-grid{margin-top:0;gap:.4em}
+.as{background:#0b1118;border:1px solid #1a2532;border-radius:10px;padding:.35em .55em}
+.as label{font:800 .64em var(--num);letter-spacing:.06em;color:#7b8da2}
+.as b{font:600 .95em var(--num);color:#dff3ff}
+.as.hidden b{color:#2e3b4b}
+.as #btn12{margin-top:.3em}
+
+/* chat polish */
+.col-right{border-radius:var(--r);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.msg{border-radius:14px;line-height:1.4;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.msg.me{background:linear-gradient(180deg,#22548a,#1c4675)}
+.composer{background:#0d131a}
+.quick button,.assess-row button{min-height:34px}
+
+/* voice settings */
+.voice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.6em}
+.voice-card{border:1px solid var(--line);border-radius:12px;padding:.6em;background:var(--panel2);display:flex;flex-direction:column;gap:.45em}
+.voice-card[data-who="partner"]{border-color:#7a5a1c;background:#1a1408}
+.vc-h{font-weight:700}
+.card label.vc-sl{flex-direction:row;align-items:center;gap:.5em;font-size:.82em}
+.vc-sl input{flex:1;padding:0}
+.vc-sl output{width:2.6em;text-align:right;font:600 .9em var(--num);color:var(--mut)}
+.vc-row{display:flex;align-items:center;gap:.5em}
+.vc-row button{min-height:36px;padding:.3em .9em!important;font-size:.85em!important}
+.vc-note{color:#ffcf8f}
+
+/* phones */
+@media (max-width:600px){
+  .sim-body{padding:.45em;gap:.5em}
+  .monitor{border-radius:14px;padding:.45em .45em .5em;box-shadow:0 0 0 3px #0c1117}
+  .mon-main{grid-template-columns:1fr}
+  #cvECG{height:118px}#cvPleth{height:52px}#cvCO2{height:52px}
+  .nums{display:grid;grid-template-columns:repeat(6,1fr);gap:.35em}
+  .num{min-height:58px;padding:.25em .45em .3em}
+  .num.hr{grid-column:span 2}.num.spo2{grid-column:span 2}.num.etco2{grid-column:span 2}.num.bp{grid-column:span 4}.num.rr{grid-column:span 2}
+  .num b{font-size:2em}.num.bp b{font-size:1.7em}
+  .dev-btns{grid-template-columns:1fr}
+  .dv-group{gap:.4em}
+  .dv-group.pacer .dv-step{flex:1 1 45%;justify-content:space-between}
+  .dv-group.defib select{flex:1 1 30%}
+  .dev-btns .dv-shock{flex:1 1 100%;min-height:52px;font-size:1em}
+  .assess-grid{grid-template-columns:repeat(3,1fr)}.as.wide{grid-column:span 3}
+  .mon-brand i{display:none}
+}
+@media (max-width:600px){ .num.hr{order:1}.num.spo2{order:2}.num.etco2{order:3}.num.bp{order:4}.num.rr{order:5} }
+.wave-label{background:rgba(2,3,4,.72);border-radius:4px;padding:.05em .3em}
+
+/* ---------------------------------------------------------------------
+ * v2.8 ZOLL-inspired skin (generic: no vendor logos, marks, fonts or artwork).
+ * Device housing bezel > black screen: status/prompt line, numerics row on top, waveform stack,
+ * softkey bar under the screen, numbered 1-2-3 Energy / Charge / Shock hard keys.
+ * --------------------------------------------------------------------- */
+.monitor.zx{background:linear-gradient(180deg,#34393f,#24282d);border:1px solid #454b52;border-radius:20px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)}
+.monitor.zx.armed{box-shadow:0 0 0 3px rgba(255,59,48,.55),0 0 26px rgba(255,59,48,.35),0 12px 30px rgba(0,0,0,.5)}
+.zx .mon-top,.zx .mon-main,.zx .dev-read{background:#000}
+.zx .mon-top{margin:0;border:0;border-radius:10px 10px 0 0;padding:6px 8px;gap:6px;font-size:.74em;border-bottom:1px solid #1b1b1b;flex-wrap:nowrap}
+.mon-pt{font:800 .95em var(--num);color:#000;background:#d9dde2;border-radius:3px;padding:.1em .4em}
+.mon-mode{font:800 .95em var(--num);letter-spacing:.06em;color:#fff;border:1px solid #555;border-radius:3px;padding:.1em .45em}
+.mon-mode.m-pacer{color:#ffb340;border-color:#7a5310}.mon-mode.m-sync{color:#fff;border-color:#bbb;background:#222}.mon-mode.m-defib{color:#ff5a4e;border-color:#7a1d17}
+.mon-prompt{flex:1;min-width:0;text-align:center;font:800 1.02em var(--num);letter-spacing:.04em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-prompt.warn{color:#ffd60a}.mon-prompt.info{color:#7fd8ff}
+.mon-prompt.shock{color:#fff;background:#c4160c;border-radius:3px;animation:zxPrompt .8s steps(2,jump-none) infinite}
+@keyframes zxPrompt{50%{background:#5a0a05}}
+.zx .mon-status{background:transparent;border:0;padding:0;font-size:.9em}
+.zx .mon-icon{background:#111;border-color:#333;height:26px;width:30px}
+.zx .mon-main{display:flex;flex-direction:column;gap:0;padding:0 6px 4px}
+.zx .nums{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border-bottom:1px solid #1d1d1d}
+.zx .num{background:#000;border:0;border-right:1px solid #1d1d1d;border-radius:0;min-height:64px;padding:4px 7px 5px}
+.zx .num:last-child{border-right:0}
+.zx .num b{font-size:2.3em;font-weight:700}
+.zx .num.bp b{font-size:1.65em}
+.zx .num.hr{color:#00e64d}.zx .num.spo2{color:#26d9ff}.zx .num.etco2{color:#ffe14d}.zx .num.bp{color:#fff}.zx .num.rr{color:#fff}
+.zx .num small{color:#7c7c7c}
+.zx .num.alarm{background:#c4160c;box-shadow:none;border-color:#c4160c}
+.zx .num.alarm b,.zx .num.alarm label,.zx .num.alarm small{color:#fff}
+.zx .num.alarm b{animation:zxAlarm 1s steps(2,jump-none) infinite}
+@keyframes zxAlarm{50%{opacity:.55}}
+.zx .num.alarm label::after{color:#fff}
+.zx .num .heart{color:#00e64d}
+.zx .waves{padding-top:2px}
+.zx .wave-row{border-bottom:1px dotted #161616}
+.zx .wave-label{background:rgba(0,0,0,.75);font-size:.7em}
+.zx .wave-label.ecg{color:#00e64d}.zx .wave-label.pleth{color:#26d9ff}.zx .wave-label.co2{color:#ffe14d}
+.zx #cvECG{height:132px}.zx #cvPleth{height:62px}.zx #cvCO2{height:62px}
+.zx .dev-panel{margin:0;padding:0;border:0;background:transparent}
+.zx .dev-read{border-radius:0 0 10px 10px;padding:4px 8px 6px;margin:0 0 10px;border-top:1px solid #1b1b1b;font-size:.7em}
+.zx .dev-read span{background:#000;border-color:#2a2a2a;border-radius:3px}
+.zx .dev-read .on{color:#ffb340;border-color:#7a5310}.zx .dev-read .cap{color:#00e64d;border-color:#0f5a2a}.zx .dev-read .chg{background:#c4160c;border-color:#c4160c}
+.zx .dev-btns{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:10px;align-items:stretch}
+.zx .dv-group{background:transparent;border:0;padding:0}
+.zx .softkeys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.zx .softkeys .dv-step{grid-column:span 2}
+.zx .dev-btns button,.zx .dev-btns select{font:700 .78em var(--num);color:#eef1f4;background:linear-gradient(180deg,#575e66,#3d434a);border:1px solid #20252a;border-radius:6px;min-height:46px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 0 #15181b}
+.zx .dev-btns button:active{transform:translateY(2px);box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
+.zx .dev-btns button.act{color:#000;background:linear-gradient(180deg,#ffd27a,#f0a830);border-color:#7a5310}
+.zx #dvPadsBtn.act{color:#001b0a;background:linear-gradient(180deg,#8ff0b4,#3bc777);border-color:#0f5a2a}
+.zx #dvSyncBtn.act{color:#000;background:linear-gradient(180deg,#ffffff,#cfd4da);border-color:#888}
+.zx #dvSyncBtn.act .led{background:#111}
+.zx #dvSyncBtn.act .led.beat{animation:zxLed .25s ease-out}
+@keyframes zxLed{0%{background:#00e64d;box-shadow:0 0 8px 2px rgba(0,230,77,.9)}100%{background:#111}}
+.zx .dv-step{display:flex;border:1px solid #20252a;border-radius:6px;background:#1c2024;overflow:hidden}
+.zx .dv-step .dv-sl{flex:1;font-size:.62em;color:#c6ccd3;text-transform:uppercase;padding:0 .6em;align-self:center;line-height:1.15}
+.zx .dv-step button{border-radius:0!important;border:0!important;min-width:46px}
+.zx .dv-step output{background:#000;color:#ffb340;min-width:3em;border-color:#20252a;align-self:stretch;display:flex;align-items:center;justify-content:center}
+.zx .hardkeys{display:grid;grid-template-columns:1fr;gap:6px}
+.zx .hk{position:relative;display:flex;align-items:center;gap:.55em;text-align:left;padding:.4em .7em!important;min-height:52px!important}
+.zx .hk-n{display:inline-grid;place-items:center;width:1.7em;height:1.7em;border-radius:50%;font:800 .9em var(--num);background:#000;color:#fff;flex:none}
+.zx .hk-l{font:800 .95em var(--num);letter-spacing:.03em}
+.zx label.hk-energy{background:linear-gradient(180deg,#575e66,#3d434a);border:1px solid #20252a;border-radius:6px;color:#eef1f4;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 0 #15181b}
+.zx label.hk-energy select{margin-left:auto;min-height:36px!important;background:#000!important;color:#fff!important;border:1px solid #111!important;box-shadow:none!important;font-size:.95em!important;padding:.2em 1.4em .2em .5em}
+.zx .hk-charge{background:linear-gradient(180deg,#ffe066,#e7b416)!important;color:#1a1400!important;border-color:#7a6300!important}
+.zx .hk-charge .hk-n{background:#1a1400;color:#ffe066}
+.zx .hk-charge.charging{animation:zxChg .6s ease-in-out infinite alternate}
+@keyframes zxChg{to{filter:brightness(1.18)}}
+.zx .hk-charge .chg-bar{height:5px;background:#1a1400;opacity:.85}
+.zx .hk-charge.charged .chg-bar{height:5px;opacity:.85}
+.zx .dev-btns .dv-shock{color:#ffd9d6!important;background:linear-gradient(180deg,#7a2a24,#521913)!important;border-color:#2a0b08!important;justify-content:flex-start}
+.zx .dev-btns .dv-shock .hk-n{background:#2a0b08}
+.zx .dev-btns .dv-shock.armed{color:#fff!important;background:radial-gradient(circle at 50% 30%,#ff5a4e,#c4160c)!important;border-color:#ff8a80!important;box-shadow:0 0 0 2px rgba(255,90,78,.45),0 0 18px rgba(255,59,48,.6)!important;animation:armed 1s ease-in-out infinite}
+@media (max-width:600px){
+  .monitor.zx{padding:7px;border-radius:16px}
+  .zx .mon-top{font-size:.68em;gap:4px;padding:5px 6px}
+  .zx .mon-pt{display:none}
+  .zx .nums{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .zx .num{min-height:56px;padding:3px 6px 4px;border-bottom:1px solid #1d1d1d}
+  .zx .num.hr,.zx .num.spo2,.zx .num.etco2{grid-column:span 2}.zx .num.bp{grid-column:span 4}.zx .num.rr{grid-column:span 2}
+  .zx .num.etco2{border-right:0}
+  .zx .num b{font-size:1.95em}.zx .num.bp b{font-size:1.6em}
+  .zx #cvECG{height:116px}.zx #cvPleth{height:52px}.zx #cvCO2{height:52px}
+  .zx .dev-btns{grid-template-columns:1fr}
+  .zx .softkeys{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .zx .softkeys .dv-step{grid-column:span 4}
+  .zx .hardkeys{grid-template-columns:1.25fr 1fr 1fr}
+  .zx .hk{flex-direction:column;align-items:center;justify-content:center;gap:.2em;text-align:center;padding:.35em .3em!important;min-height:64px!important}
+  .zx label.hk-energy select{margin:0;width:100%!important}
+  .zx .dev-btns .dv-shock{justify-content:center;min-width:0;flex:none}
+}
+.zx .dv-step .dv-sl{text-transform:none;font-size:.7em}
+.zx .softkeys #dvPadsBtn{order:1}.zx .softkeys #dvPacerBtn{order:2}.zx .softkeys #dvSyncBtn{order:3}.zx .softkeys [data-op="clear"]{order:4}
+.zx .softkeys .dv-step{order:5}.zx .softkeys [data-op="o2away"]{order:7}.zx .softkeys [data-op="disarm"]{order:8}
+.zx .softkeys [data-op="o2away"],.zx .softkeys [data-op="disarm"]{grid-column:span 2}
+
 </style>
 </head>
 <body>
@@ -267,56 +494,61 @@ details summary{cursor:pointer;margin:6px 0}
       <div class="col-left">
         <div class="dispatch" id="dispatch"></div>
         <!-- MONITOR -->
-        <div class="monitor" id="monitor">
+        <div class="monitor zx" id="monitor">
           <div class="mon-top">
-            <span class="mon-brand">LIFEPAK-style monitor (simulated)</span>
+            <span class="mon-pt" title="Patient type">ADULT</span>
+            <span class="mon-mode" id="monMode">MONITOR</span>
+            <span class="mon-prompt" id="monPrompt" aria-live="polite"></span>
             <span class="mon-status" id="monStatus">NO LEADS</span><span id="brosChip" hidden></span>
-            <button class="tiny" id="btnBeep" title="QRS tone">🔇</button>
+            <button class="mon-icon" id="btnBeep" title="QRS tone" aria-label="QRS tone">🔇</button>
           </div>
           <div class="mon-main">
-            <div class="waves">
-              <div class="wave-label ecg">II <span id="rhythmLbl"></span></div>
-              <canvas id="cvECG"></canvas>
-              <div class="wave-label pleth">Pleth</div>
-              <canvas id="cvPleth"></canvas>
-              <div class="wave-label co2">CO₂</div>
-              <canvas id="cvCO2"></canvas>
-            </div>
             <div class="nums">
-              <div class="num hr" data-k="hr"><label>HR</label><b>--</b><small>bpm</small></div>
-              <div class="num spo2" data-k="spo2"><label>SpO₂</label><b>--</b><small>%</small></div>
-              <div class="num bp" data-k="bp"><label>NIBP</label><b>--/--</b><small id="bpTime">mmHg</small></div>
-              <div class="num rr" data-k="rr"><label>RR</label><b>--</b><small>/min</small></div>
-              <div class="num etco2" data-k="etco2"><label>EtCO₂</label><b>--</b><small>mmHg</small></div>
+              <div class="num hr" data-k="hr"><label>HR</label><small>bpm</small><b>--</b><i class="heart" id="hrHeart">♥</i></div>
+              <div class="num spo2" data-k="spo2"><label>SpO₂</label><small>%</small><b>--</b></div>
+              <div class="num bp" data-k="bp"><label>NIBP</label><small id="bpTime">mmHg</small><b>--/--</b></div>
+              <div class="num etco2" data-k="etco2"><label>EtCO₂</label><small>mmHg</small><b>--</b></div>
+              <div class="num rr" data-k="rr"><label>RR</label><small>/min</small><b>--</b></div>
+            </div>
+            <div class="waves">
+              <div class="wave-row ecg"><div class="wave-label ecg"><span class="lead">II</span><span class="scale">×1.0</span> <span id="rhythmLbl"></span></div><canvas id="cvECG"></canvas></div>
+              <div class="wave-row pleth"><div class="wave-label pleth"><span class="lead">SpO₂</span></div><canvas id="cvPleth"></canvas></div>
+              <div class="wave-row co2"><div class="wave-label co2"><span class="lead">CO₂</span><span class="scale">0–50 mmHg</span></div><canvas id="cvCO2"></canvas></div>
             </div>
           </div>
           <div class="dev-panel" id="devPanel">
             <div class="dev-read"><span id="dvPads">PADS OFF</span><span id="dvPace">PACER OFF</span><span id="dvSync">SYNC OFF</span><span id="dvEnergy">200 J</span></div>
             <div class="dev-btns" id="devBtns">
-              <button type="button" data-op="pads">Pads</button>
-              <button type="button" data-op="pacer" id="dvPacerBtn">Pacer</button>
-              <span class="dv-pair"><button type="button" data-op="ratedown" title="Rate −10">Rate −</button><button type="button" data-op="rateup" title="Rate +10">+</button></span>
-              <span class="dv-pair"><button type="button" data-op="madown" title="mA −10">mA −</button><button type="button" data-op="maup" title="mA +10">+</button></span>
-              <button type="button" data-op="sync" id="dvSyncBtn">Sync</button>
-              <select id="dvJ" title="Energy (biphasic)"><option value="120">120 J</option><option value="150">150 J</option><option value="200" selected>200 J</option><option value="360">360 J</option></select>
-              <button type="button" data-op="charge">Charge</button>
-              <button type="button" data-op="clear">Clear!</button>
-              <button type="button" data-op="o2away">O₂ away</button>
-              <button type="button" data-op="shock" class="dv-shock" id="dvShockBtn">⚡ Shock</button>
-              <button type="button" data-op="disarm">Disarm</button>
+              <div class="dv-group softkeys" aria-label="Softkeys">
+                <button type="button" data-op="pads" id="dvPadsBtn" class="sk">Pads</button>
+                <button type="button" data-op="pacer" id="dvPacerBtn" class="sk">Pacer</button>
+                <div class="dv-step"><span class="dv-sl">Pacer rate (ppm)</span><button type="button" data-op="ratedown" title="Rate −10" aria-label="Rate down">▼</button><output id="dvRateVal">70</output><button type="button" data-op="rateup" title="Rate +10" aria-label="Rate up">▲</button></div>
+                <div class="dv-step"><span class="dv-sl">Pacer output (mA)</span><button type="button" data-op="madown" title="mA −10" aria-label="mA down">▼</button><output id="dvMaVal">0</output><button type="button" data-op="maup" title="mA +10" aria-label="mA up">▲</button></div>
+                <button type="button" data-op="sync" id="dvSyncBtn" class="sk"><i class="led" id="dvSyncLed"></i>Sync</button>
+                <button type="button" data-op="clear" class="sk">Clear!</button>
+                <button type="button" data-op="o2away" class="sk">O₂ away</button>
+                <button type="button" data-op="disarm" class="sk">Disarm</button>
+              </div>
+              <div class="dv-group hardkeys" aria-label="Defibrillator controls">
+                <label class="hk hk-energy"><span class="hk-n">1</span><span class="hk-l">Energy</span><select id="dvJ" title="Energy (biphasic)" aria-label="Energy"><option value="120">120 J</option><option value="150">150 J</option><option value="200" selected>200 J</option><option value="360">360 J</option></select></label>
+                <button type="button" data-op="charge" id="dvChargeBtn" class="hk hk-charge"><span class="hk-n">2</span><span class="hk-l">Charge</span><i class="chg-bar" id="dvChgBar"></i></button>
+                <button type="button" data-op="shock" class="hk dv-shock" id="dvShockBtn"><span class="hk-n">3</span><span class="hk-l">⚡ Shock</span></button>
+              </div>
             </div>
           </div>
-          <div class="assess-grid" id="assessGrid">
-            <div class="as" data-k="bgl"><label>BGL</label><b>--</b></div>
-            <div class="as" data-k="temp"><label>Temp</label><b>--</b></div>
-            <div class="as" data-k="gcs"><label>GCS</label><b>--</b></div>
-            <div class="as" data-k="pupils"><label>Pupils</label><b>--</b></div>
-            <div class="as" data-k="pain"><label>Pain</label><b>--</b></div>
-            <div class="as wide" data-k="skin"><label>Skin</label><b>--</b></div>
-            <div class="as wide" data-k="lungs"><label>Lung sounds</label><b>--</b></div>
-            <div class="as wide" data-k="ecg"><label>Rhythm / 12-lead</label><b>--</b><button class="tiny" id="btn12" hidden>View 12-lead</button></div>
-            <div class="as wide" data-k="neuro"><label>Neuro / stroke exam</label><b>--</b></div>
-          </div>
+        </div>
+        <div class="findings" id="findings">
+            <div class="assess-grid" id="assessGrid">
+              <div class="as" data-k="bgl"><label>BGL</label><b>--</b></div>
+              <div class="as" data-k="temp"><label>Temp</label><b>--</b></div>
+              <div class="as" data-k="gcs"><label>GCS</label><b>--</b></div>
+              <div class="as" data-k="pupils"><label>Pupils</label><b>--</b></div>
+              <div class="as" data-k="pain"><label>Pain</label><b>--</b></div>
+              <div class="as wide" data-k="skin"><label>Skin</label><b>--</b></div>
+              <div class="as wide" data-k="lungs"><label>Lung sounds</label><b>--</b></div>
+              <div class="as wide" data-k="ecg"><label>Rhythm / 12-lead</label><b>--</b><button class="tiny" id="btn12" hidden>View 12-lead</button></div>
+              <div class="as wide" data-k="neuro"><label>Neuro / stroke exam</label><b>--</b></div>
+            </div>
         </div>
         <div class="tx-strip" id="txStrip"></div>
       </div>
@@ -356,11 +588,27 @@ details summary{cursor:pointer;margin:6px 0}
   <label class="row"><input type="checkbox" id="setAutoSend" checked> Send speech automatically when I stop talking</label>
   <label class="row"><input type="checkbox" id="setHints"> Show instructor hints during the scenario</label>
   <label class="row"><input type="checkbox" id="setInstr" checked> Instructor speaks findings aloud (pulses, skin, pupils, lung sounds…)</label>
-  <label>Instructor voice <select id="setInstrVoice"><option value="auto">Auto</option></select></label>
-  <label>Patient voice <select id="setPtVoice"><option value="auto">Auto (matches the patient's sex and age)</option></select></label>
-  <label>Speech rate <input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="1"></label>
+  <label>Overall speech rate <input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="1"></label>
+  <h3>Voices</h3>
+  <p class="fine">Pick from the voices this device has (English first). Choices are saved on this device. If a saved voice disappears (new device or browser), Auto is used.</p>
+  <div class="voice-grid">
+    <div class="voice-card" data-who="partner"><div class="vc-h">🧑‍🚒 Partner (EMT)</div>
+      <select id="setPartnerVoice" aria-label="Partner voice"><option value="auto">Auto (a voice different from patient and instructor)</option></select>
+      <label class="vc-sl">Pitch <input type="range" id="setPartnerPitch" min="0.5" max="1.6" step="0.05" value="0.95"><output id="outPartnerPitch">0.95</output></label>
+      <label class="vc-sl">Rate <input type="range" id="setPartnerRate" min="0.6" max="1.6" step="0.05" value="1.12"><output id="outPartnerRate">1.12</output></label>
+      <div class="vc-row"><button class="ghost tiny" id="btnTestPartner" type="button">▶ Test</button><span class="fine vc-note" id="notePartner"></span></div></div>
+    <div class="voice-card" data-who="pt"><div class="vc-h">🧑 Patient</div>
+      <select id="setPtVoice" aria-label="Patient voice"><option value="auto">Auto (matches the patient's sex and age)</option></select>
+      <label class="vc-sl">Pitch × <input type="range" id="setPtPitch" min="0.6" max="1.4" step="0.05" value="1"><output id="outPtPitch">1.00</output></label>
+      <label class="vc-sl">Rate × <input type="range" id="setPtRate" min="0.6" max="1.4" step="0.05" value="1"><output id="outPtRate">1.00</output></label>
+      <div class="vc-row"><button class="ghost tiny" id="btnTestPt" type="button">▶ Test</button><span class="fine vc-note" id="notePt"></span></div></div>
+    <div class="voice-card" data-who="instr"><div class="vc-h">📋 Instructor</div>
+      <select id="setInstrVoice" aria-label="Instructor voice"><option value="auto">Auto</option></select>
+      <label class="vc-sl">Pitch × <input type="range" id="setInstrPitch" min="0.6" max="1.4" step="0.05" value="1"><output id="outInstrPitch">1.00</output></label>
+      <label class="vc-sl">Rate × <input type="range" id="setInstrRate" min="0.6" max="1.4" step="0.05" value="1"><output id="outInstrRate">1.00</output></label>
+      <div class="vc-row"><button class="ghost tiny" id="btnTestInstr" type="button">▶ Test</button><span class="fine vc-note" id="noteInstr"></span></div></div>
+  </div>
   <p class="fine" id="voiceInfo"></p>
-  <div class="dl-row"><button class="ghost tiny" id="btnTestPt" type="button">▶ Test patient voice</button><button class="ghost tiny" id="btnTestInstr" type="button">▶ Test instructor voice</button></div>
   <hr>
   <h3>Voice input</h3>
   <label>Microphone <select id="setMicMode">
@@ -937,7 +1185,7 @@ const INTERP = (() => {
     if (/\blateral|\bavl\b|\bv ?[56]\b/.test(t)) terr.push("lateral");
     const stemi = pos ? true : neg ? false : null;
     // Right-sided lead (V4R) read: ST elevation in V4R = RV involvement (standard practice*; LA County protocols are silent on V4R)
-    const rvNeg = /\bno (st )?(elevation|ste)\b[^,.]*\bv ?4 ?r\b|\bv ?4 ?r\b[^,.]*\b(normal|no (st )?elevation|negative|isoelectric|flat|unremarkable)\b|\bno (rv|right ventric\w*|right sided) (infarct\w*|involvement|mi|stemi)\b/.test(t);
+    const rvNeg = /\bno (st )?(elevation|ste)\b[^,.]*\bv ?4 ?r\b|\bv ?4 ?r\b[^,.]*\b(normal|no (st )?elevation|negative|isoelectric|flat|unremarkable)\b|\bno (rv|right ventric\w*|right sided) (infarct\w*|involvement|mi|stemi)\b|\bno (st )?(elevation|ste)\b[^,.]*\bright ?sided? (lead|ekg|ecg|12 ?lead)/.test(t);
     const rvPos = /\bv ?4 ?r\b[^,.]*\belevat|\belevat\w*[^,.]*\bv ?4 ?r\b|\b(rv|right ventric\w*|right sided) (infarct\w*|mi|involvement|stemi)\b|\brvmi\b/.test(t);
     const rv = rvNeg ? false : rvPos ? true : null;
     if (!cls && stemi == null && rv == null) return null;
@@ -1182,7 +1430,7 @@ const NLU = (() => {
     [/\b(the|\d+|give me \d+|increase|decrease) (am a|an a|and a|i'm a|a may|and may)\b/g, "$1 ma"],
     [/\b(electrical|mechanical|me chemical|no|lost|have|of) (catcher|captor|captain)\b/g, "$1 capture"], [/\bme chemical\b/g, "mechanical"],
     [/\b(after every|each) (spite|spy|spice)\b/g, "$1 spike"], [/\b(why|white|wise) qrs\b/g, "wide qrs"],
-    [/\b(set|check|bump|thump|increase|decrease|lower|raise) (the )?right\b/g, "$1 the rate"], [/^ ?(right|great|wait|regaining) (\d{2,3})\b/g, " rate $2"],
+    [/\b(set|check|bump|thump|increase|decrease|lower|raise) (the )?right\b(?! ?(sided?|side|chest|leads?|v ?4|lung|arm|leg|pupil|hand|foot|ear|eye))/g, "$1 the rate"], [/^ ?(right|great|wait|regaining) (\d{2,3})\b/g, " rate $2"],
     [/\b(deliver|delivered|push|press|the live with) the (shop|shot|jock|shark)\b/g, "deliver the shock"],
     [/\b(the )?(o to|oh to|al two|out to|c o two|movie or two|o two|or two)( away)\b/g, " o2 away"], [/\boxygen (to way|subway)\b/g, "oxygen away"],
     [/\bcardi\w* (overt|over|that|of it|vert|virgin|version|aversion)\b/g, "cardioversion"], [/\bcarded a version\b/g, "cardioversion"], [/\bcardinal version\b/g, "cardioversion"],
@@ -1493,7 +1741,7 @@ const NLU = (() => {
     ["ebl", /(estimate|estimated|how much) (the |her )?(blood loss|bleeding|blood)|\bebl\b|blood loss/],
     ["broselow", /broselow|bros(e)? ?low|brazil ?o|length ?based|(measure|size|tape) (him|her|the (kid|child|patient|baby)) (with|on|using) (the |a )?(tape|broselow)|color code|what colou?r (is|on the tape|zone)/],
     ["monitor", /\bmonitor\b|leads on|\b(3|4) ?lead|hook (him|her|you|them) up|cardiac monitor|put (him|her|you|them) on the (monitor|lp|lifepak|zoll)|\brhythm\b(?! check)|\bekg\b|\becg\b|\belectrocardiogram/],
-    ["v4r", /\bv ?4 ?r\b|\bv ?four ?r\b|right ?sided (12 ?lead|ekg|ecg|leads?|lead placement|twelve)|right sided v ?4|(move|put|place|switch) (lead )?v ?(4|four) (to|on|over to) (the )?right|\bright chest lead|reverse (the )?(precordial|chest) leads/],
+    ["v4r", /\bv ?4 ?r\b|\bv ?four ?r\b|right ?sided? (12 ?lead|ekg|ecg|leads?|lead placement|twelve)|\blead (on|to) the right\b[^.]*\b(5th|fifth) (intercostal|ics)|right sided v ?4|(move|put|place|switch) (lead )?v ?(4|four) (to|on|over to) (the )?right|\bright chest lead|reverse (the )?(precordial|chest) leads/],
     ["12lead", /\b12 ?lead/],
     ["bp", /blood pressure|\bbp\b|\bnibp\b|pressure cuff|\bcuff\b|\b(manual|get a|need a|take a|check a|grab a|another|repeat) pressure\b|pressure (in|on) both arms|both arms (pressure|bp)|what'?s (the|his|her|your) pressure|(his|her) pressure\b|(re ?check|recheck|check|repeat|retake) (the |his |her )?pressure\b/],
     ["spo2", /\bsats?\b|\bspo2\b|pulseox|oximet|o2 sat|oxygen sat|saturation|finger probe|satting/],
@@ -2001,6 +2249,11 @@ const NLU = (() => {
       } }
     if (out.tx.some(x => ["midaz", "fentanyl", "morphine", "ketamine"].includes(x.id)) && /\b(for|before|from|during|with|while)( the| we| he'?s| she'?s| him| her| his| we'?re)? (synchronized )?(pac(e|ing|er)|tcp|cardiover\w*|(the )?shock)\b/.test(t)) out.tx = out.tx.filter(x => !["pace", "cardiovert", "defib"].includes(x.id));
     if (out.assess.includes("v4r")) { out.assess = out.assess.filter(a => a !== "12lead" && a !== "monitor"); out.tx = out.tx.filter(x => x.id !== "transport"); }
+    { // v2.8: negated medication orders ("hold the nitro", "no nitro, RV infarct") must never give the drug
+      const NEG = /\b(?:hold|holding|withhold|withholding|avoid|skip|without|contraindicat\w*|(?:don'?t|do not)(?: (?:give|giving|use|push))?|no|not)(?: (?:the|any|more|his|her))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus)\b/g;
+      const map = { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "ns", fluids: "ns", bolus: "ns" };
+      let m; const neg = new Set(); while ((m = NEG.exec(t))) { const w = m[1].startsWith("nitro") ? "nitro" : m[1]; if (map[w]) neg.add(map[w]); }
+      if (neg.size && !/\b(did|have|has|do|does|taken?|took|any)\b[^.?]*\?/.test(t)) out.tx = out.tx.filter(x => !neg.has(x.id)); }
     if (out.assess.includes("mechcap")) out.assess = out.assess.filter(a => a !== "pulsecheck" && a !== "monitor" && (a !== "pulse" || /femoral|carotid|radial/.test(t)));
     if (/\b(do|does|did|have|has) (you|he|she|they) (have|got|had)\b.*\bpacer\b/.test(t)) out.tx = out.tx.filter(x => x.id !== "pace");
     // ---- partner routing ----
@@ -2130,6 +2383,14 @@ const SIM = (() => {
   function computeTargets(snap) {
     let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
     if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
+    // RV infarct + nitroglycerin: preload-dependent hypotension (instructor standard, standard practice*); fluids blunt it
+    st.x.rvDrop = 0;
+    if (tg.twelve && tg.twelve.rv && st.x.rvNitroT != null && !st.x.arrest && tg.sbp) {
+      const k = E(st, "nitro"), f = Math.min(1, 1.6 * E(st, "ns")), drop = 44 * k * (1 - 0.75 * f);
+      st.x.rvDrop = drop; tg = Object.assign({}, tg, { sbp: Math.max(58, tg.sbp - drop), dbp: Math.max(34, (tg.dbp || tg.sbp * 0.6) - 0.6 * drop) });
+      if (tg.rhythm !== "brady" && tg.hr) tg.hr += 0.25 * drop;
+      if (drop > 18) tg.skin = "Ashen, cool, clammy; cap refill > 3 sec; neck veins distended";
+    }
     // human factors: reassurance calms (small, fading), painful procedures spike HR/RR transiently
     if (tg.hr && tg.pulse !== false && !st.x.arrest) {
       const calm = st.x.calmT != null ? Math.max(0, 1 - (st.t - st.x.calmT) / 240) * Math.min(1, 0.6 + 0.2 * (st.x.calmN || 1)) : 0;
@@ -2170,7 +2431,7 @@ const SIM = (() => {
       if (a) ui.say([{ speaker: sc.ambientBystander ? "bystander" : (/^\(/.test(a) ? "narrator" : (mental() === "unresponsive" || mental() === "arrest" || mental() === "seizing") ? "narrator" : "patient"), text: a }]);
     }
   }
-  function mental() { const m = sc.mental ? sc.mental(st) : "alert"; return typeof COURSE !== "undefined" && st ? COURSE.mental(m, st) : m; }
+  function mental() { let m = sc.mental ? sc.mental(st) : "alert"; if (st && st.x.rvDrop > 18 && ["alert", "anxious"].includes(m)) m = "confused"; return typeof COURSE !== "undefined" && st ? COURSE.mental(m, st) : m; }
   const H = { event: (t, k) => event(t, k), rec: k => rec(k), dev: (t, r, l) => { const d = dev(t, r, l); ui.say([d]); return d; }, devQuiet: (t, r, l) => dev(t, r, l), log: (k, t) => log(k, t) };
   const PEDS = () => sc.patient.age < 15;
   const OB_TX = new Set(["obkit", "deliver", "drynewborn", "clampcord", "placenta", "fundal", "skintoskin"]);
@@ -2178,7 +2439,7 @@ const SIM = (() => {
   function event(text, kind = "sys") { log(kind === "warn" ? "warn" : "find", text); ui.say([{ speaker: kind === "warn" ? "warn" : "find", text }]); }
   function log(kind, text) { st.log.push({ t: st.t, kind, text }); }
   function rec(key) { if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb"); (st.events[key] = st.events[key] || []).push(st.t); st.evOrder = st.evOrder || {}; if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1); }
-  function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); const safety = /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
+  function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); const own = /^standard practice\*\s*\((.+)\)$/.exec(ref || ""), safety = !own && /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${own ? "standard practice*: " + own[1] : safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${own ? "standard practice*: " + own[1] + "; LA County protocols are silent" : safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
   // device (monitor/defibrillator) context
   function devC() { return { st, sc, mental, treat: tx => treat(tx), dev: (t, r, l) => dev(t, r, l), devQuiet: (t, r, l) => { dev(t, r, l); }, rec, log, event: (t, k) => event(t, k),
     say: l => { l.filter(x => x.speaker === "patient").forEach(x => log("patient", x.text)); ui.say(l); }, partner: t => ui.say([pSay(t)]) }; }
@@ -2304,7 +2565,7 @@ const SIM = (() => {
       const tw = st.rev.twelve && st.rev.twelve.info;
       if (!tw || !tw.v4r) out.push("You haven't moved V4 to the right side yet. Say \"right-sided lead\" or \"get a V4R\".");
       else { const act = !!tw.rv, v = st.x.ip.v4r = st.x.ip.v4r || {}; v.done = true; v.ok = p.rv === act; rec(v.ok ? "a:v4rread" : "a:v4rread:missed"); log_("V4R", p.rv ? "ST elevation in V4R" : "no elevation in V4R", act ? "ST elevation in V4R (RV involvement)" : "no ST elevation in V4R", v.ok);
-        out.push(v.ok ? (act ? "Correct: ST elevation in V4R = right ventricular involvement. RV infarcts are preload-dependent: watch the BP closely with nitroglycerin (1211 ❹ caution; inferior MI alone isn't a contraindication) and treat hypotension per 1207." : "Correct: V4R is isoelectric, so there's no RV involvement.")
+        out.push(v.ok ? (act ? "Correct: ST elevation in V4R = right ventricular infarct. The RV is preload-dependent: NO nitroglycerin (instructor standard, graded as a critical error; 1211 ❹ itself says inferior MI alone isn't a contraindication). Treat pain per MCG 1345 and hypotension with fluids per 1207." : "Correct: V4R is isoelectric, so there's no RV involvement.")
           : (act ? "Look again at the V4R slot: there IS ~1.5 mm of ST elevation. That means right ventricular involvement." : "Look again: V4R is isoelectric (no ST elevation), so no RV involvement.")); }
     }
     if (p.stemi != null) {
@@ -2440,6 +2701,9 @@ const SIM = (() => {
         let mg = doseOf(tx, "mg") || 0.4; st.lastNitroDose = mg;
         const isChf = sc.base === "chf";
         if (!bpKnown) notes.push(dev("Nitroglycerin given without a current blood pressure. Assess BP before each dose.", isChf ? "1214 #8" : "1211 #6"));
+        if (!isChf && st.tg && st.tg.twelve && st.tg.twelve.rv) { st.x.rvNitroT = st.t; rec("x:nitrorv");
+          notes.push(dev(`CRITICAL: nitroglycerin with a RIGHT VENTRICULAR infarct (ST elevation in V4R)${st.events["a:v4r"] ? "" : "; you didn't obtain V4R first"}. The RV is preload-dependent: expect a large BP drop. Lay flat, NS fluid bolus, reassess.`, "standard practice* (RV infarct, instructor standard)", "deviation"));
+          notes.push(dev("1211 ❹ says inferior MI alone is not a contraindication to nitroglycerin. A positive V4R / RV infarct is graded per instructor standard.", "1211 ❹", "note")); }
         if (sbp < 100) notes.push(dev(`Nitroglycerin with SBP ${Math.round(sbp)} (< 100 mmHg): HOLD.`, isChf ? "1214 #8" : "1211 #6"));
         if (sc.pde5Hours != null && sc.pde5Hours <= 48) { st.flags.nitroWithPde5 = true; notes.push(dev(`Patient took a PDE5 inhibitor ~${sc.pde5Hours} h ago. Nitroglycerin is contraindicated within 48 h${(st.events["q:pde5"] ? "" : "; you did not ask")}.`, isChf ? "1214 #8" : "1211 #6")); }
         if (!isChf && !st.events["a:12lead"] && sc.base === "stemi") notes.push(dev("Nitroglycerin for chest pain is given AFTER the 12-lead ECG.", "1211 #6", "caution"));
@@ -3549,6 +3813,8 @@ SCENARIOS.push({
     { label: "Medications / history obtained", keys: ["q:meds", "q:history"], ref: "1201" },
     { label: "Pain mgmt per MCG 1345 since nitro contraindicated (fentanyl 50 mcg)", keys: ["t:fentanyl", "t:morphine"], ref: "1211 #8", optional: true },
     { label: "NO nitroglycerin (PDE5 inhibitor within 48 h)", keys: ["!t:nitro"], ref: "1211 #6", critical: true },
+    // LA County 1211/1308 are silent on right-sided leads: instructor standard (standard practice*)
+    { label: "Right-sided lead (V4R) obtained for inferior STEMI", keys: ["a:v4r"], ref: "standard practice* (instructor standard)", critical: true },
   ],
   expected: "Inferior STEMI with recent PDE5 inhibitor use (sildenafil about 10 h before the call). Nitroglycerin is CONTRAINDICATED. Give aspirin 325 mg, get a 12-lead, notify and transmit to the SRC, and treat pain with fentanyl per MCG 1345.",
 });
@@ -4373,13 +4639,63 @@ addS(G({
     { label: "Base contact (symptomatic bradycardia)", keys: ["t:base"], ref: "1212", critical: true },
     { label: "NO nitroglycerin (SBP < 100, bradycardia < 50)", keys: ["!t:nitro"], ref: "1211 #6 ❹", critical: true },
     // LA County 1211/1308 are silent on right-sided leads: standard practice*
-    { label: "Right-sided lead (V4R): ST elevation = RV involvement", keys: ["a:v4rread"], ref: "standard practice*", optional: true },
+    { label: "Right-sided lead (V4R) obtained for inferior STEMI", keys: ["a:v4r"], ref: "standard practice* (instructor standard)", critical: true },
+    { label: "V4R read: ST elevation = RV infarct", keys: ["a:v4rread"], ref: "standard practice*", optional: true },
+    { label: "NO nitroglycerin with RV infarct (positive V4R)", keys: ["!x:nitrorv"], ref: "standard practice* (1211 ❹: inferior MI alone is not a contraindication)", critical: true },
   ],
   pi: { correct: "CPMI", accept: ["DYSR"], acceptNote: "Cardiac Dysrhythmia is a reasonable secondary PI; STEMI is the cause and the primary impression.", differential: ["CPMI", "DYSR", "SYNC"],
     clues: { CPMI: "Inferior ST elevation with reciprocal changes. The brady/AV block is a complication of the inferior MI.", DYSR: "Bradycardia < 60 with poor perfusion is present, but it's secondary to the STEMI.", SYNC: "Near-syncope is the complaint, but the 12-lead explains it." },
     explain: "Inferior STEMI commonly causes bradycardia/AV block and hypotension. Treat with both 1211 and 1212: aspirin, SRC notification, atropine/fluids. Hold nitro (SBP < 100, HR < 50).", keyFindingKeys: ["a:12lead", "a:bp", "a:monitor"] },
   expected: "Inferior STEMI with symptomatic bradycardia and hypotension. 12-lead → SRC notification/transmit. Aspirin 325 mg, supine, IV, atropine 1 mg (TCP if no response and HR ≤ 40), NS for poor perfusion. Base contact. NO nitro.",
 }));
+
+/* ---------- Ref. 1211 Inferior STEMI with RIGHT VENTRICULAR infarct (V4R positive): nitroglycerin trap ----------
+ * 1211 ❹: "Inferior MI alone is not a contraindication to nitroglycerin." Adrian's instructor standard (standard practice*):
+ * obtaining V4R on every inferior STEMI is required, and nitroglycerin with a positive V4R / RV infarct is a CRITICAL error. */
+(() => {
+  const B = SCENARIOS.find(s => s.id === "stemi");
+  addS(clone(B, {
+    id: "stemi_rv", title: "Chest Pain: Inferior STEMI + RV infarct", difficulty: "Advanced", pde5Hours: null, startSev: 0.3,
+    summary: "64 y/o male, chest pressure and nausea at work.",
+    dispatchTitle: "64 y/o male, chest pressure", dispatchShort: "Downey auto shop, coworker calling.",
+    dispatch: "Engine 61 / RA 61, respond to an auto shop on Firestone Blvd, Downey. 64-year-old male, chest pain, conscious and breathing. Time of call 1418.",
+    scene: "Scene safe. An auto shop office. The patient is sitting in a desk chair, pale and sweaty, rubbing his chest. A coworker is with him.",
+    patient: { name: "Daniel Okafor", age: 64, sex: "M", weightKg: 88 }, bystander: { name: "Luis", role: "coworker", sex: "M" }, allergies: [],
+    answers: Object.assign({}, B.answers, {
+      greet: "Hey. Sorry, I feel terrible.", name: "Daniel Okafor.", age: "Sixty-four.",
+      onset: "About thirty minutes ago, under a car. It just came on.", events: "I was working under a lift. Pressure came on and I got sick to my stomach.",
+      allergies: "No allergies.", meds: "Amlodipine for pressure and a cholesterol pill.", history: "High blood pressure, cholesterol. Never had heart trouble.",
+      pde5: "No. Never taken anything like that.", lastoral: "A sandwich at noon.", orient: "Downey, at the shop. It's a weekday afternoon.",
+      hospital: "Downey Medical, I guess. Wherever you say.", drugs: "No. I quit smoking ten years ago.",
+    }),
+    bystanderAnswers: { cc: "He came out from under the car gray and sweaty, said his chest was tight and he was going to throw up.", meds: "I don't know. Blood pressure pills, I think.", history: "He's got high blood pressure, that's all I know.", allergies: "I don't know.", pde5: "No idea, man.", events: "He was working, then he came out holding his chest.", onset: "Half an hour ago.", name: "Danny Okafor. Daniel.", age: "Sixty-four." },
+    ambient: st => st.sev > 0.85 || st.x.rvDrop > 18 ? "I feel really weak... like I'm gonna pass out." : pick(["(groans) This pressure...", "Am I having a heart attack?", "Can somebody call my wife?"]),
+    targets(st) {
+      const t = B.targets.call(this, st);
+      return Object.assign({}, t, { twelve: Object.assign({}, t.twelve, { rv: true, st: Object.assign({}, t.twelve.st, { III: 0.34, V1: 0.06 }), text: "ST elevation II, III, aVF (III > II) with reciprocal ST depression I, aVL. ***ACUTE MI SUSPECTED***, inferior STEMI. (Consider right-sided leads.)" }),
+        lungs: "Clear and equal bilaterally", edema: st.x.rvDrop > 18 ? "JVD present; no pedal edema" : t.edema });
+    },
+    checklist: [
+      { label: "Cardiac monitor applied", keys: ["a:monitor"], ref: "1211 #3" },
+      { label: "12-lead ECG acquired", keys: ["a:12lead"], ref: "1211 #3", critical: true },
+      { label: "STEMI recognized: SRC notified / ECG transmitted", keys: ["t:notify"], ref: "1211 / MCG 1303", critical: true },
+      // instructor standard (LA County protocols are silent on V4R): standard practice*
+      { label: "Right-sided lead (V4R) obtained for inferior STEMI", keys: ["a:v4r"], ref: "standard practice* (instructor standard)", critical: true },
+      { label: "V4R read: ST elevation = RV infarct", keys: ["a:v4rread"], ref: "standard practice*", optional: true },
+      { label: "Aspirin 325 mg chewable PO", keys: ["t:aspirin"], ref: "1211 #5", critical: true },
+      { label: "Blood pressure assessed", keys: ["a:bp"], ref: "1211 #6" },
+      { label: "Asked about sexually enhancing meds (PDE5) within 48 h", keys: ["q:pde5"], ref: "1211 #6" },
+      { label: "Vascular access established", keys: ["t:iv", "t:io"], ref: "1211 #7" },
+      { label: "OPQRST pain assessment (onset, quality, radiation, severity)", keys: ["q:onset", "q:quality", "q:radiation", "q:severity"], all: true, ref: "1201" },
+      { label: "Allergies asked", keys: ["q:allergies"], ref: "1201" },
+      { label: "Pain management per MCG 1345 instead of nitro (fentanyl 50 mcg)", keys: ["t:fentanyl", "t:morphine"], ref: "1211 #8 / MCG 1345", optional: true },
+      { label: "NO nitroglycerin with RV infarct (positive V4R)", keys: ["!x:nitrorv"], ref: "standard practice* (1211 ❹: inferior MI alone is not a contraindication)", critical: true },
+    ],
+    protocol: "1211", refs: ["1211"],
+    pi: { correct: "CPMI", accept: [], differential: ["CPMI", "CPSC", "HOTN"], clues: { CPMI: "12-lead: ST elevation II, III, aVF; V4R: ST elevation = RV involvement.", CPSC: "The ECG shows ST elevation: this is a STEMI, not just suspected cardiac.", HOTN: "Any hypotension here is from the RV infarct (and nitro); the PI is the STEMI." }, keyFindingKeys: ["a:12lead", "a:v4r"], explain: "Inferior STEMI with right ventricular involvement (ST elevation in V4R). The RV is preload-dependent: nitroglycerin can cause profound hypotension (instructor standard). Aspirin, SRC, pain control per MCG 1345, fluids if hypotensive." },
+    expected: "Inferior STEMI with RV infarct. 12-lead, then right-sided V4R (required): ST elevation in V4R. Aspirin 325 mg, SRC notification/transmit, IV, fentanyl for pain. NO nitroglycerin (critical error: BP crashes; fluids improve it).",
+  }));
+})();
 
 /* ===== scx_12_resp.js ===== */
 /* ---------- Ref. 1214 Pulmonary Edema / CHF variants ---------- */
@@ -6213,6 +6529,7 @@ const APPROACH = {
   vf: ["Scene is safe: a gym. A man in his 60s is lying on his back next to a treadmill. He's gray, not moving, and not breathing normally. A gym employee is doing compressions that look shallow and slow. An AED is still in its case on the floor.", "Not tracking: eyes closed, no movement, no response to your arrival."],
   nstemi: ["Scene is safe: a home living room. A woman in her mid-60s is lying on the couch with a bucket beside her. She looks pale and tired but is breathing without difficulty. Her daughter is with her.", "Eyes open, and she tracks you as you walk in, though she looks washed out."],
   dissection: ["Scene is safe: a warehouse floor; watch the forklift traffic. A man in his 50s is sitting on a pallet, rocking, holding his chest and reaching toward his upper back. He looks pale and sweaty and is in obvious severe pain. Coworkers are standing around him.", "Eyes open and tracking you; he's grimacing and calls out to you to hurry."],
+  stemi_rv: ["Scene is safe: an auto shop office. A man in his 60s is sitting in a desk chair, pale and sweaty, rubbing his chest. He's breathing comfortably. A coworker is with him.", "Eyes open, and he tracks you as you walk in."],
   stemi_brady: ["Scene is safe: a mobile home. A man in his 70s is sitting on the edge of the bed, gripping the headboard. His skin looks gray and sweaty. He's breathing without obvious difficulty. His wife is in the doorway.", "Eyes open and tracking you, but he looks unwell and moves slowly."],
   chf_cp: ["Scene is safe: an assisted-living room. An elderly man is sitting upright in a recliner, breathing hard; you can hear wheezing from the door. His color looks dusky and he's sweaty. Inhalers, a home nebulizer and a pill organizer are on the side table. A caregiver is with him.", "Eyes open and tracking you; he raises a hand to you but is too short of breath to say much."],
   chf_soft: ["Scene is safe: a kitchen. A woman in her late 60s is sitting at the table, leaning forward, breathing fast. She looks pale and a bit sweaty. Her husband is holding a handwritten list of her medications.", "Eyes open and tracking you as you approach."],
@@ -6623,14 +6940,16 @@ const Monitor = (() => {
   }
   function resize(o) {
     const dpr = window.devicePixelRatio || 1, r = o.c.getBoundingClientRect();
-    o.w = Math.max(50, Math.floor(r.width)); o.h = Math.max(20, Math.floor(r.height));
+    const w = Math.max(50, Math.floor(r.width)), h = Math.max(20, Math.floor(r.height));
+    if (w === o.w && h === o.h && o.dpr === dpr) return; // mobile scroll (URL bar) fires resize without a size change: keep the trace
+    const keep = o.w === w; o.w = w; o.h = h; o.dpr = dpr;
     o.c.width = o.w * dpr; o.c.height = o.h * dpr; o.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    o.buf = new Array(o.w).fill(null); o.x = 0; if (o.marks) o.marks = [];
+    if (!keep) { o.buf = new Array(o.w).fill(null); o.x = 0; if (o.marks) o.marks = []; }
   }
   function draw(o) {
     const { ctx, w, h, buf, x } = o;
     ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = o.color; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.beginPath();
+    ctx.strokeStyle = o.color; ctx.lineWidth = o.lw || 1.7; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.shadowColor = o.color; ctx.shadowBlur = 4; ctx.beginPath();
     let pen = false;
     for (let i = 0; i < w; i++) {
       const v = buf[i];
@@ -6638,10 +6957,19 @@ const Monitor = (() => {
       const y = h - ((v - o.range[0]) / (o.range[1] - o.range[0])) * h;
       if (!pen) { ctx.moveTo(i, y); pen = true; } else ctx.lineTo(i, y);
     }
-    ctx.stroke();
+    ctx.stroke(); ctx.shadowBlur = 0;
+    if (o.fill) { // capnography: filled plateau, like real capnographs
+      ctx.fillStyle = o.fill; ctx.beginPath(); let open = false, sx = 0;
+      for (let i = 0; i < w; i++) { const v = buf[i], gap = v == null || (i > x && i < x + 14);
+        if (gap) { if (open) { ctx.lineTo(i - 1, h); ctx.lineTo(sx, h); ctx.closePath(); open = false; } continue; }
+        const y = h - ((v - o.range[0]) / (o.range[1] - o.range[0])) * h; if (!open) { ctx.moveTo(i, h); ctx.lineTo(i, y); sx = i; open = true; } else ctx.lineTo(i, y); }
+      if (open) { ctx.lineTo(w - 1, h); ctx.lineTo(sx, h); ctx.closePath(); } ctx.fill(); }
+    if (buf[x] != null) { const y = h - ((buf[x] - o.range[0]) / (o.range[1] - o.range[0])) * h; ctx.fillStyle = o.color; ctx.shadowColor = o.color; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, 6.3); ctx.fill(); ctx.shadowBlur = 0; } // write head
+    ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(x + 1, 0, 12, h); // erase bar
     if (o.marks) { ctx.fillStyle = "#ffffff"; for (let i = 0; i < w; i++) if (o.marks[i] && !(i > x && i < x + 14)) { ctx.beginPath(); ctx.moveTo(i - 4, 3); ctx.lineTo(i + 4, 3); ctx.lineTo(i, 10); ctx.closePath(); ctx.fill(); } }
     if (buf.every(v => v == null)) { ctx.fillStyle = "#3a4656"; ctx.font = "12px ui-monospace,monospace"; ctx.fillText(o.offText || "", 8, h / 2 + 4); }
   }
+  function pulseUI(id) { const e = typeof document !== "undefined" && document.getElementById && document.getElementById(id); if (!e) return; e.classList.remove("beat"); void e.offsetWidth; e.classList.add("beat"); }
   function beep() {
     if (!beepOn) return;
     try {
@@ -6671,6 +6999,8 @@ const Monitor = (() => {
             beat.w = 0.75 + Math.random() * 0.5;
             beat.rr = rr; beat.next = tt + rr;
             if (s.monitor && ["sinus", "brady", "afib", "vt", "pea", "chb", "svt", "paced"].includes(s.rhythm)) beep();
+            if (s.monitor && s.rhythm !== "pea") pulseUI("hrHeart");
+            if (s.sync && s.monitor && !["vf", "asystole"].includes(s.rhythm)) pulseUI("dvSyncLed");
             if (s.sync && s.monitor && !["vf", "asystole"].includes(s.rhythm)) markAt = tt + (s.shape === "tdp" ? rr * (0.08 + Math.random() * 0.4) : s.rhythm === "vt" ? rr * 0.22 : 0.2 * Math.max(0.55, Math.min(1, Math.sqrt(rr / 0.85))));
           } else if (rate <= 0) beat.next = tt + 0.2;
           if (s.spikes && s.paceRate > 0 && tt >= pace.next) { pace.last = tt; pace.next = tt + 60 / s.paceRate; }
@@ -6694,7 +7024,7 @@ const Monitor = (() => {
     getState = stateFn;
     ch.ecg = setup("cvECG", "#2bff88", [-0.9, 1.4]); ch.ecg.offText = "LEADS OFF: apply the monitor";
     ch.pleth = setup("cvPleth", "#38e8ff", [-0.1, 1.15]); ch.pleth.offText = "SpO2 probe not applied";
-    ch.co2 = setup("cvCO2", "#ffd84a", [-0.05, 1.3]); ch.co2.offText = "Capnography not applied";
+    ch.co2 = setup("cvCO2", "#ffd84a", [-0.05, 1.3]); ch.co2.offText = "Capnography not applied"; ch.co2.fill = "rgba(255,216,74,.16)"; ch.ecg.lw = 2;
     window.addEventListener("resize", () => Object.values(ch).forEach(resize));
     requestAnimationFrame(frame);
   }
@@ -7178,7 +7508,7 @@ const Semantic = (() => {
 (() => {
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const settings = Object.assign({ voice: true, autoSend: true, hints: false, rate: 1, engine: "auto", grammar: false, semantic: false, micMode: "handsfree", instr: true, instrVoice: "auto", ptVoice: "auto", key: "", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", remember: false }, JSON.parse(localStorage.getItem("medicsim.settings") || "{}"));
+  const settings = Object.assign({ voice: true, autoSend: true, hints: false, rate: 1, engine: "auto", grammar: false, semantic: false, micMode: "handsfree", instr: true, instrVoice: "auto", ptVoice: "auto", partnerVoice: "auto", partnerPitch: 0.95, partnerRate: 1.12, ptPitch: 1, ptRate: 1, instrPitch: 1, instrRate: 1, key: "", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", remember: false }, JSON.parse(localStorage.getItem("medicsim.settings") || "{}"));
   let chatHistory = [], currentDebrief = null;
 
   // ---------------- screens ----------------
@@ -7300,8 +7630,8 @@ const Semantic = (() => {
 
   // ---------------- speech synthesis (offline: browser/OS voices) ----------------
   // Prefers on-device voices (voice.localService === true) so replies keep working with no network.
-  let voices = [];
-  const loadVoices = () => { voices = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => /^en/i.test(v.lang)); };
+  let voices = [], allVoices = [];
+  const loadVoices = () => { allVoices = window.speechSynthesis ? speechSynthesis.getVoices() : []; voices = allVoices.filter(v => /^en/i.test(v.lang)); };
   if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = () => { loadVoices(); updateVoiceInfo(); }; }
   const FEMALE = /female|samantha|victoria|karen|moira|tessa|fiona|zira|aria|jenny|susan|allison|ava|serena|kate|libby|sonia|michelle|emma|joanna|salli|kimberly|ivy|natasha|catherine|nicky|google us english|zoe|nora|joelle|kathy|vicki|princess|shelley|grandma/i;
   const MALE = /\bmale\b|daniel|alex\b|fred|david|mark|guy|tom\b|aaron|arthur|rishi|ryan|christopher|eric|steffan|brian|matthew|justin|joey|james|google uk english male|oliver|thomas|gordon|lee\b|evan|nathan|ralph|junior|reed|rocko|grandpa|albert/i;
@@ -7325,13 +7655,13 @@ const Semantic = (() => {
   let ttsPending = 0, ttsTailUntil = 0;
   window.__partnerVoice = (pv, bv, iv) => partnerVoice(pv, bv, iv);
   function speaking() { return ttsPending > 0 || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil; }
-  const byName = n => voices.find(v => v.name === n) || null;
-  function patientVoice() { const sc = SIM.scenario; return (settings.ptVoice !== "auto" && byName(settings.ptVoice)) || pickVoice(sc.patient.sex, null, sc.patient.age); }
+  const byName = n => { if (!n || n === "auto") return null; if (!allVoices.length) loadVoices(); return allVoices.find(v => v.name === n) || null; };
+  function patientVoice() { const sc = SIM.scenario || { patient: { sex: "F", age: 60 } }; return (settings.ptVoice !== "auto" && byName(settings.ptVoice)) || pickVoice(sc.patient.sex, byName(settings.partnerVoice), sc.patient.age); }
   // Instructor: a DIFFERENT voice from the patient (and bystander) when one exists; otherwise the same voice with a strongly different pitch/rate.
   function instructorVoice(pv, bv) {
     if (settings.instrVoice !== "auto") { const v = byName(settings.instrVoice); if (v) return { voice: v, same: v === pv }; }
     if (!voices.length) loadVoices();
-    const others = voices.filter(v => v !== pv && v !== bv);
+    const others = voices.filter(v => v !== pv && v !== bv && v.name !== settings.partnerVoice); // keep Auto instructor distinct from a chosen partner voice
     const offline = !navigator.onLine; const pool = others.filter(v => !offline || v.localService);
     const ptSex = SIM.scenario ? SIM.scenario.patient.sex : "F";
     const isF = v => FEMALE.test(v.name) && !/\bmale\b/i.test(v.name.replace(/female/i, "")), isM = v => MALE.test(v.name) && !/female/i.test(v.name);
@@ -7343,10 +7673,12 @@ const Semantic = (() => {
   // otherwise the closest voice with a clearly different pitch/rate (lower, quicker: a partner talking while working).
   function partnerVoice(pv, bv, ivv) {
     if (!voices.length) loadVoices();
+    const chosen = byName(settings.partnerVoice); // saved voice missing on this device -> fall through to Auto
+    if (chosen) return { voice: chosen, pitch: settings.partnerPitch, rate: settings.partnerRate, distinct: chosen !== pv && chosen !== ivv, chosen: true };
     const offline = !navigator.onLine;
     const pool = voices.filter(v => v !== pv && v !== bv && v !== ivv && (!offline || v.localService));
     const v = pool.find(v => v.localService && /en-US/i.test(v.lang)) || pool.find(v => /en-US/i.test(v.lang)) || pool.find(v => v.localService && /^en/i.test(v.lang)) || pool.find(v => /^en/i.test(v.lang)) || null;
-    if (v) return { voice: v, pitch: 0.95, rate: 1.12, distinct: true };
+    if (v) return { voice: v, pitch: settings.partnerPitch, rate: settings.partnerRate, distinct: true };
     return { voice: ivv || pv || null, pitch: 0.7, rate: 1.22, distinct: false };
   }
   // Read numbers/abbreviations the way a proctor would say them.
@@ -7377,12 +7709,12 @@ const Semantic = (() => {
         (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, ptv.voice, ptv.pitch, settings.rate * ptv.rate, 1));
         return;
       }
-      if (m.speaker === "radio") { if (!settings.voice) return; (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, iv.voice, iv.same ? 0.7 : 0.92, settings.rate * 1.05, 1)); return; }
+      if (m.speaker === "radio") { if (!settings.voice) return; (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, iv.voice, (iv.same ? 0.7 : 0.92) * settings.instrPitch, settings.rate * 1.05 * settings.instrRate, 1)); return; }
       if (m.speaker === "find" || m.speaker === "narrator") {
         if (!settings.instr) return;
         const ptPitch = sc.patient.sex === "F" ? 1.1 : 0.9;
         const pitch = iv.same ? (ptPitch > 1 ? 0.55 : 1.45) : 1.0, rate = settings.rate * (iv.same ? 1.18 : 1.08);
-        (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, iv.voice, pitch, rate, 1));
+        (spokenFinding(m.text).match(/[^.!?]+[.!?]*/g) || []).map(x => x.trim()).filter(x => x.length > 1).forEach(sent => utter(sent, iv.voice, pitch * settings.instrPitch, rate * settings.instrRate, 1));
         return;
       }
       if (!settings.voice) return;
@@ -7393,9 +7725,36 @@ const Semantic = (() => {
       chunks.forEach(t => {
         let rate = settings.rate * (age > 70 ? 0.88 : age > 60 ? 0.94 : 1);
         if (isP && ["confused", "aphasic"].includes(ment)) rate *= 0.78; else if (isP && sob) rate *= 0.92; else if (isP && st.sev > 0.5 && sc.base !== "hypo") rate *= 0.9; else if (isP && ment === "anxious") rate *= 1.08;
-        utter(t, isP ? pv : bv, (sex === "F" ? 1.1 : 0.9) - (age > 65 ? 0.12 : 0) + (age < 25 ? 0.08 : 0), rate, isP && (ment === "confused" || sob) ? 0.85 : 1);
+        utter(t, isP ? pv : bv, ((sex === "F" ? 1.1 : 0.9) - (age > 65 ? 0.12 : 0) + (age < 25 ? 0.08 : 0)) * (isP ? settings.ptPitch : 1), rate * (isP ? settings.ptRate : 1), isP && (ment === "confused" || sob) ? 0.85 : 1);
       });
     });
+  }
+  // Voice pickers (Settings): English voices first, then the rest; a saved voice missing on this device stays listed but Auto is used.
+  const VOICE_SEL = [["#setPartnerVoice", "partnerVoice", "#notePartner", "Auto (a voice different from patient and instructor)"], ["#setPtVoice", "ptVoice", "#notePt", "Auto (matches the patient's sex and age)"], ["#setInstrVoice", "instrVoice", "#noteInstr", "Auto"]];
+  function fillVoiceSelects() {
+    if (!allVoices.length) loadVoices();
+    const opt = v => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})${v.localService ? " · offline" : " · online"}</option>`;
+    const en = allVoices.filter(v => /^en/i.test(v.lang)), other = allVoices.filter(v => !/^en/i.test(v.lang));
+    VOICE_SEL.forEach(([sel, key, note, autoLbl]) => { const e = $(sel); if (!e) return; const cur = settings[key] || "auto", have = allVoices.some(v => v.name === cur);
+      e.innerHTML = `<option value="auto">${esc(autoLbl)}</option>` + (cur !== "auto" && !have ? `<option value="${esc(cur)}">${esc(cur)} (not on this device: using Auto)</option>` : "") +
+        (en.length ? `<optgroup label="English">${en.map(opt).join("")}</optgroup>` : "") + (other.length ? `<optgroup label="Other languages">${other.map(opt).join("")}</optgroup>` : "");
+      e.value = cur; const n = $(note); if (n) n.textContent = cur !== "auto" && !have ? "Saved voice missing: Auto in use." : ""; });
+  }
+  function syncVoiceSliders() {
+    [["Partner", "partner"], ["Pt", "pt"], ["Instr", "instr"]].forEach(([id, k]) => ["Pitch", "Rate"].forEach(P => { const inp = $(`#set${id}${P}`), out = $(`#out${id}${P}`); if (!inp) return; inp.value = settings[k + P]; if (out) out.textContent = (+settings[k + P]).toFixed(2); }));
+  }
+  function bindVoiceControls() {
+    VOICE_SEL.forEach(([sel, key]) => { const e = $(sel); if (e) e.onchange = () => { settings[key] = e.value || "auto"; persistSettings(); fillVoiceSelects(); }; });
+    [["Partner", "partner"], ["Pt", "pt"], ["Instr", "instr"]].forEach(([id, k]) => ["Pitch", "Rate"].forEach(P => { const inp = $(`#set${id}${P}`); if (!inp) return; inp.oninput = () => { settings[k + P] = +inp.value; const o = $(`#out${id}${P}`); if (o) o.textContent = (+inp.value).toFixed(2); persistSettings(); }; }));
+  }
+  const SAMPLE = { partner: "Copy, BP is 128 over 76. Want me to grab the gurney?", pt: "Oh, thank goodness you're here. My chest hurts.", instr: "Radial pulses are present, weak and rapid, bilaterally. Skin is pale, cool and diaphoretic." };
+  function testVoice(who) {
+    if (!window.speechSynthesis) return; speechSynthesis.cancel(); loadVoices();
+    const sc = SIM.scenario || { patient: { sex: "F", age: 60 }, bystander: null }, r = +$("#setRate").value || 1;
+    const pv = patientVoice(), iv = instructorVoice(pv, null);
+    if (who === "partner") { const ptv = partnerVoice(pv, null, iv.voice); utter(SAMPLE.partner, ptv.voice, ptv.pitch, r * ptv.rate, 1); return ptv; }
+    if (who === "pt") { utter(SAMPLE.pt, pv, (sc.patient.sex === "F" ? 1.1 : 0.9) * settings.ptPitch, r * settings.ptRate, 1); return { voice: pv }; }
+    utter(SAMPLE.instr, iv.voice, (iv.same ? 0.55 : 1) * settings.instrPitch, r * (iv.same ? 1.18 : 1.08) * settings.instrRate, 1); return iv;
   }
   function updateVoiceInfo() {
     const el = $("#voiceInfo"); if (!el) return;
@@ -7403,8 +7762,7 @@ const Semantic = (() => {
     if (!voices.length) loadVoices();
     const loc = voices.filter(v => v.localService);
     const f = pickVoice("F", null, 40), m = pickVoice("M", null, 40);
-    const fill = (sel, cur) => { const e = $(sel); if (!e) return; e.innerHTML = `<option value="auto">Auto</option>` + voices.map(v => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})${v.localService ? " · offline" : " · online"}</option>`).join(""); e.value = voices.some(v => v.name === cur) ? cur : "auto"; };
-    fill("#setInstrVoice", settings.instrVoice); fill("#setPtVoice", settings.ptVoice);
+    fillVoiceSelects();
     el.innerHTML = voices.length ? `${voices.length} English voices, <b>${loc.length} on-device</b> (these work offline).<br>Female patients: <b>${esc(f ? f.name : "default")}</b>${f && f.localService ? " · offline ✓" : " · needs network"}<br>Male patients: <b>${esc(m ? m.name : "default")}</b>${m && m.localService ? " · offline ✓" : " · needs network"}` : "No voices reported yet (some browsers load them late).";
   }
 
@@ -7585,6 +7943,7 @@ const Semantic = (() => {
     if (sub !== undefined && el.querySelector("small")) el.querySelector("small").textContent = sub;
     if (el.classList.contains("as") && prev !== val && !hidden) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
   }
+  let zxShockN = 0, zxShockUntil = 0;
   function render() {
     const st = SIM.state, sc = SIM.scenario; if (!st) return;
     const v = st.v, rv = st.rev, tg = st.tg;
@@ -7616,8 +7975,25 @@ const Semantic = (() => {
       set("#dvPace", d.pacerOn ? `PACER ${d.rate}/min ${d.mA} mA${d.cap === "mech" || d.cap === "elec" ? " · CAPTURE" : d.cap === "inhibited" ? " · INHIBITED" : d.mA ? " · NO CAPTURE" : ""}` : "PACER OFF", d.pacerOn ? (d.cap === "mech" || d.cap === "elec" ? "cap" : "on") : "");
       set("#dvSync", d.sync ? "SYNC ◆" : "SYNC OFF", d.sync ? "sync" : "");
       set("#dvEnergy", d.charging ? `CHARGING ${d.energy} J…` : d.charged ? `CHARGED ${d.energy} J` : `${d.energy || 200} J`, d.charging || d.charged ? "chg" : "");
+      { const rv_ = $("#dvRateVal"), ma_ = $("#dvMaVal"); if (rv_) rv_.textContent = d.rate || 70; if (ma_) ma_.textContent = d.mA || 0; }
+      { const raw = st.x.dv, bar = $("#dvChgBar"), ch = raw && raw.charging, tot = ch ? (ch.J > 200 ? 6 : 4) : 1, pr = ch ? Math.max(0.08, Math.min(1, 1 - (ch.due - st.t) / tot)) : d.charged ? 1 : 0;
+        if (bar) bar.style.width = (pr * 100).toFixed(0) + "%"; $("#dvChargeBtn").classList.toggle("charging", !!d.charging); $("#dvChargeBtn").classList.toggle("charged", !!d.charged);
+        $("#dvPadsBtn").classList.toggle("act", !!d.pads); $("#monitor").classList.toggle("armed", !!d.charged); }
       $("#dvPacerBtn").classList.toggle("act", !!d.pacerOn); $("#dvSyncBtn").classList.toggle("act", !!d.sync); $("#dvShockBtn").classList.toggle("armed", !!d.charged);
-      if (d.energy && document.activeElement !== $("#dvJ") && [120, 150, 200, 360].includes(d.energy)) $("#dvJ").value = String(d.energy);
+      if (document.activeElement !== $("#dvJ")) { const ej = d.energy || (d.sync ? 120 : 200); if ([120, 150, 200, 360].includes(ej)) $("#dvJ").value = String(ej); }
+      { // ZOLL-inspired mode + operator prompt line (generic wording, no vendor artwork)
+        const now = Date.now(), n = d.shockN || 0; if (n > zxShockN) zxShockUntil = now + 3500; zxShockN = n;
+        const ej = d.energy || (d.sync ? 120 : 200), noCap = d.pacing && d.cap !== "mech" && d.cap !== "elec" && d.cap !== "inhibited";
+        let mode = d.pacerOn ? "PACER" : d.sync ? "SYNC" : d.charging || d.charged || n ? "DEFIB" : "MONITOR", pr = "", cls = "";
+        if (d.charging) { pr = `CHARGING ${ej} J…`; cls = "warn"; }
+        else if (d.charged) { pr = d.sync ? `SYNC ${d.charged || ej} J READY: PRESS SHOCK` : `${d.charged || ej} J READY: PRESS SHOCK`; cls = "shock"; }
+        else if (now < zxShockUntil) { pr = "SHOCK DELIVERED"; cls = "info"; }
+        else if ((d.pacerOn || d.sync) && !d.pads) { pr = "CONNECT PADS"; cls = "warn"; }
+        else if (d.pacerOn && !d.mA) { pr = `PACER ${d.rate} PPM: INCREASE OUTPUT`; }
+        else if (d.pacerOn) { pr = `PACER ${d.rate} PPM ${d.mA} mA${noCap ? ": NO CAPTURE" : ""}`; cls = noCap ? "warn" : ""; }
+        else if (d.sync) { pr = `SYNC ON: SELECT ENERGY (${ej} J)`; }
+        else if (d.pads) { pr = `${ej} J SELECTED`; }
+        const mp = $("#monPrompt"), mm = $("#monMode"); if (mp) { mp.textContent = pr; mp.className = "mon-prompt " + cls; } if (mm) { mm.textContent = mode; mm.className = "mon-mode m-" + mode.toLowerCase(); } }
       if (dv && dv.pacing && (dv.cap === "elec" || dv.cap === "mech") && rv.monitor) setNum("hr", String(dv.rate), false, false, "bpm (paced)"); }
     // treatment chips
     const chips = Object.keys(st.count).filter(k => st.count[k] && !["base", "notify", "transport", "stopcpr"].includes(k)).map(k => `<span class="chip">${esc(({ removepatch: "PATCH OFF", removeheat: "HEAT OFF" }[k] || k).toUpperCase())}${st.count[k] > 1 ? " ×" + st.count[k] : ""}</span>`);
@@ -7770,11 +8146,11 @@ const Semantic = (() => {
     $("#setMicMode").value = settings.micMode; $("#setInstr").checked = settings.instr;
     $("#setSemantic").checked = settings.semantic;
     $("#setKey").value = settings.key || ""; $("#setEndpoint").value = settings.endpoint; $("#setModel").value = settings.model; $("#setRemember").checked = settings.remember;
-    updateVoiceInfo(); refreshStatus();
+    updateVoiceInfo(); syncVoiceSliders(); refreshStatus();
   }
   function persistSettings() { const persist = { ...settings }; if (!settings.remember) persist.key = ""; localStorage.setItem("medicsim.settings", JSON.stringify(persist)); }
   function saveSettings() {
-    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: "auto", grammar: false, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
+    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, partnerVoice: $("#setPartnerVoice").value || "auto", instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: "auto", grammar: false, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
     persistSettings();
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Speech.setOptions({ engine: settings.engine, grammar: settings.grammar });
@@ -7802,7 +8178,7 @@ const Semantic = (() => {
     const nm = c => PROVIDER_IMPRESSIONS[c] ? `${PROVIDER_IMPRESSIONS[c][0]} (${c}) → TP ${PROVIDER_IMPRESSIONS[c][1]}` : c;
     $("#drillFb").innerHTML = `<p class="${r === "correct" ? "ok" : r === "partial" ? "warn" : "bad"}"><b>${r === "correct" ? "✅ Correct" : r === "partial" ? "🟡 Acceptable, not the best primary" : "❌ Not quite"}</b>: ${esc(nm(curVg.correct))}</p>${r === "partial" ? `<p class="fine">${esc(curVg.acceptNote)}</p>` : ""}<p>${esc(curVg.explain)}</p>${Object.entries(curVg.clues).map(([c, t]) => `<p class="fine"><b>${esc(c)}</b>: ${esc(t)}</p>`).join("")}<p class="fine">Streak ${S.streak} · best ${S.best} · ${S.correct}/${S.n} correct</p>`;
   });
-  window.MedicSimUI = { _hfQueue: t => hfQueue(t), _skip: () => skipSpeech(), openHelp: () => openHelp(), _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
+  window.MedicSimUI = { _testVoice: w => testVoice(w), _partnerVoice: () => { const pv = patientVoice(); return partnerVoice(pv, null, instructorVoice(pv, null).voice); }, _hfQueue: t => hfQueue(t), _skip: () => skipSpeech(), openHelp: () => openHelp(), _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
 
   // ---------------- wire up ----------------
   document.addEventListener("DOMContentLoaded", () => {
@@ -7811,11 +8187,7 @@ const Semantic = (() => {
     $("#btnDrillNext").onclick = piDrill;
     $("#btnDlVosk").onclick = startVoskDownload; $("#btnDelVosk").onclick = async () => { await Speech.deleteModel(); refreshStatus(); };
     $("#btnDlSem").onclick = startSemDownload; $("#btnDelSem").onclick = async () => { await Semantic.remove(); settings.semantic = false; persistSettings(); $("#setSemantic").checked = false; refreshStatus(); };
-    const testSay = who => { if (!window.speechSynthesis) return; speechSynthesis.cancel(); loadVoices(); const sel = who === "i" ? $("#setInstrVoice").value : $("#setPtVoice").value; const sc = SIM.scenario || { patient: { sex: "F", age: 60 } };
-      const pv = (sel !== "auto" && who === "p" && byName(sel)) || pickVoice(sc.patient.sex, null, sc.patient.age);
-      if (who === "p") utter("Oh, thank goodness you're here. My chest hurts.", pv, sc.patient.sex === "F" ? 1.1 : 0.9, +$("#setRate").value, 1);
-      else { const prev = settings.instrVoice; settings.instrVoice = sel; const iv = instructorVoice(pv, null); settings.instrVoice = prev; utter("Radial pulses are present, weak and rapid, bilaterally. Skin is pale, cool and diaphoretic.", iv.voice, iv.same ? 0.55 : 1, +$("#setRate").value * (iv.same ? 1.18 : 1.08), 1); } };
-    $("#btnTestPt").onclick = () => testSay("p"); $("#btnTestInstr").onclick = () => testSay("i");
+    $("#btnTestPartner").onclick = () => testVoice("partner"); $("#btnTestPt").onclick = () => testVoice("pt"); $("#btnTestInstr").onclick = () => testVoice("instr"); bindVoiceControls();
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Monitor.init(monState);
     $("#form").addEventListener("submit", e => { e.preventDefault(); const t = $("#txt").value; $("#txt").value = ""; submit(t); });
@@ -7835,7 +8207,7 @@ const Semantic = (() => {
       if (op === "pacer") op = dv.pacerOn ? "paceoff" : "pace";
       if (op === "sync") val = !dv.sync;
       if (op === "charge" && dv.energy !== +$("#dvJ").value) say(SIM.device("energy", +$("#dvJ").value));
-      addMsg({ speaker: "me", text: "[monitor] " + (op === "charge" ? `Charge ${$("#dvJ").value} J` : b.textContent.trim() === "+" ? b.title : b.textContent.trim()), tap: true });
+      addMsg({ speaker: "me", text: "[monitor] " + (op === "charge" ? `Charge ${$("#dvJ").value} J` : op === "shock" ? "Shock" : b.title || b.textContent.trim()), tap: true });
       say(SIM.device(op, val)); };
     $("#dvJ").onchange = () => { if (SIM.state && !SIM.state.ended) say(SIM.device("energy", +$("#dvJ").value)); };
     document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".modal.open").forEach(m => m.classList.remove("open")); });
