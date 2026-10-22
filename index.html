@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10-combo dac68232ad">
+<meta name="medicsim-version" content="2.10.1-vitaltaps a3b2d6bf04">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -837,6 +837,12 @@ const PROTOCOLS = {
   "1315": { title: "MCG 1315 CPAP", revised: "06-01-18",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040595_1315-CPAP.pdf",
     keyPoints: ["Criteria: longer than the length-based tape, awake, cooperative, follows commands", "Contraindications: arrest, can't protect airway, can't follow commands, SBP < 90, tracheostomy, vomiting, suspected pneumothorax, traumatic respiratory distress", "Worsening or not tolerated: discontinue CPAP, O2 per MCG 1302, be ready to BMV"]},
+  "1207": { title: "TP 1207 Shock / Hypotension", revised: "07-01-24",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1040509_1207Shock-Hypotension.pdf",
+    keyPoints: ["Base contact required; high-flow O2 15 L/min for all shock; supine if respiratory status allows; large-bore IV (IO after 2 failed attempts with poor perfusion)", "#8 NS 1 L IV/IO rapid infusion, reassess each 250 mL for pulmonary edema", "#11 Poor perfusion persists despite fluids (or pulmonary edema stops fluids): push-dose epinephrine 1 mL (0.01 mg/mL = 10 mcg) IV/IO every 1-5 min to keep SBP > 90 until hospital arrival; CONTACT BASE concurrent with the initial dose", "Preparation: 9 mL NS + 1 mL epinephrine 0.1 mg/mL (IV formulation) in a 10 mL syringe", "❺ Appropriate for NON-traumatic shock including cardiogenic shock; doses beyond 10 mL may need to be prepared for long transports (no maximum stated)"]},
+  "1317.17": { title: "MCG 1317.17 Epinephrine", revised: "01-01-26",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1053940_1317.17-Epinephrine2018-07-01.pdf",
+    keyPoints: ["Anaphylaxis: 0.5 mg (1 mg/mL) IM lateral thigh, repeat q10 min x2 (max 3)", "Cardiac arrest: 1 mg (0.1 mg/mL) IV/IO q5 min x2 (max 3 mg)", "Non-traumatic shock (incl. symptomatic bradycardia, after ROSC): push-dose epi 1 mL (10 mcg of 0.01 mg/mL) IV/IO q1-5 min to keep SBP > 90", "Pediatric push-dose: 0.1 mL/kg (max 1 mL) per MCG 1309", "Onset < 2 min IV; duration 5-10 min IV (20-30 min IM)", "Inadvertent IV injection of the usual IM formulation and dose is a 10-fold overdose: sudden severe hypertension, possible cerebral hemorrhage"]},
   "1317.3": { title: "MCG 1317.3 Albuterol", revised: "01-01-26",
     url: "https://file.lacounty.gov/SDSInter/dhs/1053949_1317.3-Albuterol2018-07-01.pdf",
     keyPoints: ["Adult respiratory distress / bronchospasm: 5 mg (6 mL) via neb or 4 puffs via MDI; may repeat x2 prn wheezing (3 doses)", "Pediatric: < 4 y 2.5 mg (3 mL) neb or 2 puffs MDI; ≥ 4 y 5 mg (6 mL) or 4 puffs; repeat x2 prn, max 3 total doses before Base contact", "Hyperkalemia: 5 mg via neb continuously until hospital arrival", "TP 1237 #12 / ❺: may be given in-line with CPAP for moderate or severe distress", "Adverse effects: tachycardia, tremor; beta-blockers may blunt the effect"]},
@@ -906,7 +912,7 @@ const DOSING = (() => {
     naloxone:    { name: "Naloxone", unit: "mg", routes: ["IN", "IM", "IV", "IO"], ref: "MCG 1317.29", text: "2-4 mg IN, 2 mg IM, or 0.8-2 mg IV; max 8 mg all routes", skip: "dose total" },
     midaz:       { name: "Midazolam", unit: "mg", routes: ["IM", "IN", "IV", "IO"], ref: "MCG 1317.25", text: "Seizure: 10 mg IM/IN or 5 mg IV/IO; max 10 mg before Base", skip: "dose prebase" },
     epi:         { name: "Epinephrine", unit: "mg", routes: ["IM", "IV", "IO", "NEB"], ref: "MCG 1317.17", text: "Anaphylaxis 0.5 mg IM (1 mg/mL); arrest 1 mg IV/IO (0.1 mg/mL)", skip: "dose count total repeat prebase" },
-    pushepi:     { name: "Push-dose epinephrine", unit: "mL", routes: ["IV", "IO"], dose: 1, repeatMin: 1, ref: "MCG 1317.17", text: "1 mL (10 mcg) of 0.01 mg/mL IV/IO q1-5 min to SBP > 90" },
+    pushepi:     { name: "Push-dose epinephrine", unit: "mL", routes: ["IV", "IO"], dose: 1, repeatMin: 1, ref: "MCG 1317.17", text: "1 mL (10 mcg) of 0.01 mg/mL IV/IO q1-5 min to SBP > 90", skip: "dose" },
     magnesium:   { name: "Magnesium sulfate", unit: "g", routes: ["IV", "IM"], dose: { IV: 4, IM: 10 }, maxCount: 1, ref: "MCG 1317.24 / TP 1217", text: "4 g in 100 mL NS/SW IV over 20 min; 10 g IM (5 g in each buttock with lidocaine) only if no IV access (IM preferred over IO)" },
     txa:         { name: "Tranexamic acid", unit: "g", routes: ["IV", "IO"], dose: 1, maxCount: 1, ref: "MCG 1317.41", text: "1 g in 50-100 mL NS IV/IO over 10 min, once" },
     oralglucose: { name: "Oral glucose", unit: "g", routes: ["PO"], dose: 15, ref: "TP 1203", text: "15 g PO if awake and alert" },
@@ -1618,7 +1624,7 @@ const NLU = (() => {
     [/\bpace ?maker\b/g, "pacemaker"], [/\bheating (pat|pads|path)\b/g, "heating pad"], [/\b(expo's|expos|ex pose|x pose)\b/g, "expose"], [/\brole (him|her|them) (over|on)\b/g, "roll $1 $2"],
     [/\b(you vula|uvular|you vela|you view la)\b/g, "uvula"], [/\bpen ?lite\b/g, "penlight"], [/\btrans ?dermal\b/g, "transdermal"], [/\bport a ?cath?\b|\bport cath\b/g, "port a cath"],
     [/\bnight ?(row|roe|rose|road)\b/g, "nitro"], [/\bnitro ?gl[a-z]*\b/g, "nitroglycerin"], [/\bnitrogen\b(?! gas)/g, "nitro"], [/\bneighbor (tro|throw)\b/g, "nitro"],
-    [/\b(al|el|all|ol) ?(but|bute|butte|beauty|bu|bute) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol|oral|orol|eral|aral|or ?al)\b/g, "albuterol"], [/\bin[ -]line\b/g, "inline"], [/\bchick ?skin\b/g, "check skin"], [/\bneb(ulizer)? (by )?it ?self\b/g, "neb by itself"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
+    [/\b(al|el|all|ol) ?(but|bute|butte|beauty|bu|bute) ?(te )?(rol|roll|erol|or ?all|all|terol|a rol|oral|orol|eral|aral|or ?al)\b/g, "albuterol"], [/\bin[ -]line\b/g, "inline"], [/\bchick ?skin\b/g, "check skin"], [/\b(pushed|posh|post|pus|push to|pushy) dose (?=epi|epinephrine|pressor)/g, "push dose "], [/\bpush (those|does|dos|toes|doze) (?=epi|epinephrine|pressor)/g, "push dose "], [/\bpush-dose\b/g, "push dose"], [/\b(dirty epi|epi spritzer|spritzer)\b/g, "push dose epi"], [/\bneb(ulizer)? (by )?it ?self\b/g, "neb by itself"], [/\balbuter[a-z]*\b/g, "albuterol"], [/\b(al|el) ?b[eu]{1,3}t[a-z]*r[ao]l+\b/g, "albuterol"], [/\bal bueno\b/g, "albuterol"],
     [/\b(see|sea|c|si) ?pap\b/g, "cpap"], [/\bbye? ?pap\b/g, "bipap"], [/\bc ?pop\b/g, "cpap"],
     [/\bb ?g ?l\b/g, "bgl"], [/\bc ?b ?g\b/g, "cbg"], [/\bg ?c ?s\b/g, "gcs"], [/\bb ?p\b/g, "bp"], [/\bs ?p ?o ?(2|two|to)\b/g, "spo2"], [/\bo ?(2|two|to) sat/g, "o2 sat"],
     [/\b(e ?t|end ?tidal|and ?tidal|in ?tidal|end title|and title) ?c ?o ?(2|two|to)\b/g, "etco2"], [/\b(and|in|an) tidal\b/g, "end tidal"], [/\bc ?o ?(2|two)\b/g, "co2"], [/\bcapno\w*/g, "capnography"],
@@ -2433,7 +2439,7 @@ if (typeof module !== "undefined") module.exports = NLU;
  * LA County protocol checks, logging.
  * ===================================================================== */
 const EFFECTS = { // onset s, plateau s
-  txa: [300, 99999], nitro: [60, 300], fentanyl: [120, 900], morphine: [300, 1200], epi: [150, 600], pushepi: [30, 180], ns: [300, 1800],
+  txa: [300, 99999], nitro: [60, 300], fentanyl: [120, 900], morphine: [300, 1200], epi: [150, 600], pushepi: [30, 150], epiod: [15, 150], ns: [300, 1800],
   albuterol: [150, 600], naloxone: [180, 2400], midaz: [180, 1800], d10: [60, 240], glucagon: [600, 600], oralglucose: [300, 300],
   diphen: [120, 1200], ondansetron: [300, 1800], amio: [60, 900], atropine: [30, 300], aspirin: [600, 99999], adenosine: [8, 20], vagal: [10, 20], cardiovert: [2, 99999], pace: [10, 99999], calcium: [60, 600], bicarb: [60, 600], removepatch: [480, 99999], removeheat: [600, 99999], cooling: [300, 99999], fowler: [30, 99999], cpap: [60, 99999],
 };
@@ -2483,6 +2489,9 @@ const SIM = (() => {
   function computeTargets(snap) {
     let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
     if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
+    // v2.10.1 push-dose epi (MCG 1317.17: onset < 2 min, duration 5-10 min IV): transient BP/HR rise for scenarios that don't model it themselves
+    if (!st.x.arrest && tg.sbp) { const pe = (sc._pm != null ? sc._pm : (sc._pm = /pushepi/.test(String(sc.targets) + String(sc.drift)) || !!(sc.txResp && sc.txResp.pushepi))) ? 0 : E(st, "pushepi"), od = E(st, "epiod");
+      if (pe || od) tg = Object.assign({}, tg, { sbp: tg.sbp + 18 * pe + 75 * od, dbp: (tg.dbp || tg.sbp * 0.6) + 8 * pe + 35 * od, hr: (tg.hr || 0) + 6 * pe + 40 * od }); }
     // RV infarct + nitroglycerin: preload-dependent hypotension (instructor standard, standard practice*); fluids blunt it
     st.x.rvDrop = 0;
     if (tg.twelve && tg.twelve.rv && st.x.rvNitroT != null && !st.x.arrest && tg.sbp) {
@@ -2798,7 +2807,13 @@ const SIM = (() => {
         st.rev.twelve = { t: st.t, info: { ...tg.twelve, rate: Math.round(st.v.hr), rhythm: tg.rhythm, artifact: tg.artifact } };
         st.x.ip = st.x.ip || {}; st.x.ip.tw = { ask: st.t, done: false, tries: 0 }; R("ecg", "12-lead acquired: interpret it");
         out.push(`12-lead acquired (rate ${Math.round(st.v.hr)}). What's your 12-lead interpretation?`); break;
-      case "bp": if (arrest || !st.v.sbp) { R("bp", "--/--"); out.push("NIBP: unable to obtain."); } else { R("bp", vitalStr().bp); out.push(`BP ${vitalStr().bp} mmHg.` + (tg.bpNote ? " " + tg.bpNote : "")); } break;
+      case "bp": st.x.bpTrend = ""; if (arrest || !st.v.sbp) { R("bp", "--/--"); out.push("NIBP: unable to obtain."); } else { R("bp", vitalStr().bp);
+        // v2.10.1 serial BPs: a recheck reports the previous reading and the pulse-pressure trend (numbers only; recognizing it is the medic's job)
+        const bs = vitalStr().bp, mm = /(\d+)\/(\d+)/.exec(bs), H = (st.x.bpHist = st.x.bpHist || []), prev = H[H.length - 1];
+        if (mm) { const cur = { t: st.t, s: +mm[1], d: +mm[2] };
+          if (prev && st.t - prev.t >= 20) st.x.bpTrend = `Last was ${prev.s}/${prev.d} at ${fmtT(prev.t)}; pulse pressure ${prev.s - prev.d} → ${cur.s - cur.d}.`;
+          if (!prev || st.t - prev.t >= 20) H.push(cur); }
+        out.push(`BP ${bs} mmHg.` + (tg.bpNote ? " " + tg.bpNote : "") + (st.x.bpTrend ? " " + st.x.bpTrend : "")); } break;
       case "spo2": st.rev.spo2 = { t: st.t }; out.push(st.v.spo2 == null ? "SpO2: no reliable waveform." : `SpO2 ${Math.round(st.v.spo2)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : "room air"}).`); break;
       case "pulse": { const pc = typeof DEVICE !== "undefined" && !arrest ? DEVICE.pulseCheck(devC(), lastSites, /match|capture/.test(lastText)) : null; R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(pc || EXAM.pulses(sc, st, lastText, mental(), lastSites)); break; }
       case "mechcap": { const pc = typeof DEVICE !== "undefined" ? DEVICE.pulseCheck(devC(), lastSites.length ? lastSites : ["femoral"], true) : null; out.push(pc || "The pacer isn't running, so there's no capture to check."); break; }
@@ -2943,7 +2958,7 @@ const SIM = (() => {
           if (n(st, "epi") >= 3) notes.push(dev("Max epinephrine 3 mg without Base.", "1210"));
           narr = "Epinephrine 1 mg (0.1 mg/mL) IV/IO";
         } else {
-          if ((route === "IV" || route === "IO") || (mg && mg >= 1)) notes.push(dev("Epinephrine 1 mg IV/IO (or 1 mg+) in a patient with a pulse is a dangerous error. Use 0.5 mg (1 mg/mL) IM, or push-dose epi 0.01 mg/mL for shock.", "1219 #4"));
+          if ((route === "IV" || route === "IO") || (mg && mg >= 1)) { st.x.epiOd = true; notes.push(dev(`Epinephrine ${mg ? mg + " mg " : ""}${route === "IV" || route === "IO" ? route + " " : ""}in a patient with a pulse: IM-formulation/arrest-dose epi IV is a 10-fold (or worse) overdose (sudden severe hypertension, possible cerebral hemorrhage). Use 0.5 mg (1 mg/mL) IM, or push-dose epi 1 mL (10 mcg) of 0.01 mg/mL for shock.`, "MCG 1317.17 / 1219 #4", "critical")); }
           else if (mg && mg !== 0.5) notes.push(dev(`Adult IM epinephrine dose is 0.5 mg (0.5 mL of 1 mg/mL) (you said ${mg} mg).`, "1219 #4 / 1237", "note"));
           if (n(st, "epi") >= 1 && !st.events["t:base"]) notes.push(dev("Repeat IM epinephrine requires Base contact.", "1219 #4", "caution"));
           if (st.last.epi != null && st.t - st.last.epi < 540) notes.push(dev("IM epi repeat interval is every 10 min.", "1219", "caution"));
@@ -2952,7 +2967,33 @@ const SIM = (() => {
           narr = "Epinephrine 0.5 mg (1 mg/mL) IM lateral thigh";
         }
         break; }
-      case "pushepi": narr = "Push-dose epinephrine (0.01 mg/mL) 1 mL IV"; if (!st.flags.iv) notes.push(dev("Push-dose epi requires IV/IO access.", "1219 #7", "caution")); if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with the first push-dose epinephrine.", "1219 #7 / 1210", "note")); if (sbp >= 90) notes.push(dev("Push-dose epi titrates to SBP > 90. Current SBP is above that.", "1219 #7", "caution")); break;
+      case "pushepi": { // TP 1207 #11 ❺, 1219 #7, 1210 #19 (ROSC), 1212 #11, MCG 1317.17 (rev 01-01-26)
+        const rosc = st.x.roscT != null, proto = sc.protocol || (sc.refs || [])[0] || "", brady = proto === "1212" || /brady|chb|mobitz|pacer/.test(sc.id);
+        const ref = rosc ? "1210 #19" : sc.base === "anaph" || proto.startsWith("1219") ? "1219 #7" : brady ? "1212 #11" : "1207 #11";
+        const d = tx.doses || [], mL = doseOf(tx, "mL"), mcg = doseOf(tx, "mcg"), mg = doseOf(tx, "mg");
+        const amt = mL != null ? mL * 10 : mcg != null ? mcg : mg != null ? mg * 1000 : 10; // mcg (0.01 mg/mL = 10 mcg/mL)
+        narr = sc.peds ? "Push-dose epinephrine (0.01 mg/mL) IV/IO per MCG 1309 (0.1 mL/kg, max 1 mL)" : `Push-dose epinephrine (0.01 mg/mL; 9 mL NS + 1 mL epi 0.1 mg/mL) ${+(amt / 10).toFixed(2)} mL (${+amt.toFixed(1)} mcg) IV/IO`;
+        if (st.x.arrest) notes.push(dev("Push-dose epi is for hypotension WITH a pulse (post-ROSC/shock). In arrest give epinephrine 1 mg (0.1 mg/mL) IV/IO.", "1210 #10 / #19"));
+        if (!st.flags.iv) notes.push(dev("Push-dose epi requires IV/IO access.", ref, "caution"));
+        if (!sc.peds && d.length) { // dose checks: adults only (peds = MCG 1309 by weight)
+          if (amt >= 100) st.x.epiOd = true;
+          if (amt >= 100) notes.push(dev(`Push-dose epi is 1 mL (10 mcg) of 0.01 mg/mL; ${+amt.toFixed(1)} mcg is a ${Math.round(amt / 10)}-fold overdose (check the dilution: 9 mL NS + 1 mL of 0.1 mg/mL).`, "MCG 1317.17 / " + ref, "critical"));
+          else if (Math.abs(amt - 10) > 0.01) notes.push(dev(`Push-dose epi adult dose is 1 mL (10 mcg) of 0.01 mg/mL every 1-5 min; you said ${+amt.toFixed(1)} mcg.`, "MCG 1317.17 / " + ref, amt > 10 ? "deviation" : "note"));
+        }
+        if (!st.x.arrest) {
+          const poorSkin = /pale|cool|cold|clammy|mottl|diaphor|cyan|ashen|gray/i.test(String(st.tg.skin || "")), trauma = !!(sc.trauma || sc.tag === "TRAUMA");
+          const notInd = sbp >= 140 || sbp >= 100 || (sbp >= 90 && !poorSkin);
+          if (sbp >= 140) notes.push(dev(`Push-dose epi in a hypertensive patient (SBP ${Math.round(sbp)}) is not indicated and dangerous.`, ref + " / MCG 1317.17", "critical"));
+          else if (notInd) notes.push(dev(`Push-dose epi is for hypotension/poor perfusion, titrated to keep SBP > 90; SBP is ${Math.round(sbp)}${poorSkin ? "" : " with adequate perfusion"}, so it isn't indicated now.`, ref));
+          if (trauma) notes.push(dev("Push-dose epi is for NON-traumatic shock. Traumatic shock: hemorrhage control, NS, rapid transport to a Trauma Center.", "1207 ❺ / 1244"));
+          const edema = sc.base === "chf" || (st.events["t:ns"] && /rales|crackles/i.test(String(st.tg.lungs || "")) && /chf|cardio|stemi|mi\b/.test(sc.base || "")); // 1207 #11: pulmonary edema requiring fluids to stop
+          if (!notInd && !st.events["t:ns"] && !edema && !(rosc && (st.v.hr < 60 || sbp < 70)) && !brady)
+            notes.push(dev(rosc ? "Post-ROSC SBP < 90: NS 1 L first; push-dose epi if no response after 250 mL (or worsening hypotension/bradycardia)." : "Fluids first: NS IV rapid infusion, then push-dose epi if poor perfusion persists despite fluids.", rosc ? "1210 #19" : ref === "1219 #7" ? "1219 #7" : "1207 #8, #11"));
+          if (brady && !st.events["t:pace"]) notes.push(dev("Bradycardia: push-dose epi is for persistent poor perfusion AFTER initiating TCP.", "1212 #11"));
+          if (brady && !st.events["t:base"]) notes.push(dev("Bradycardia: push-dose epi needs a Base order.", "1212 #11"));
+          else if (!rosc && !brady && !notInd && !trauma && n(st, "pushepi") === 0 && !st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with the initial dose of push-dose epinephrine.", ref, "note"));
+        }
+        break; }
       case "amio": narr = "Amiodarone " + (n(st, "amio") ? "150 mg" : "300 mg") + " IV/IO"; if (!st.x.arrest) notes.push(dev("Amiodarone here is outside the cardiac arrest protocol context.", "1210")); else if ((st.x.shocks || 0) < 3) notes.push(dev("Amiodarone is given after defibrillation x3.", "1210 #12", "caution")); break;
       case "defib": {
         const r = st.tg.rhythm;
@@ -3070,6 +3111,7 @@ const SIM = (() => {
     if (id !== "midaz") { st.count[id] = (st.count[id] || 0) + 1; rec("t:" + id); if (id === "albuterol" && n(st, "albuterol") >= 2) rec("t:albuterol#2"); if (n(st, id) >= 2) rec("t:" + id + "#2"); }
     if (st.x.rosc) rec("t:" + id + "@rosc");
     st.last[id] = st.t;
+    if ((id === "epi" || id === "pushepi") && st.x.epiOd) { addEffect("epiod"); st.x.epiOd = false; }
     if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : undefined);
     if (typeof COURSE !== "undefined") COURSE.onTreat(id, st, sc);
     if (sc.onTreat) { const r = sc.onTreat(id, st, tx, H); if (r && r.lines) notes.push(...r.lines); }
@@ -3187,7 +3229,7 @@ const SIM = (() => {
     if (o.kind === "a") {
       const saveT = lastText; lastText = o.raw || lastText;
       switch (o.id) {
-        case "bp": { const r = assess("bp").join(" "); const m = r.match(/(\d+\/\d+)/); say(m ? `BP is ${m[1]}.` + (st.tg.bpNote ? " " + st.tg.bpNote : "") : `I can't get a pressure on ${him()}, medic.`); break; }
+        case "bp": { const r = assess("bp").join(" "); const m = r.match(/(\d+\/\d+)/); say(m ? `BP is ${m[1]}.` + (st.tg.bpNote ? " " + st.tg.bpNote : "") + (st.x.bpTrend ? " " + st.x.bpTrend : "") : `I can't get a pressure on ${him()}, medic.`); break; }
         case "spo2": assess("spo2"); say(st.v.spo2 == null ? `I can't get a good waveform on the pulse ox, ${he()}'s too ${st.x.arrest ? "down" : "cold"}.` : `Sat is ${Math.round(st.v.spo2)}% on ${o2Name()}.`); break;
         case "rr": assess("rr"); say(rrReport()); break;
         case "recheck": { const n = o.recheckMin || 5; st.x.recheck = { every: n * 60, next: st.t + n * 60 }; } // fallthrough to a set now
@@ -3391,7 +3433,8 @@ const COURSE = (() => {
     const he = sc.patient.sex === "F" ? "She" : "He", out = [], worse = dir === "worse";
     const mW = MENT[m] > MENT[c.m], mB = MENT[m] < MENT[c.m];
     if (worse ? mW : mB) out.push(mW ? (m === "unresponsive" ? "no longer responding to voice" : m === "seizing" ? "starting to seize" : "more confused and harder to rouse") : (c.m === "unresponsive" ? "starting to respond, eyes opening to voice" : "more alert and answering more clearly"));
-    if (v.sbp != null && p.sbp != null && Math.abs(v.sbp - p.sbp) >= 12 && (worse ? P.perf > P0.perf : P.perf < P0.perf)) out.push(worse ? "weaker radial pulse, paler and clammier" : "stronger radial pulse, skin warming");
+    if (worse && v.sbp != null && p.sbp != null && v.sbp - p.sbp >= 25 && v.sbp >= 160) out.push("pounding, bounding pulse, flushed and complaining of a severe headache"); // catecholamine surge (e.g. IV epi error)
+    else if (v.sbp != null && p.sbp != null && Math.abs(v.sbp - p.sbp) >= 12 && (worse ? P.perf > P0.perf : P.perf < P0.perf)) out.push(worse ? "weaker radial pulse, paler and clammier" : "stronger radial pulse, skin warming");
     else if (worse && P.perf - P0.perf > EPS) out.push("perfusion is worsening: paler, cooler, weaker pulse");
     if (v.spo2 != null && p.spo2 != null && Math.abs(v.spo2 - p.spo2) >= 3 && (worse ? v.spo2 < p.spo2 : v.spo2 > p.spo2)) out.push(worse ? "lips and nail beds look duskier" : "color is pinking up");
     if (v.rr != null && p.rr != null && Math.abs(v.rr - p.rr) >= 5 && (worse ? P.rr >= P0.rr : P.rr <= P0.rr)) out.push(v.rr > p.rr ? (v.rr > 24 ? "breathing faster and working harder" : "breathing faster") : (v.rr < 10 ? "breathing is slowing and getting shallow" : "breathing is calmer, less work"));
@@ -8191,7 +8234,7 @@ const NEXT = (() => {
     midaz: ["Midazolam 5 mg IM", "Midazolam 5 milligrams IM"], ondansetron: ["Zofran 4 mg", "Ondansetron 4 milligrams ODT"], atropine: ["Atropine 1 mg", "Atropine 1 milligram IV"],
     adenosine: ["Adenosine 6 mg", "Adenosine 6 milligrams rapid IV push"], vagal: ["Vagal maneuver", "Try a modified valsalva maneuver"], amio: ["Amiodarone", "Amiodarone 150 milligrams IV over 10 minutes"],
     calcium: ["Calcium chloride", "Calcium chloride 1 gram IV"], bicarb: ["Sodium bicarb", "Sodium bicarbonate 50 milliequivalents IV"], magnesium: ["Magnesium", "Magnesium sulfate 2 grams IV"],
-    pushepi: ["Push-dose epi", "Push dose epinephrine 1 milliliter every 3 minutes"], cardiovert: ["Sync cardioversion", "Synchronized cardioversion"], pace: ["Pace", "Transcutaneous pacing"],
+    pushepi: ["Push-dose epi 10 mcg", "Push dose epinephrine 1 milliliter IV"], cardiovert: ["Sync cardioversion", "Synchronized cardioversion"], pace: ["Pace", "Transcutaneous pacing"],
     txa: ["TXA 1 g", "TXA 1 gram IV"], needle: ["Needle decompression", "Needle decompression second intercostal space midclavicular line"], tourniquet: ["Tourniquet", "Apply a tourniquet"],
     pelvicbinder: ["Pelvic binder", "Apply a pelvic binder"], smr: ["SMR", "Partner, spinal motion restriction"], bandage: ["Direct pressure", "Direct pressure and a pressure dressing"],
     cooling: ["Cooling", "Passive cooling, remove excess clothing"], blanket: ["Keep warm", "Put a blanket on and keep warm"], iv: ["IV", "Start an IV"], io: ["IO", "Start an IO"],
@@ -8212,7 +8255,7 @@ const NEXT = (() => {
   const SLOTS = {
     "1237": [["fowler", "nrb", "nc"], ["alb_cpap", "alb_hhn", "alb_nrb", "albuterol"], ["cpap_neb", "cpap", "nitro"], ["epi", "diphen", "pushepi"], ["alb_rep"], ["iv", "ns"]],
     "1237-P": [["fowler", "nrb", "nc"], ["alb_hhn", "alb_nrb", "albuterol"], ["alb_rep"], ["epi", "diphen"], ["iv", "ns"]],
-    "1214": [["fowler", "supine", "nrb"], ["cpap", "nc"], ["nitro", "aspirin"], ["alb_cpap", "albuterol"], ["iv", "ns"]],
+    "1214": [["fowler", "supine", "nrb"], ["cpap", "nc"], ["nitro", "aspirin"], ["alb_cpap", "albuterol"], ["iv", "ns"], ["pushepi"]],
     "1211": [["nc", "nrb", "fowler"], ["aspirin", "nitro"], ["iv"], ["fentanyl", "morphine", "ns"]],
     "1219": [["epi", "diphen"], ["nrb", "supine", "fowler"], ["iv", "ns"], ["albuterol", "pushepi"]],
     "1219-P": [["epi", "diphen"], ["nrb", "supine", "fowler"], ["iv", "ns"], ["albuterol", "pushepi"]],
@@ -8222,7 +8265,10 @@ const NEXT = (() => {
     "1231-P": [["recovery", "suction", "nrb"], ["midaz", "naloxone"], ["d10", "oralglucose"], ["cooling"]],
     "1232": [["nc", "nrb", "supine", "fowler"], ["iv"], ["d10", "oralglucose"]],
     "1213": [["nrb", "nc"], ["iv"], ["vagal", "adenosine", "cardiovert"], ["amio", "pace", "atropine"]],
-    "1204": [["nrb", "nc"], ["iv", "ns"], ["cooling", "blanket"]],
+    "1204": [["nrb", "nc"], ["iv", "ns"], ["pushepi", "epi"], ["cooling", "blanket"]],
+    "1207": [["nrb", "supine"], ["iv", "ns"], ["pushepi", "epi"], ["blanket"]],
+    "1210": [["nrb", "bvm"], ["iv", "io"], ["ns"], ["pushepi", "epi", "atropine"]],
+    "1212": [["nrb", "nc"], ["iv"], ["atropine", "adenosine"], ["pace"], ["ns", "pushepi"]],
     "1233": [["supine", "nc", "fowler"], ["iv", "ns"]],
     "1244": [["tourniquet", "bandage", "needle", "chestseal", "pelvicbinder", "smr"], ["nrb", "bvm", "hypervent"], ["iv", "ns", "txa"], ["fentanyl", "morphine"], ["blanket"]],
   };
@@ -8241,7 +8287,7 @@ const NEXT = (() => {
       ["Lung sounds", "Listen to lung sounds"], ["Heart sounds", "Listen to heart sounds"], ["JVD", "Check for JVD"], ["Trachea", "Check the trachea"], ["Chest rise", "Check his chest rise"],
       ["Expose chest", "Expose the chest"], ["Abdomen", "Palpate the abdomen"], ["Pelvis", "Check the pelvis"], ["Legs", "Expose the legs"], ["Head trauma?", "Any trauma to the head?"],
       ["Stroke scale", "Do a stroke scale, mLAPSS and LAMS"], ["Smell", "Any smell of alcohol on his breath?"], ["Med bottles", "Check for med bottles"], ["Cap refill", "Check capillary refill"]]],
-    ["Partner", [["BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"], ["Recycle BP", "Partner, recycle the BP"], ["NRB 15 L", "Partner, nonrebreather at 15 liters"], ["Cannula 4 L", "Partner, nasal cannula at 4 liters"],
+    ["Partner", [["BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"], ["Blood pressure", "Partner, get a blood pressure"], ["Resp rate", "Partner, count respirations"], ["Pulse ox", "Partner, get a pulse ox"], ["Recycle BP", "Partner, recycle the BP"], ["NRB 15 L", "Partner, nonrebreather at 15 liters"], ["Cannula 4 L", "Partner, nasal cannula at 4 liters"],
       ["BVM + capno", "Partner, bag him with the BVM and put capno on"], ["OPA", "Partner, insert an OPA"], ["NPA", "Partner, insert an NPA"], ["Suction", "Partner, suction the airway"],
       ["i-gel", "Partner, insert an i-gel"], ["Recovery position", "Partner, roll him into the recovery position"], ["SMR", "Partner, spinal motion restriction"], ["Start compressions", "Partner, start compressions"],
       ["Switch compressors", "Switch compressors"], ["Gurney", "Partner, get the gurney"]]],
@@ -8278,6 +8324,17 @@ const NEXT = (() => {
     return [...rest.slice(0, 6 - must.length), ...must];
   }
 
+  // Vitals slot (partner): combined chip while nothing is taken yet, plus separate Blood pressure / Resp rate / Pulse ox taps. Each drops off once
+  // that vital is done (or the partner is already on it); All actions keeps them for rechecks/trending.
+  function vitalChips(sim) {
+    const st = sim.state, ev = st.events, pend = id => (st.pq || []).some(q => q.id === id || q.id === "vitals");
+    const has = id => !!(ev["a:" + id] || ev["a:vitals"] || pend(id)), out = [];
+    if (!has("bp") && !has("spo2") && !has("rr")) out.push(C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate", "partner"));
+    if (!has("bp")) out.push(C("Blood pressure", "Partner, get a blood pressure", "partner"));
+    if (!has("rr")) out.push(C("Resp rate", "Partner, count respirations", "partner"));
+    if (!has("spo2")) out.push(C("Pulse ox", "Partner, get a pulse ox", "partner"));
+    return out;
+  }
   function suggest(sim) {
     const st = sim.state, sc = sim.scenario; if (!st || !sc) return null;
     const F = sc.patient && sc.patient.sex === "F", ev = st.events;
@@ -8293,7 +8350,7 @@ const NEXT = (() => {
       if (!done("pulses")) ch.push(C("Radial + carotid", "Checking radial and carotid pulses"));
       if (!ev["a:airway"]) ch.push(C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"));
       if (!done("skin")) ch.push(C("Skin / forehead", "Feeling the forehead, checking skin signs"));
-      if (!done("partner")) ch.push(C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate", "partner"));
+      ch.push(...vitalChips(sim));
       if (done("avpu") && !done("abc")) ch.push(C("NRB 15 L", "Partner, nonrebreather at 15 liters", "partner"), C("BVM + capno", "Partner, bag him with the BVM and put capno on", "partner"));
       const top = ch.slice(0, 5);
       if (!done("intro")) top.push(C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"));
@@ -8306,7 +8363,7 @@ const NEXT = (() => {
       intro: () => [C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?")],
       pulses: () => [C("Radial + carotid", "Checking radial and carotid pulses")],
       skin: () => [C("Skin / forehead", "Feeling the forehead, checking skin signs")],
-      partner: () => [C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate", "partner")],
+      partner: () => vitalChips(sim),
       cc: () => [C("Chief complaint", "What's bothering you today?")],
       avpu: () => [C("Is he alert?", "Is he alert?")],
       abc: () => { const pool = ["nrb", "bvm", "opa", "suction", "recovery", "nc"]; if (sc.tag === "TRAUMA") pool.push("bandage", "tourniquet", "needle", "smr");
@@ -8322,9 +8379,11 @@ const NEXT = (() => {
     const TITLE = { track: "Approach", intro: "Introduce + consent", pulses: "Pulses", skin: "Skin signs", partner: "Partner vitals", cc: "Chief complaint", avpu: "AVPU", abc: "ABCs / life threats", ao: "A&O", why: "Why altered? AEIOU-TIPS", hx: "History / OPQRST" };
     if (step.id !== "tx" && step.id !== "radio") {
       const order = f.steps.map(x => x.id), i0 = order.indexOf(step.id), out = [];
-      for (const id of order.slice(i0)) { if (id === "tx") break; if (id !== step.id && sd(id)) continue; if (GROUPS[id]) out.push(...GROUPS[id]().map(c => ({ ...c, grp: id }))); if (out.length >= 6) break; }
+      // v2.10.1: separate RR / SpO2 taps stay in the vitals slot until each one is actually done (step counts as done after any one vital)
+      const iP = order.indexOf("partner"), vLeft = vitalChips(sim).length > 0, from = vLeft && iP >= 0 && iP < i0 ? iP : i0;
+      for (const id of order.slice(from)) { if (id === "tx") break; if (id !== step.id && sd(id) && !(id === "partner" && vLeft)) continue; if (GROUPS[id]) out.push(...GROUPS[id]().map(c => ({ ...c, grp: id }))); if (out.length >= 6) break; }
       if (out.length < 4) out.push(...txChips(sim, ev).slice(0, 6 - out.length)); // sequence continues into treatment (group order kept)
-      let title = TITLE[step.id] || step.id; if (step.id === "why") { const ae = sim.aeiou(); title += ` ${ae.n}/${ae.total}`; }
+      const tId = (out[0] && out[0].grp) || step.id; let title = TITLE[tId] || tId; if (tId === "why") { const ae = sim.aeiou(); title += ` ${ae.n}/${ae.total}`; }
       return fin(step.id, title, out);
     }
     if (step.id === "tx") return fin("tx", "Treatment (protocol order)", txChips(sim, ev));
@@ -8342,6 +8401,7 @@ const NEXT = (() => {
     if (st.flags.o2 === "bvm" && slots.some(sl => sl.includes("alb_hhn"))) slots = slots.map(sl => sl.includes("alb_hhn") ? [...sl, "alb_bvm"] : sl);
     const used = new Set(), dpool = shuffle(DISTRACT.filter(k => !want.has(k) && !ev["t:" + k]), sc.id + "|d"); let di = 0, out = [], prefix = [];
     // anything still missing from history (allergies before meds) comes before treatment
+    vitalChips(sim).filter(c => c.label !== "BP, SpO₂, RR").forEach(c => prefix.push(c));
     [["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"]].forEach(([l, s2, k]) => { if (!ev[k]) prefix.push(C(l, s2)); });
     slots.forEach((sl, si) => {
       const live = sl.filter(id => !used.has(id) && !done(id)); if (!live.length) return;
@@ -8819,7 +8879,7 @@ const NEXT = (() => {
       if (sig !== nextSig) { nextSig = sig; $("#nextStep").textContent = sg.title;
         // v2.10: chips are in call order; a thin divider marks each new step/protocol slot; treatment wraps so the whole sequence is visible
         const key = c => c.slot != null ? "s" + c.slot : c.grp ? "g" + c.grp : c.cat === "radio" ? "radio" : "x";
-        $("#nextChips").classList.toggle("wrap", sg.step === "tx");
+        $("#nextChips").classList.toggle("wrap", sg.step === "tx" || (sg.chips[0] && sg.chips[0].grp === "partner")); // vitals step wraps (max 2 rows) so BP / RR / SpO2 taps are all visible
         $("#nextChips").innerHTML = sg.chips.map((c, i) => `${i && key(c) !== key(sg.chips[i - 1]) ? '<span class="chip-sep" aria-hidden="true"></span>' : ""}<button type="button" class="c-${esc(c.cat || "talk")}" data-say="${esc(c.say)}" title="${esc(c.say)}">${esc(c.label)}</button>`).join(""); } }
     const ae = SIM.aeiou && SIM.aeiou();
     const showAe = !!(ae && ae.altered && !st.x.arrest);
