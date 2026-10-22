@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.1-vitaltaps a3b2d6bf04">
+<meta name="medicsim-version" content="2.10.2-naloxone 7f5c7f01d8">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -827,6 +827,8 @@ const PROTOCOLS = {
       "Airway first: apneic patients get positive-pressure ventilation (BMV) BEFORE naloxone",
       "Suspected opioid OD with ALOC + hypoventilation/apnea: Naloxone 2-4 mg IN, OR 2 mg IM, OR 0.8-2 mg IV; max 8 mg all routes; titrate to adequate RR/tidal volume",
       "Vascular access should NOT delay IN/IM naloxone",
+      "#6 Partial response with strong suspicion of opioid OD: CONTACT BASE for additional naloxone doses",
+      "#10 Evaluate for other causes of ALOC (MCG 1320); #12 glucose < 60 or > 200 → TP 1203",
       "Offer Leave Behind Naloxone if improved with capacity (MCG 1337)",
       "Consider capnography (MCG 1305); cardiac monitoring prn",
       "Check blood glucose (< 60 or > 200 → TP 1203); assess for trauma and co-ingestions",
@@ -840,6 +842,9 @@ const PROTOCOLS = {
   "1207": { title: "TP 1207 Shock / Hypotension", revised: "07-01-24",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040509_1207Shock-Hypotension.pdf",
     keyPoints: ["Base contact required; high-flow O2 15 L/min for all shock; supine if respiratory status allows; large-bore IV (IO after 2 failed attempts with poor perfusion)", "#8 NS 1 L IV/IO rapid infusion, reassess each 250 mL for pulmonary edema", "#11 Poor perfusion persists despite fluids (or pulmonary edema stops fluids): push-dose epinephrine 1 mL (0.01 mg/mL = 10 mcg) IV/IO every 1-5 min to keep SBP > 90 until hospital arrival; CONTACT BASE concurrent with the initial dose", "Preparation: 9 mL NS + 1 mL epinephrine 0.1 mg/mL (IV formulation) in a 10 mL syringe", "❺ Appropriate for NON-traumatic shock including cardiogenic shock; doses beyond 10 mL may need to be prepared for long transports (no maximum stated)"]},
+  "1317.29": { title: "MCG 1317.29 Naloxone", revised: "01-01-26",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1053948_1317.29-Noloxone2019-04-01.pdf",
+    keyPoints: ["Indication: suspected opiate overdose with altered mental status AND hypoventilation/apnea", "Adult: 2-4 mg IN (1 mg/nostril or 4 mg/0.1 mL), OR 2 mg IM, OR 0.8-2 mg IV push; max 8 mg all routes; titrate to adequate RR (≥ 12) and tidal volume, NOT to consciousness", "Give in small increments; large boluses can precipitate withdrawal (vomiting, agitation) and pulmonary edema", "Onset < 2 min IV, 2-10 min IM; duration 20-120 min: some narcotics outlast naloxone, so watch for re-sedation and repeat", "Not indicated in cardiac arrest (may be given after ROSC)", "Adverse effects: nausea/vomiting, sweating, tachycardia, agitation, hypertension, pulmonary edema"]},
   "1317.17": { title: "MCG 1317.17 Epinephrine", revised: "01-01-26",
     url: "https://file.lacounty.gov/SDSInter/dhs/1053940_1317.17-Epinephrine2018-07-01.pdf",
     keyPoints: ["Anaphylaxis: 0.5 mg (1 mg/mL) IM lateral thigh, repeat q10 min x2 (max 3)", "Cardiac arrest: 1 mg (0.1 mg/mL) IV/IO q5 min x2 (max 3 mg)", "Non-traumatic shock (incl. symptomatic bradycardia, after ROSC): push-dose epi 1 mL (10 mcg of 0.01 mg/mL) IV/IO q1-5 min to keep SBP > 90", "Pediatric push-dose: 0.1 mL/kg (max 1 mL) per MCG 1309", "Onset < 2 min IV; duration 5-10 min IV (20-30 min IM)", "Inadvertent IV injection of the usual IM formulation and dose is a 10-fold overdose: sudden severe hypertension, possible cerebral hemorrhage"]},
@@ -2524,6 +2529,9 @@ const SIM = (() => {
     st.t += dt;
     if (sc.drift) st.sev = clamp(st.sev + (sc.drift(st) || 0) * dt / 60, 0, 1);
     if (sc.tickExtra) sc.tickExtra(st, dt, H);
+    if (st.x.nalTrialT != null && !st.x.nalTrialNudged && st.t - st.x.nalTrialT >= 180 && !st.x.arrest) { st.x.nalTrialNudged = true;
+      event("No change in breathing or mental status since the naloxone.", "find");
+      dev("No response to naloxone: a reasonable empiric trial when the cause is unclear, but this isn't an opioid picture. Keep working AEIOU-TIPS (glucose, stroke screen, head trauma, seizure/postictal, toxins, infection).", "1241 #10 / MCG 1320", "note"); rec("x:nalNoResponse"); }
     codeTick(dt);
     if (typeof COURSE !== "undefined") { COURSE.tick(st, sc, mental(), { rec, event }); }
     if (typeof DEVICE !== "undefined" && st.x.dv) DEVICE.tick(devC());
@@ -2595,6 +2603,8 @@ const SIM = (() => {
     log(kind === "warn" ? "warn" : "find", text); ui.say([{ speaker: kind === "warn" ? "warn" : "find", text }]); }
   function log(kind, text) { st.log.push({ t: st.t, kind, text }); }
   function rec(key) { if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb"); (st.events[key] = st.events[key] || []).push(st.t); st.evOrder = st.evOrder || {}; if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1); }
+  // Does this scenario's patient respond to naloxone (opioid toxidrome modeled)? Otherwise naloxone has no effect.
+  function opioidCall() { return sc.base === "opioid" || !!sc.opioid || /naloxone|nalEff|nalDoses|nalLevel/.test(String(sc.targets) + String(sc.drift) + String(sc.tickExtra) + String(sc.onTreat)); }
   function dev(text, ref, level = "deviation") { st.devs.push({ t: st.t, text, ref, level }); const own = /^standard practice\*\s*\((.+)\)$/.exec(ref || ""), safety = !own && /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${own ? "standard practice*: " + own[1] : safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${own ? "standard practice*: " + own[1] + "; LA County protocols are silent" : safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
   // device (monitor/defibrillator) context
   function devC() { return { st, sc, mental, treat: tx => treat(tx), dev: (t, r, l) => dev(t, r, l), devQuiet: (t, r, l) => { dev(t, r, l); }, rec, log, event: (t, k) => event(t, k),
@@ -2655,7 +2665,7 @@ const SIM = (() => {
     { id: "A", label: "Alcohol / Acidosis", keys: ["q:drugs", "a:smell"], rx: /\balcohol|\bdrink(ing|s)?\b|\bdrunk\b|\betoh\b|acidosis|\bdka\b|ketone|fruity/ },
     { id: "E", label: "Epilepsy / Electrolytes / Endocrine", keys: ["q:seizurehx", "a:tongue", "a:incont"], rx: /seizure (history|disorder)|history of seizures|epilep|electrolyte|thyroid|endocrine|adrenal|sodium|potassium/ },
     { id: "I", label: "Insulin (hypoglycemia / hyperglycemia)", keys: ["a:bgl"], rx: /glucose|blood sugar|\bsugar\b|insulin|diabet|\bbgl\b|\bd stick\b|dextro/ },
-    { id: "O", label: "Opiates / Overdose / O₂ (hypoxia)", keys: ["a:pupils", "a:spo2", "a:medbottles", "a:patches"], rx: /opiat|opioid|overdos|pinpoint|narcan|naloxone|hypox|oxygen sat|\bpulse ox\b|\bsp ?o2\b|took too many|pills/ },
+    { id: "O", label: "Opiates / Overdose / O₂ (hypoxia)", keys: ["a:pupils", "a:spo2", "a:medbottles", "a:patches", "a:tracks", "t:naloxone"], rx: /opiat|opioid|overdos|pinpoint|narcan|naloxone|hypox|oxygen sat|\bpulse ox\b|\bsp ?o2\b|took too many|pills/ },
     { id: "U", label: "Uremia / Underdose (missed meds)", keys: [], rx: /dialysis|kidney|renal|uremi|miss(ed)? (any |a |his |her |your )?(dose|doses|meds|medications|pills)|stopped taking|underdose|taking (his|her|your) (meds|medications) (as prescribed|like)|compliant/ },
     { id: "T", label: "Trauma / Temperature", keys: ["a:trauma", "a:head", "a:temp", "a:back"], rx: /trauma|head injury|hit (his|her|your) head|\bfell\b|\bfall\b|temperature|hypotherm|hypertherm|heat stroke|too hot|too cold/ },
     { id: "I2", label: "Infection", keys: ["a:temp", "q:fever"], rx: /infect|fever|sepsis|septic|\buti\b|pneumonia|been sick|chills/ },
@@ -3035,15 +3045,31 @@ const SIM = (() => {
         if (!alert) { notes.push(dev("Oral glucose only if the patient is awake and alert (aspiration risk).", "1203 #7")); rec("t:oralglucose@altered"); }
         narr = "Oral glucose 15 g PO"; break;
       case "glucagon": if (st.flags.iv) notes.push(dev("Glucagon is for when venous access can't be obtained. You have IV access, so use D10.", "1203 #7", "note")); narr = "Glucagon 1 mg IM"; break;
-      case "naloxone": {
-        const mg = doseOf(tx, "mg"); const route = tx.route || "IN";
-        narr = `Naloxone ${mg || (route === "IN" ? 4 : 2)} mg ${route}`;
-        if (st.x.arrest) notes.push(dev("In cardiac arrest, naloxone is not a priority over CPR/ventilation/epinephrine.", "1210", "note"));
-        if (sc.base === "opioid" && st.flags.o2 !== "bvm" && st.v.rr < 8) notes.push(dev("Apneic/hypoventilating overdose: start BMV first, then naloxone.", "1241 ❶", "caution"));
+      case "naloxone": { // TP 1241 #4/#6/#10 ❶ (rev 07-01-26), MCG 1317.29 (rev 01-01-26)
+        const mg = doseOf(tx, "mg"); const route = tx.route || "IN", dose = mg || (route === "IN" ? 4 : 2);
+        narr = `Naloxone ${dose} mg ${route}`;
+        const hypovent = st.v.rr < 12 || (st.v.etco2 || 0) > 50 || /apneic|shallow/i.test(String(st.tg.airway || "") + " " + String(st.tg.lungs || ""));
+        const altered = !["alert", "anxious"].includes(m), vent = st.flags.o2 === "bvm" || !!st.flags.sga;
+        if (st.x.arrest) notes.push(dev("Naloxone is not indicated in cardiac arrest (it can be given after ROSC if opioid OD is suspected). Prioritize CPR, ventilation and epinephrine.", "MCG 1317.29 / 1210", "note"));
+        else {
+          if (!altered && !hypovent) notes.push(dev(`Naloxone isn't indicated: the patient is ${m} with RR ${Math.round(st.v.rr)}. Indication is suspected opioid OD with altered mental status AND hypoventilation/apnea.`, "1241 #4 / MCG 1317.29"));
+          else if (!hypovent) notes.push(dev(`Altered but breathing adequately (RR ${Math.round(st.v.rr)}): naloxone is titrated to respiratory rate and tidal volume, not to wake the patient. Keep working the AEIOU-TIPS differential.`, "1241 #4, #10 / MCG 1317.29", "caution"));
+          else if (!altered) notes.push(dev("Naloxone indication requires altered mental status with hypoventilation.", "1241 #4", "caution"));
+          const ventPend = (st.pq || []).some(q => q.id === "bvm" || q.id === "sga");
+          if (hypovent && (st.v.rr < 8 || st.v.spo2 < 90) && !vent) {
+            if (ventPend) notes.push(dev("BMV was ordered but ventilations weren't established yet. Ventilate first, then naloxone.", "1241 ❶", "caution"));
+            else { notes.push(dev("Hypoventilating/apneic: open the airway and ventilate with BMV FIRST, then give naloxone to restore spontaneous breathing.", "1241 ❶")); rec("x:nalNoBvm"); } }
+          else if (vent) rec("x:bvmBeforeNal");
+        }
         if (route === "IV" && !st.flags.iv) notes.push(dev("IV naloxone without IV access. Don't let vascular access delay IN/IM naloxone.", "1241 ❶", "caution"));
-        if (mg && ((route === "IN" && (mg < 2 || mg > 4)) || (route === "IM" && mg !== 2) || (route === "IV" && (mg < 0.8 || mg > 2)))) notes.push(dev(`Naloxone dose per 1241: 2-4 mg IN, 2 mg IM, 0.8-2 mg IV (you said ${mg} mg ${route}).`, "1241 #4", "note"));
-        if (((st.x.nalTotal || 0) + (mg || 2)) > 8) notes.push(dev("Naloxone maximum 8 mg all routes.", "1241 #4"));
-        if (alert) notes.push(dev("Naloxone is for opioid OD with ALOC + hypoventilation.", "1241 #4", "caution"));
+        if (!sc.peds) { // adult dose checks only (peds: 0.1 mg/kg per MCG 1309)
+          if (mg && ((route === "IN" && (mg < 2 || mg > 4)) || (route === "IM" && mg !== 2) || ((route === "IV" || route === "IO") && (mg < 0.4 || mg > 2)))) notes.push(dev(`Adult naloxone dose: 2-4 mg IN, 2 mg IM, or 0.8-2 mg IV push in small increments (you said ${mg} mg ${route}).`, "1241 #4 / MCG 1317.29", "note"));
+          st.x.nalSum = (st.x.nalSum || 0) + dose;
+          if (st.x.nalSum > 8) notes.push(dev(`Naloxone maximum is 8 mg all routes (total now ${st.x.nalSum} mg).`, "1241 #4 / MCG 1317.29"));
+        }
+        if (n(st, "naloxone") >= 1 && !st.events["t:base"] && st.v.rr < 12) notes.push(dev("Partial response with strong suspicion of opioid OD: CONTACT BASE for additional naloxone doses.", "1241 #6", "note"));
+        // empiric trial on a non-opioid cause: no effect; nudge (not an error) after a few minutes
+        if (!st.x.arrest && altered && !opioidCall()) { st.x.nalTrialT = st.x.nalTrialT || st.t; st.x.nalTrialNudged = false; }
         break; }
       case "midaz": {
         const mg = doseOf(tx, "mg"), route = tx.route || (st.flags.iv ? "IV" : "IM");
@@ -3446,7 +3472,7 @@ const COURSE = (() => {
     return `${worse ? "Reassess: " + he + "'s getting worse" : "Reassess: " + he + "'s improving"}: ${out.join(", ")}.`;
   }
   // ---------- curveballs ----------
-  const VOMIT = ["opioid", "fent_patch", "etoh", "postictal_etoh", "stroke", "stroke_post", "stroke_lams5", "seizure", "focal_sz", "hypo", "hypo_elder", "dka", "stemi", "nstemi", "stemi_brady", "anaph_gi", "bb_od", "urosepsis", "vasovagal", "chf_cp"];
+  const VOMIT = ["opioid", "fent_patch", "fent_found_down", "oxy_elder", "etoh", "postictal_etoh", "stroke", "stroke_post", "stroke_lams5", "seizure", "focal_sz", "hypo", "hypo_elder", "dka", "stemi", "nstemi", "stemi_brady", "anaph_gi", "bb_od", "urosepsis", "vasovagal", "chf_cp"];
   const ARREST = { stemi: "vf", nstemi: "vf", chf_cp: "vf", vt_pulse: "vf", stemi_brady: "pea", chb: "pea", mobitz2: "pea", bb_od: "pea", pe: "pea", dissection: "pea", opioid: "pea", fent_patch: "pea", anaph: "pea", anaph_gi: "pea" };
   const RHYTHM = { stemi_brady: "chb", mobitz2: "chb", nstemi: "afib", chf_cp: "afib", stemi: "vt" };
   const SEIZE = ["postictal_etoh", "etoh", "stroke_lams5"];
@@ -7321,6 +7347,189 @@ addS(clone("vf", {
   expected: "PEA from opioid hypoxia: CPR, BMV with high-flow O2 (fix the hypoxia), IO, epi 1 mg ASAP, no shocks, no pulse checks without a capnography rise. ROSC follows oxygenation; then naloxone (1210 #26), 12-lead, BGL, Base.",
 }));
 
+/* ===== scx_52_opioid.js ===== */
+/* ---------- v2.10.2 opioid toxicity calls (TP 1241 rev 07-01-26, MCG 1317.29 rev 01-01-26) ----------
+ * Shared model: st.x.load = opioid burden; naloxone doses build a level that wears off.
+ * dep = load - naloxone. Titrate to respiratory effort: an overshoot precipitates withdrawal (MCG 1317.29). */
+const OD = {
+  nal(st, tau) { let s = 0; for (const d of (st.x.nalDoses || [])) { const dt = st.t - d.t, on = d.on; s += dt < 0 ? 0 : dt < on ? d.amt * dt / on : d.amt * Math.exp(-(dt - on) / tau); } return s; },
+  dose(st, tx) {
+    const r = tx.route || "IN", mg = (tx.doses.find(d => d.u === "mg") || {}).v || (r === "IN" ? 4 : 2);
+    st.x.nalDoses.push({ t: st.t, amt: r === "IN" ? 0.95 * mg / 4 : r === "IV" || r === "IO" ? 0.55 * mg : 0.95 * mg / 2, on: r === "IV" || r === "IO" ? 45 : r === "IM" ? 120 : 150 });
+    st.x.nalTotal = (st.x.nalTotal || 0) + mg;
+  },
+  // hypoxia accumulates while hypoventilating and unventilated; hypoxic PEA if ignored
+  hypoxia(st, dt, dep) {
+    const m = dt / 60, vent = st.flags.o2 === "bvm" || st.flags.sga;
+    const d = (dep > 0.6 ? 0.07 : dep > 0.35 ? 0.02 : -0.2) - (vent ? 0.3 : 0) - (O2(st) > 0 && dep <= 0.6 ? 0.05 : 0);
+    st.x.hyp = Math.max(0, Math.min(1.2, st.x.hyp + d * m));
+    if (st.x.hyp >= 1.15 && !st.x.arrest) { st.x.arrest = true; st.x.arrestT = st.t; SIM.event("The patient has gone into cardiac arrest (hypoxic PEA). No carotid pulse.", "warn"); }
+  },
+  arrestTg(st, bgl, temp) { const vent = st.flags.o2 === "bvm" || st.flags.sga; return { hr: 0, sbp: 0, dbp: 0, rr: vent ? 10 : 0, spo2: null, etco2: st.flags.cpr ? 15 : 6, temp, bgl, gcs: [1, 1, 1], pupils: "1 mm, nonreactive", pain: null, skin: "Cyanotic, cool, mottled", lungs: vent ? "Breath sounds with ventilation only" : "No spontaneous breath sounds", rhythm: st.t - st.x.arrestT < 90 ? "pea" : "asystole", rhythmName: st.t - st.x.arrestT < 90 ? "PEA (sinus brady, no pulse)" : "Asystole", cpr: st.flags.cpr, twelve: null, neuro: "Unresponsive", airway: "Apneic", trauma: "None", edema: "None", pulse: false }; },
+};
+
+/* 1) Fentanyl overdose, found down (IV use): paraphernalia, fresh track marks, pinpoint pupils, RR 4.
+ * Fentanyl is short-acting, so a titrated dose holds; a big overshoot = precipitated withdrawal. */
+const ffNal = st => OD.nal(st, 1200);
+const ffDep = st => Math.max(0, (st.x.load || 0) - ffNal(st));
+addS({
+  id: "fent_found_down", approach: { see: "Scene is safe; security has the stall door propped open. A man in his late 20s is slumped on the restroom floor against the wall, head flexed forward, making slow gurgling snores. His lips are blue. A belt is wrapped around his left upper arm, and an uncapped syringe, a burnt spoon with a cotton ball and a torn baggie are on the floor beside him.", track: "Eyes closed; he does NOT track you or react to your arrival." }, title: "Found down in a restroom", tag: "TOXICOLOGY", protocol: "1241", refs: ["1241", "1302", "1317.29"], base: "opioid", opioid: true, difficulty: "Intermediate",
+  dispatchTitle: "Unknown problem, man down", dispatchShort: "Downtown library restroom, security calling.",
+  summary: "~30 y/o male found down in a public restroom.",
+  dispatch: "RA 9, respond to the Central Library, 630 W 5th St, Los Angeles, first-floor men's restroom. Unknown problem, man down, not answering. Caller is library security. Time of call 1426.",
+  scene: "Scene safe; security has the door propped open. A man in his late 20s is slumped on the floor of a stall against the wall, head flexed forward, making slow gurgling snores. His lips are blue. A belt is loosely wrapped around his left upper arm. On the floor next to him: an uncapped syringe, a bent spoon with burnt residue and a cotton ball, and a small torn baggie.",
+  patient: { name: "Tyler Brooks", age: 27, sex: "M", weightKg: 75 }, bystander: { name: "Marcus", role: "library security officer", sex: "M" },
+  personality: "Unresponsive at first. After a titrated dose: groggy, then embarrassed and a bit defensive, wants to leave. If over-reversed: sweating, vomiting, angry and dope-sick.",
+  allergies: [], pde5Hours: null, startSev: 0.6,
+  inspect: {
+    mouth: st => ffDep(st) > 0.6 ? "The tongue has fallen back (snoring) with frothy saliva at the lips; no vomit, pills or foreign body. An OPA or NPA would hold the airway." : "Mouth clear; mucous membranes moist.",
+    arms: "Fresh puncture mark with a small bead of blood in the LEFT antecubital fossa, plus older track marks and bruising along both forearm veins. A belt is still around the left upper arm.",
+    legs: "Jeans; no injuries. A lighter in the front pocket.",
+  },
+  exam: {
+    tracks: "Fresh track mark in the left antecubital fossa with a bead of blood; older track marks along both forearms. Belt tourniquet on the left upper arm. Syringe, burnt spoon and cotton on the floor.",
+    medbottles: "No prescription bottles. A torn baggie with a little off-white powder residue is on the floor next to the syringe.",
+    smell: "No odor of alcohol.",
+  },
+  init(st) { st.x.load = 1.05; st.x.hyp = 0.6; st.x.arrest = false; st.x.nalDoses = []; },
+  drift: () => 0,
+  tickExtra(st, dt, H) {
+    st.x.load = Math.max(0, st.x.load - 0.03 * dt / 60);
+    OD.hypoxia(st, dt, ffDep(st));
+    const over = ffNal(st) - st.x.load;
+    if (!st.x.withdrawal && over > 0.5) { st.x.withdrawal = st.t; SIM.event("He bolts upright, sweating, retching and swearing, pulling at the BVM mask: precipitated opioid withdrawal.", "warn");
+      H.devQuiet("Too much naloxone: precipitated withdrawal (vomiting, agitation, tachycardia; risk of pulmonary edema). Titrate in small increments to RR ≥ 12 and adequate tidal volume, not to full wakefulness.", "MCG 1317.29", "caution"); }
+    if (ffDep(st) < 0.3) st.x.wasAwake = true;
+  },
+  onTreat(id, st, tx) { if (id === "naloxone") OD.dose(st, tx); },
+  targets(st) {
+    if (st.x.arrest) return OD.arrestTg(st, 104, 97.9);
+    const h = st.x.hyp, dep = ffDep(st), vent = st.flags.o2 === "bvm" || st.flags.sga, wd = !!st.x.withdrawal && st.t - st.x.withdrawal < 600;
+    const deep = dep > 0.6, mid = dep > 0.3;
+    const rr = vent && deep ? 12 : deep ? Math.max(3, 6 - 6 * (dep - 0.6)) : mid ? 9 : wd ? 24 : 16;
+    return {
+      hr: wd ? 124 : deep ? 58 : mid ? 70 : 92, sbp: wd ? 158 : deep ? 104 - 20 * Math.max(0, h - 0.8) : 124, dbp: wd ? 96 : deep ? 62 : 76, rr,
+      spo2: Math.max(40, 98 - 34 * h + 3 * O2(st)), etco2: vent && deep ? 44 : deep ? 66 + 10 * h : mid ? 52 : 38, temp: 97.9, bgl: 104,
+      gcs: deep ? [1, 1, 4] : mid ? [3, 3, 5] : [4, 5, 6], pupils: mid ? "Pinpoint, 1 mm, sluggish" : wd ? "5 mm, reactive" : "3 mm, reactive",
+      pain: deep ? null : 2, skin: wd ? "Flushed, diaphoretic, gooseflesh" : h > 0.5 && deep ? "Cyanotic lips and nail beds, cool, dry" : "Pale, warm, dry",
+      lungs: deep && !vent ? "Slow, shallow, gurgling respirations; diminished bilaterally" : wd ? "Clear; coarse after vomiting" : "Clear bilaterally",
+      rhythm: deep ? "brady" : "sinus", rhythmName: deep ? "Sinus bradycardia" : wd ? "Sinus tachycardia" : "Normal sinus rhythm",
+      twelve: { st: {}, text: "Sinus rhythm. No acute ST changes." },
+      neuro: deep ? "Unresponsive to voice; withdraws to pain" : mid ? "Opens eyes to voice, slurred speech; moves all extremities" : "Awake, oriented; moves all extremities, no focal deficit",
+      edema: "None", trauma: "No signs of trauma; no head injury found", airway: deep && !vent ? "Snoring/gurgling; head flexed and tongue obstructing; needs repositioning, suction, OPA/NPA" : "Patent",
+    };
+  },
+  mental: st => st.x.arrest ? "arrest" : ffDep(st) > 0.6 ? "unresponsive" : ffDep(st) > 0.3 ? "confused" : st.x.withdrawal && st.t - st.x.withdrawal < 600 ? "anxious" : "alert",
+  answers: {
+    greet: "...what... where am I?", name: "Tyler.", age: "Twenty-seven.", cc: "Nothing, man, I'm fine. I just nodded off.", onset: "I don't know... I came in to use the bathroom.",
+    meds: "Nothing. No meds.", history: "Nothing. I mean... I've been using for a couple years.", allergies: "None.", lastoral: "A burrito this morning.",
+    events: "I just did a little, like usual. It must've been fetty in it.", drugs: "Yeah... I shot up. It was supposed to be dope but it was probably fentanyl.",
+    orient: "Library... downtown. It's Thursday?", chestpain: "No.", sob: "No.", feelnow: "Sick. I feel like crap.",
+    hospital: "Nah, I don't need the hospital.", refusal: "I'm good, I just want to go.", consent: "...fine, whatever.", pde5: "What? No.",
+  },
+  confusedAnswers: ["...mm... I'm good...", "...leave me alone...", "(eyes roll back, nods off)"],
+  bystanderAnswers: {
+    cc: "I found him on the floor of the stall when I did my rounds. He wouldn't answer me and he was making that snoring sound.",
+    events: "He came in maybe twenty minutes ago and went straight to the bathroom. I don't know him.", name: "I don't know his name.", age: "Late twenties maybe.",
+    drugs: "There's a needle and a spoon right there. This happens here a couple times a month.", meds: "No idea.", history: "No idea, I've never seen him before.", allergies: "No idea.", lastoral: "No idea.", onset: "Twenty minutes, tops.",
+  },
+  fallback: st => SIM.mental() === "alert" || SIM.mental() === "anxious" ? pick(["What?", "Huh?"]) : "...",
+  ambient: st => st.x.arrest ? null : SIM.mental() === "unresponsive" ? pick(["(slow, gurgling snores)", "(no response; lips blue)"]) : SIM.mental() === "confused" ? "(nodding off, eyes drifting closed)" : st.x.withdrawal && st.t - st.x.withdrawal < 600 ? pick(["(retching) Why'd you hit me so hard, man?!", "Ugh, I'm so sick..."]) : pick(["Can I go now?", "I'm good, really."]),
+  checklist: [
+    { label: "Airway opened and BMV for hypoventilation (before naloxone)", keys: ["t:bvm"], ref: "1241 #1, ❶", critical: true },
+    { label: "Naloxone (2-4 mg IN / 2 mg IM / 0.8-2 mg IV) titrated to respirations", keys: ["t:naloxone"], ref: "1241 #4 / MCG 1317.29", critical: true },
+    { label: "Pupils assessed (pinpoint)", keys: ["a:pupils"], ref: "1241 / AEIOU-TIPS 'O'" },
+    { label: "Arms checked for track marks / paraphernalia noted", keys: ["a:tracks", "a:exparms", "a:expall"], ref: "1241 #16" },
+    { label: "Blood glucose checked", keys: ["a:bgl"], ref: "1241 #12" },
+    { label: "Capnography", keys: ["a:etco2"], ref: "1241 #7" },
+    { label: "Reassess breathing after naloxone", keys: ["a:rr#2", "a:spo2#2", "a:vitals#2"], ref: "1241 #4" },
+  ],
+  pi: { correct: "ODPO", accept: ["RARF"], acceptNote: "Respiratory failure can be a secondary PI, but the cause is the overdose.", differential: ["ODPO", "ALOC", "HYPO", "TRMA"],
+    clues: { ODPO: "Pinpoint pupils, RR 4, high EtCO2, syringe/spoon/belt tourniquet, fresh track mark, and he wakes with naloxone.", ALOC: "Use only when no cause is found; here the cause is obvious.", HYPO: "BG 104, so it's excluded once you check.", TRMA: "No signs of head injury." },
+    explain: "Classic opioid toxidrome (pinpoint pupils, respiratory depression, coma) from injected fentanyl, with paraphernalia. Ventilate first, then titrate naloxone to breathing. Too much at once precipitates withdrawal.", keyFindingKeys: ["a:pupils", "a:rr", "a:tracks", "a:bgl"] },
+  expected: "Reposition the airway, suction, and ventilate with BMV + capnography FIRST (1241 ❶). Then naloxone 2-4 mg IN / 2 mg IM / 0.8-2 mg IV titrated to RR ≥ 12 and adequate tidal volume, not to full consciousness; repeat if needed (max 8 mg; Base for more if only a partial response, 1241 #6). Check BG (1241 #12), pupils, track marks. If he wakes and wants to refuse, assess capacity; Leave Behind Naloxone (1241 #5, MCG 1337).",
+});
+
+/* 2) Elderly accidental oxycodone ER overdose: long-acting, so naloxone wears off and he re-sedates. */
+const oxNal = st => OD.nal(st, 600);
+const oxDep = st => Math.max(0, (st.x.load || 0) - oxNal(st));
+addS({
+  id: "oxy_elder", approach: { see: "Scene is safe: a living room with the TV on. An elderly man is slumped in a recliner, chin on his chest, snoring with long pauses between breaths. A weekly pill organizer and several prescription bottles are on the side table. His wife is anxiously hovering.", track: "Eyes closed; he does NOT track you or react to your arrival." }, title: "Elderly man, can't stay awake", tag: "TOXICOLOGY", protocol: "1241", refs: ["1241", "1302", "1317.29"], base: "opioid", opioid: true, difficulty: "Advanced",
+  dispatchTitle: "81 y/o male, unresponsive", dispatchShort: "Whittier home, wife calling.",
+  summary: "81 y/o male, wife can't keep him awake.",
+  dispatch: "RA 28, respond to a residence on Painter Ave, Whittier. 81-year-old male, difficult to wake, breathing funny. Caller is the wife. Time of call 2215.",
+  scene: "Scene safe. Living room, TV on. An elderly man is slumped in a recliner, chin on his chest, snoring with long pauses between breaths. His wife is anxious. A weekly pill organizer and several prescription bottles are on the side table.",
+  patient: { name: "Walter Simmons", age: 81, sex: "M", weightKg: 70 }, bystander: { name: "Betty", role: "wife", sex: "F" },
+  personality: "Unresponsive at first. After naloxone: drowsy, polite, a bit forgetful (mild dementia), complains of hip pain. Drifts off again as the naloxone wears off.",
+  allergies: ["sulfa"], pde5Hours: null, startSev: 0.6,
+  inspect: {
+    mouth: st => oxDep(st) > 0.6 ? "The tongue has fallen back (snoring); loose lower partial denture. Remove it before an OPA/BMV. No vomit or pills." : "Mouth clear; partial denture in place.",
+    arms: "Thin skin with old bruises; no track marks; no patches. MedicAlert bracelet: 'Sulfa allergy'.",
+    legs: "Mild ankle edema bilaterally; a healed surgical scar over the right hip.",
+  },
+  exam: {
+    medbottles: "Pill organizer: tonight's (Thu PM) AND tomorrow morning's (Fri AM) compartments are both empty. OxyContin (oxycodone ER) 20 mg bottle filled 3 days ago is 4 tablets short of the count. Also donepezil, amlodipine, senna.",
+    tracks: "No track marks.", smell: "No odor of alcohol.", patches: "No medication patches found.",
+  },
+  init(st) { st.x.load = 1.0; st.x.hyp = 0.5; st.x.arrest = false; st.x.nalDoses = []; },
+  drift: () => 0,
+  tickExtra(st, dt) {
+    st.x.load = Math.min(1.15, st.x.load + 0.01 * dt / 60); // extended-release: still absorbing
+    const dep = oxDep(st);
+    OD.hypoxia(st, dt, dep);
+    if (!st.x.resedWarned && st.x.wasAwake && dep > 0.6) { st.x.resedWarned = st.t; SIM.event("He's getting harder to rouse again: snoring returns and respirations are slowing (the naloxone is wearing off; the oxycodone ER is long-acting).", "warn"); }
+    if (dep < 0.3) st.x.wasAwake = true;
+  },
+  onTreat(id, st, tx) { if (id === "naloxone") OD.dose(st, tx); },
+  targets(st) {
+    if (st.x.arrest) return OD.arrestTg(st, 118, 97.6);
+    const h = st.x.hyp, dep = oxDep(st), vent = st.flags.o2 === "bvm" || st.flags.sga;
+    const deep = dep > 0.6, mid = dep > 0.3;
+    const rr = vent && deep ? 12 : deep ? Math.max(3, 7 - 6 * (dep - 0.6)) : mid ? 10 : 15;
+    return {
+      hr: deep ? 56 : mid ? 62 : 78, sbp: deep ? 102 - 20 * Math.max(0, h - 0.8) : mid ? 118 : 142, dbp: deep ? 58 : 74, rr,
+      spo2: Math.max(40, 96 - 30 * h + 3 * O2(st)), etco2: vent && deep ? 44 : deep ? 62 + 10 * h : mid ? 50 : 40, temp: 97.6, bgl: 118,
+      gcs: deep ? [1, 2, 4] : mid ? [3, 4, 6] : [4, 4, 6], pupils: mid ? "Pinpoint, 1-2 mm, sluggish" : "3 mm, reactive",
+      pain: deep ? null : 5, skin: h > 0.5 && deep ? "Pale, dusky lips, cool, dry" : "Pale, warm, dry",
+      lungs: deep && !vent ? "Shallow, snoring respirations with long pauses; diminished bases" : "Clear, slightly diminished at the bases",
+      rhythm: deep ? "brady" : "sinus", rhythmName: deep ? "Sinus bradycardia" : "Normal sinus rhythm",
+      twelve: { st: {}, text: "Sinus rhythm, left axis deviation. No acute ST changes." },
+      neuro: deep ? "Withdraws to pain; no focal deficit" : mid ? "Drowsy, follows simple commands; moves all extremities equally" : "Drowsy but answers; no facial droop, grips equal, speech clear",
+      edema: "Mild bilateral ankle edema", trauma: "No signs of trauma", airway: deep && !vent ? "Snoring with apneic pauses; tongue obstructing; needs head-tilt/OPA/NPA" : "Patent",
+    };
+  },
+  mental: st => st.x.arrest ? "arrest" : oxDep(st) > 0.6 ? "unresponsive" : oxDep(st) > 0.3 ? "confused" : "alert",
+  answers: {
+    greet: "Oh... hello. Betty, who are these fellas?", name: "Walter... Simmons.", age: "Eighty-one.", cc: "My hip hurts... and I'm awful sleepy.", onset: "I don't rightly know.",
+    meds: "My pain pill, the long one... the memory pill... blood pressure.", history: "Hip replacement. My memory's not what it was. Blood pressure.", allergies: "Sulfa.", lastoral: "Supper at six.",
+    events: "I took my pills... I think I took my pills.", drugs: "No, no. Just my prescriptions.", orient: "My house... it's... I'm not sure what day.", chestpain: "No.", sob: "No.", feelnow: "Sleepy. Hip aches.",
+    hospital: "Whatever Betty thinks.", refusal: "I'd just like to sleep.", consent: "Alright.", pde5: "...pardon?",
+  },
+  confusedAnswers: ["...mm... Betty...?", "...so tired...", "(mumbles, chin drops to his chest)"],
+  bystanderAnswers: {
+    cc: "He fell asleep in his chair and now I can't wake him up. He's snoring and then he stops breathing for a while. It's scaring me.",
+    meds: "OxyContin for his hip, the 20. Donepezil for his memory, amlodipine.", history: "Hip replacement last year, early dementia, blood pressure.", allergies: "Sulfa.",
+    events: "His hip was bad today. I think he took his pain pill twice. He sometimes forgets he already took it, and tomorrow morning's slot is empty too.", drugs: "No, nothing like that. He doesn't drink.",
+    name: "Walter Simmons. He's 81.", age: "81.", lastoral: "Supper at six.", onset: "He was fine at dinner. Getting sleepier since about eight.",
+  },
+  fallback: st => SIM.mental() === "alert" ? pick(["Pardon?", "Say again, son?"]) : "...",
+  ambient: st => st.x.arrest ? null : SIM.mental() === "unresponsive" ? pick(["(snoring, then a long pause before the next breath)", "(no response; lips dusky)"]) : SIM.mental() === "confused" ? "(eyes drifting closed)" : pick(["My hip hurts...", "Is Betty alright?"]),
+  checklist: [
+    { label: "Airway opened and BMV for hypoventilation (before naloxone)", keys: ["t:bvm"], ref: "1241 #1, ❶", critical: true },
+    { label: "Naloxone (2-4 mg IN / 2 mg IM / 0.8-2 mg IV) titrated to respirations", keys: ["t:naloxone"], ref: "1241 #4 / MCG 1317.29", critical: true },
+    { label: "Pupils assessed (pinpoint)", keys: ["a:pupils"], ref: "1241 / AEIOU-TIPS 'O'" },
+    { label: "Medications / pill organizer checked (oxycodone ER count)", keys: ["a:medbottles", "q:meds"], ref: "1241 #16, #18" },
+    { label: "Blood glucose checked", keys: ["a:bgl"], ref: "1241 #12" },
+    { label: "Capnography", keys: ["a:etco2"], ref: "1241 #7" },
+    { label: "Reassess breathing after naloxone (re-sedation)", keys: ["a:rr#2", "a:spo2#2", "a:vitals#2"], ref: "1241 #4 / MCG 1317.29" },
+    { label: "Base contact for additional naloxone if partial response / re-sedation", keys: ["t:base"], ref: "1241 #6", optional: true },
+  ],
+  pi: { correct: "ODPO", accept: [], differential: ["ODPO", "ALOC", "STRK", "HYPO"],
+    clues: { ODPO: "Pinpoint pupils, RR 6 with apneic pauses, high EtCO2, empty pill-organizer slots and an oxycodone ER count that's short; he wakes with naloxone, then re-sedates.", ALOC: "Use only when no cause is found.", STRK: "No focal deficit; it reverses with naloxone.", HYPO: "BG 118." },
+    explain: "Accidental double dose of oxycodone ER in a patient with early dementia. Naloxone (20-120 min) wears off before the long-acting opioid does, so he re-sedates: keep reassessing and repeat/contact Base.", keyFindingKeys: ["a:pupils", "a:rr", "a:medbottles", "a:bgl"] },
+  expected: "Open the airway (remove the loose denture) and ventilate with BMV + capnography FIRST (1241 ❶). Then naloxone 2-4 mg IN / 2 mg IM / 0.8-2 mg IV titrated to breathing (max 8 mg). Check BG (1241 #12) and the pill organizer/oxycodone ER count; bring the bottles (1241 #18). Oxycodone ER outlasts naloxone (MCG 1317.29: some narcotics outlast it), so reassess RR/SpO2/EtCO2 for re-sedation, repeat naloxone, and contact Base for additional doses if only a partial response (1241 #6).",
+});
+
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
 const META = {
@@ -8230,7 +8439,7 @@ const NEXT = (() => {
     fentanyl: ["Fentanyl 50 mcg", "Fentanyl 50 micrograms IV"], morphine: ["Morphine 4 mg", "Morphine 4 milligrams IV"], ketorolac: ["Ketorolac 15 mg", "Ketorolac 15 milligrams IV"],
     cpap: ["CPAP", "Partner, set up CPAP"], ns: ["NS bolus", "Normal saline 250 milliliter bolus"], epi: ["Epi IM", "Epinephrine 0.5 milligrams IM"],
     albuterol: ["Albuterol neb", "Albuterol 5 milligrams nebulized"], diphen: ["Benadryl 50 mg", "Diphenhydramine 50 milligrams IV"], d10: ["D10", "Dextrose 10 percent 125 milliliters IV"],
-    glucagon: ["Glucagon 1 mg", "Glucagon 1 milligram IM"], oralglucose: ["Oral glucose", "Oral glucose 15 grams"], naloxone: ["Naloxone 2 mg IN", "Naloxone 2 milligrams intranasal"],
+    glucagon: ["Glucagon 1 mg", "Glucagon 1 milligram IM"], oralglucose: ["Oral glucose", "Oral glucose 15 grams"], naloxone: ["Naloxone 2 mg IN", "Naloxone 2 milligrams intranasal"], nal_rep: ["Repeat naloxone", "Repeat naloxone 2 milligrams intranasal"],
     midaz: ["Midazolam 5 mg IM", "Midazolam 5 milligrams IM"], ondansetron: ["Zofran 4 mg", "Ondansetron 4 milligrams ODT"], atropine: ["Atropine 1 mg", "Atropine 1 milligram IV"],
     adenosine: ["Adenosine 6 mg", "Adenosine 6 milligrams rapid IV push"], vagal: ["Vagal maneuver", "Try a modified valsalva maneuver"], amio: ["Amiodarone", "Amiodarone 150 milligrams IV over 10 minutes"],
     calcium: ["Calcium chloride", "Calcium chloride 1 gram IV"], bicarb: ["Sodium bicarb", "Sodium bicarbonate 50 milliequivalents IV"], magnesium: ["Magnesium", "Magnesium sulfate 2 grams IV"],
@@ -8248,7 +8457,7 @@ const NEXT = (() => {
     alb_bvm: ["Albuterol in-line BVM", "Albuterol 5 milligrams in line with the BVM"], alb_rep: ["Repeat albuterol", "Repeat albuterol 5 milligrams"],
   };
   // chip id -> treatment event it satisfies (variants map to the base drug/device)
-  const BASE_ID = { alb_cpap: "albuterol", alb_hhn: "albuterol", alb_nrb: "albuterol", alb_bvm: "albuterol", cpap_neb: "cpap", alb_rep: "albuterol#2" };
+  const BASE_ID = { alb_cpap: "albuterol", alb_hhn: "albuterol", alb_nrb: "albuterol", alb_bvm: "albuterol", cpap_neb: "cpap", alb_rep: "albuterol#2", nal_rep: "naloxone#2" };
   /* Protocol treatment order (slots) per LA County TP. Each slot = one decision point in protocol sequence.
    * Slot chips = the scenario's correct item(s) + same-slot alternatives/distractors, shuffled inside the slot,
    * so the protocol sequence is visible but the right choice isn't always the first chip. */
@@ -8295,7 +8504,7 @@ const NEXT = (() => {
       ["Temperature", "Check a temperature"], ["Rhythm check", "Rhythm check"], ["Pulse check", "Pulse check"], ["Shock 200 J", "Defibrillate at 200 joules"], ["Sync cardioversion", "Synchronized cardioversion"],
       ["Pace", "Transcutaneous pacing"], ["Vector change", "Change pad position to anterior posterior"]]],
     ["Meds", ["iv", "io", "aspirin", "nitro", "fentanyl", "ondansetron", "albuterol", "alb_cpap", "alb_hhn", "alb_nrb", "cpap_neb", "alb_bvm", "epi", ["Epi 1 mg IV/IO", "Epinephrine 1 milligram IV push"], "pushepi", ["Amiodarone 300 mg", "Amiodarone 300 milligrams IV push"], "amio",
-      "adenosine", "atropine", "naloxone", "d10", "glucagon", "oralglucose", "diphen", "midaz", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
+      "adenosine", "atropine", "naloxone", ["Naloxone 2 mg IM", "Naloxone 2 milligrams IM"], ["Naloxone 1 mg IV", "Naloxone 1 milligram IV push"], "d10", "glucagon", "oralglucose", "diphen", "midaz", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
       .map(x => Array.isArray(x) ? x : TXSAY[x])],
     ["Transport / Radio", [["Transport", "Let's transport, load and go"], ["Contact Base", "Base, this is Medic 12, how copy?"], ["Notify hospital", "Notify the receiving hospital"],
       ["Head up 30°", "Elevate the head of the gurney 30 degrees"], ["Keep warm", "Put a blanket on and keep warm"], ["Terminate (Base)", "Terminate resuscitation"]]],
@@ -8305,6 +8514,8 @@ const NEXT = (() => {
     a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   const pron = (s, F) => F ? s.replace(/\bhim\b/g, "her").replace(/\bhis\b/g, "her").replace(/\bhe\b/g, "she").replace(/\bHe\b/g, "She") : s;
   const C = (label, say, cat) => ({ label, say, cat: cat || "" });
+  // altered (not seizing) adult with a decreased respiratory rate: naloxone is a reasonable option on ANY call (TP 1241 #4)
+  const hypoAltered = sim => { const st = sim.state, m = sim.mental ? sim.mental() : "alert"; return !(sim.scenario || {}).peds && !st.x.arrest && !["alert", "anxious", "seizing"].includes(m) && st.v.rr < 12; };
 
   function codeChips(sim) {
     const st = sim.state, cs = sim.code() || {}, ev = st.events, out = [];
@@ -8352,9 +8563,13 @@ const NEXT = (() => {
       if (!done("skin")) ch.push(C("Skin / forehead", "Feeling the forehead, checking skin signs"));
       ch.push(...vitalChips(sim));
       if (done("avpu") && !done("abc")) ch.push(C("NRB 15 L", "Partner, nonrebreather at 15 liters", "partner"), C("BVM + capno", "Partner, bag him with the BVM and put capno on", "partner"));
+      const bagging = st.flags.o2 === "bvm" || !!st.flags.sga || (st.pq || []).some(q => q.id === "bvm" || q.id === "sga"), hyA = done("avpu") && hypoAltered(sim);
+      if (hyA && done("abc") && !bagging) ch.push(C("BVM + capno", "Partner, bag him with the BVM and put capno on", "partner"));
+      // naloxone after ventilation is established (TP 1241 ❶); straight away if not apneic/hypoxic
+      if (hyA && !ev["t:naloxone"] && (bagging || (st.v.rr >= 8 && st.v.spo2 >= 90))) ch.push(C(TXSAY.naloxone[0], TXSAY.naloxone[1], "meds"));
       const top = ch.slice(0, 5);
       if (!done("intro")) top.push(C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"));
-      return fin(done("avpu") ? "abc" : "avpu", done("avpu") ? "Not tracking: ABCs / pulses" : "Not tracking: AVPU + ABCs", top);
+      if (top.length) return fin(done("avpu") ? "abc" : "avpu", done("avpu") ? "Not tracking: ABCs / pulses" : "Not tracking: AVPU + ABCs", top);
     }
     // ---- v2.10: chips are ORDERED in Adrian's call sequence (group order fixed; done items drop off) ----
     const sd = id => { const x = f.steps.find(y => y.id === id); return !x || x.done || x.na; };
@@ -8393,11 +8608,21 @@ const NEXT = (() => {
   function txChips(sim, ev) {
     const st = sim.state, sc = sim.scenario, proto = sc.protocol || (sc.refs || [])[0] || "";
     const want = new Set(); (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^t:(\w+#?\d?)/); if (m) want.add(m[1]); }));
-    const done = id => !!ev["t:" + (BASE_ID[id] || id)] || (id === "cpap_neb" && !!st.flags.cpap) || (id === "alb_rep" && (!ev["t:albuterol"] || (st.count.albuterol || 0) >= 3));
-    const correct = id => want.has(BASE_ID[id] || id) || (BASE_ID[id] === "albuterol" && want.has("albuterol"));
+    const done = id => !!ev["t:" + (BASE_ID[id] || id)] || (id === "cpap_neb" && !!st.flags.cpap) || (id === "alb_rep" && (!ev["t:albuterol"] || (st.count.albuterol || 0) >= 3))
+      || (id === "nal_rep" && (!ev["t:naloxone"] || st.v.rr >= 12 || (st.x.nalSum || 0) >= 8));
+    const correct = id => want.has(BASE_ID[id] || id) || (id === "nal_rep" && want.has("naloxone")) || (BASE_ID[id] === "albuterol" && want.has("albuterol"));
+    // v2.10.2: ANY call with altered mental status + hypoventilation offers naloxone (TP 1241 #4), BMV first when RR < 8 / hypoxic (1241 ❶)
+    const m = sim.mental ? sim.mental() : "alert", hypoAlt = hypoAltered(sim);
+    if (hypoAlt) { want.add("naloxone"); if (st.v.rr < 8 || st.v.spo2 < 90) want.add("bvm"); }
     let slots = SLOTS[proto];
     if (!slots) { const seen = new Set(); slots = []; (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^t:(\w+)$/); if (m && TXSAY[m[1]] && !seen.has(m[1])) { seen.add(m[1]); slots.push([m[1]]); } })); }
     slots = slots.map(sl => sl.filter(id => TXSAY[id] && (id !== "alb_bvm" || st.flags.o2 === "bvm")));
+    if (hypoAlt) {
+      if (!slots.some(sl => sl.includes("bvm")) && want.has("bvm")) slots = [["bvm"], ...slots];
+      const bi = slots.findIndex(sl => sl.includes("bvm"));
+      if (!slots.some(sl => sl.includes("naloxone"))) slots = [...slots.slice(0, bi + 1), ["naloxone"], ...slots.slice(bi + 1)];
+      slots = slots.map(sl => sl.includes("naloxone") ? [...sl, "nal_rep"] : sl);
+    }
     if (st.flags.o2 === "bvm" && slots.some(sl => sl.includes("alb_hhn"))) slots = slots.map(sl => sl.includes("alb_hhn") ? [...sl, "alb_bvm"] : sl);
     const used = new Set(), dpool = shuffle(DISTRACT.filter(k => !want.has(k) && !ev["t:" + k]), sc.id + "|d"); let di = 0, out = [], prefix = [];
     // anything still missing from history (allergies before meds) comes before treatment

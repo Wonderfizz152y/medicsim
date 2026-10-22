@@ -38,6 +38,32 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.10.2-naloxone
+- **Naloxone on any call.** It's available by voice and by tap on every call where the patient is altered and hypoventilating, not only the opioid scenario.
+  - **All actions › Meds:** Naloxone 2 mg IN, Naloxone 2 mg IM and Naloxone 1 mg IV.
+  - **Next-step treatment slots:** naloxone is shuffled in with the other options whenever the patient is altered (not seizing) with RR < 12. A "Repeat naloxone" chip appears while RR stays under 12.
+  - **BMV first:** on an apneic/hypoxic patient (RR < 8 or SpO₂ < 90), the BVM chip comes before naloxone. The naloxone chip shows only once ventilations are ordered (TP 1241 ❶).
+- **Grading** (TP 1241 rev 07-01-26 #4/#6/#10 ❶; MCG 1317.29 rev 01-01-26):
+  - **BMV first:** giving naloxone to an apneic/hypoxic patient without BMV is a deviation (1241 ❶). It's a caution if BMV was ordered but hadn't started yet.
+  - **Not indicated:** a dose when the patient is alert with normal RR is a deviation (1241 #4). A dose when the patient is altered but breathing adequately is a caution: titrate to respiratory rate and tidal volume, not to consciousness.
+  - **Adult dosing:** 2-4 mg IN, 2 mg IM, or 0.8-2 mg IV in small increments, with a maximum of 8 mg by all routes.
+    - A dose outside these ranges gets a note; going over 8 mg is a deviation.
+    - Dose checks are adult only; pediatric calls are skipped.
+  - **Partial response:** if the patient responds only partly and opioid OD is strongly suspected, a note says to contact Base for more doses (1241 #6).
+  - **Cardiac arrest:** naloxone is not indicated (MCG 1317.29).
+- **Response by cause:**
+  - **True opioid calls:** RR, SpO₂ and mentation improve dose by dose.
+    - Overshooting precipitates withdrawal (vomiting, agitation, tachycardia) and adds an MCG 1317.29 note.
+    - Long-acting agents (oxycodone ER, fentanyl patches) re-sedate as naloxone wears off.
+  - **Non-opioid causes** (hypoglycemia, stroke, head injury, postictal, etc.): naloxone has no effect and is never a critical error. After 3 minutes the call shows "No change…" and the debrief nudges you to keep working AEIOU-TIPS (1241 #10 / MCG 1320).
+- **AEIOU-TIPS 'O'** is now credited by pupils, SpO₂, med bottles, patches, track marks or a naloxone trial.
+- **New calls (TOXICOLOGY):**
+  - **fent_found_down:** a 27-year-old found down in a library restroom after injecting fentanyl.
+    - Findings: syringe, burnt spoon, cotton and a belt tourniquet; fresh and old track marks; pinpoint pupils; RR 4.
+    - A titrated dose holds. Over-reversal precipitates withdrawal.
+  - **oxy_elder:** an 81-year-old with early dementia and an accidental double dose of oxycodone ER.
+    - Findings: two empty pill-organizer slots and a short OxyContin count.
+    - He wakes with naloxone, then re-sedates about 8 minutes later. Repeat the dose and contact Base.
 ### 2.10.1-vitaltaps
 - **Separate vitals taps:** Blood pressure, Resp rate and Pulse ox are now their own tap actions. They do exactly what the voice command does: the partner takes the reading, and the findings, grading credit and monitor/vitals display are the same.
   - **Next-step bar:** they sit in the vitals step (after pulses and skin), next to the combined "BP, SpO₂, RR" chip. That chip shows only until the first vital is taken.
