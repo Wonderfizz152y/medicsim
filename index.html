@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.4-instrcap 7bcfa72dfa">
+<meta name="medicsim-version" content="2.10.5-szdys 44087a0587">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -831,7 +831,8 @@ const PROTOCOLS = {
     url: "https://file.lacounty.gov/SDSInter/dhs/1040410_1231Seizure2018-04-25.pdf",
     keyPoints: [
       "Base contact required for status epilepticus or pregnant patients",
-      "Airway, O2 prn, assess for trauma, monitor prn",
+      "Airway FIRST (#1-2): a seizing or postictal patient is hypoxic. Position (recovery), suction, NPA, high-flow O2 by NRB, BVM if respirations are inadequate (especially after midazolam)",
+      "Assess for trauma, monitor prn",
       "Active seizure witnessed by EMS: Midazolam 10 mg (2 mL) IM/IN, OR Midazolam 5 mg (1 mL) IV/IO if existing access (repeat x1 in 2 min); max 10 mg before Base contact",
       "CONTACT BASE for persistent seizure (max total 20 mg)",
       "Suspected eclampsia (≥ 20 wk pregnant to 6 wk postpartum): TP 1217",
@@ -893,6 +894,15 @@ const PROTOCOLS = {
     url: "https://file.lacounty.gov/SDSInter/dhs/1040604_1365-TCP.pdf",
     keyPoints: ["Indication: symptomatic bradycardia with poor perfusion (TP 1212); NOT for asystole", "Awake patient: sedation/analgesia (midazolam 5 mg; pain per MCG 1345) unless RR < 10 or unresponsive", "Pads anterior/posterior (or per manufacturer); monitor leads on", "Rate 70/min (100/min for children < 12 months)",
       "Start at 40 mA (or per manufacturer) and increase slowly until ELECTRICAL capture (spike → wide QRS + T) AND MECHANICAL capture (palpable femoral pulse at the paced rate), then add 10 mA", "No capture by 120–130 mA: reposition the pads and re-try", "Poor perfusion despite capture: increase the rate by 10/min (max 100 adult, 120 pediatric)", "Electrical capture can occur WITHOUT mechanical capture: confirm a palpable pulse at the paced rate (1212 ❹ / MCG 1365 #5 don't specify the site)"]},
+  "1317.25": { title: "MCG 1317.25 Midazolam", revised: "08-01-26",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1188049_1317.25-Midazolam.pdf",
+    keyPoints: ["Seizure (TP 1231): 10 mg IM/IN (IN split between nostrils via atomizer) or 5 mg IV/IO with existing access; repeat x1 in 2 min; max 10 mg before Base, 20 mg total with Base", "Onset: IV 3–5 min, IM 15–20 min, IN 6–14 min (IN still beats IV when there is no line)", "Contact Base for additional IM/IN dosing", "Adverse effect: respiratory depression / hypotension: watch RR, SpO2 and EtCO2; BVM if respirations become inadequate"]},
+  "1317.15": { title: "MCG 1317.15 Diphenhydramine", revised: "01-01-26",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1053938_1317.15-Diphenhydramine2018-07-01.pdf",
+    keyPoints: ["Adult: 50 mg slow IV push, or 50 mg deep IM if no vascular access", "Indications include dystonic reaction (TP 1239) and allergic reaction (TP 1219)", "Onset 15–30 min; sedation is common"]},
+  "1239": { title: "Dystonic Reaction", revised: "01-26-21",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1040417_1239DystonicReaction2018-04-24.pdf",
+    keyPoints: ["Base contact REQUIRED to confirm the provider impression before treatment (step 4)", "Airway; vascular access prn; assess for medication exposure (step 3)", "Common causes: prochlorperazine (Compazine), hydroxyzine, promethazine (Phenergan), haloperidol (Haldol), thioridazine, alprazolam, metoclopramide (Reglan), droperidol, fluphenazine", "Signs: torticollis, oculogyric crisis, jaw/tongue protrusion, trouble speaking, anxiety; patient awake and oriented (rule out stroke and seizure)", "Diphenhydramine 50 mg slow IV push, or 50 mg deep IM if no access (step 5)", "NOT a seizure: no midazolam. NOT an opioid toxidrome: no naloxone"]},
   "1317.24": { title: "MCG 1317.24 Magnesium Sulfate", revised: "per county PDF",
     url: "https://file.lacounty.gov/SDSInter/dhs/1212486_1317.24MagnesiumSulfate.pdf",
     keyPoints: ["Standing-order indication: preeclampsia/eclampsia only (≥ 20 wk pregnant to 6 wk postpartum)", "Polymorphic VT (e.g. torsades de pointes): \"may be indicated, only with Base Physician order, in select cases\"", "Dose: 4 g in 100 mL NS or SW IV over 20 min (10 g IM if no vascular access)", "Contraindications: known heart block, myasthenia gravis; caution in severe kidney disease"]},
@@ -985,7 +995,7 @@ const DOSING = (() => {
       if (ratio >= 5 || ratio <= 0.2) add(`${d.name} ${row.dose} is a ${ratio >= 5 ? Math.round(ratio) + "x overdose" : Math.round(1 / ratio) + "x underdose"}: check your units. LA County adult dose: ${d.text}.`, "deviation");
       else if (!sk("dose") && Math.abs(val - exp) > 1e-6) add(`LA County adult ${d.name} dose is ${exp} ${d.unit}${id === "ketorolac" && route === "IM" && kg ? ` (1 mg/kg for ${kg} kg, max 30 mg)` : ""}; you said ${row.dose}. (${d.text})`, "note");
     } else if (val != null && sk("dose")) { const r = Math.max(val, 1e-9); /* own checks cover value; only catch gross unit errors below */
-      const ref = { aspirin: 325, nitro: 0.4, albuterol: 5, adenosine: 12, naloxone: 2, midaz: 5, epi: 0.5 }[id];
+      const ref = { aspirin: 325, nitro: 0.4, albuterol: 5, adenosine: 12, naloxone: 2, epi: 0.5 }[id];
       if (ref && (r / ref >= 10 || r / ref <= 0.1)) add(`${d.name} ${row.dose} is off by ${r / ref >= 10 ? Math.round(r / ref) + "x" : Math.round(ref / r) + "x"}: check your units. LA County adult dose: ${d.text}.`, "deviation"); }
     // cumulative totals / repeats
     const tot = (st.x.doseTot = st.x.doseTot || {}), cnt = st.count[id] || 0, used = val != null ? val : (typeof exp === "number" ? exp : 0);
@@ -1368,14 +1378,14 @@ const RADIO = (() => {
     CPMI: /chest pain|stemi|\bmi\b|heart attack|chest pressure|acs/, CPSC: /chest pain|chest pressure|acs|cardiac/, CHFF: /short(ness)? of breath|\bsob\b|chf|heart failure|pulmonary edema|respiratory distress|difficulty breathing/,
     ANPH: /anaphyla|allergic|allergy/, ALRX: /allergic|allergy|hives|rash/, SOBB: /asthma|copd|wheez|short(ness)? of breath|respiratory distress|bronchospasm|difficulty breathing|sob\b/,
     RDOT: /short(ness)? of breath|respiratory distress|difficulty breathing|\bpe\b|pulmonary embol|sob\b/, HYPO: /hypoglyc|low (blood )?(sugar|glucose)|diabetic/, HYPR: /hyperglyc|dka|high (blood )?(sugar|glucose)|diabetic/,
-    ODPO: /overdose|\bod\b|opioid|ingestion|poison|fentanyl|heroin/, STRK: /stroke|cva|tia|weakness|facial droop|slurred|aphasi|neuro deficit/, SEAC: /seiz/, SEPI: /seiz|postictal/,
+    ODPO: /overdose|\bod\b|opioid|ingestion|poison|fentanyl|heroin/, STRK: /stroke|cva|tia|weakness|facial droop|slurred|aphasi|neuro deficit/, SEAC: /seiz/, SEPI: /seiz|postictal/, DYRX: /dystoni|torticollis|oculogyric|neck spasm|tongue protru|reglan|haldol|compazine|metoclopramide|haloperidol|prochlorperazine/,
     CANT: /arrest|code|pulseless|v ?fib|cpr|rosc/, DYSR: /brady|tachy|dysrhythm|arrhythm|svt|heart block|a ?fib|palpitat|v ?tach|pacemaker|pacer|dizz|weak|polymorph|torsade|wide ?complex|wpw|pre ?excit/, SYNC: /syncop|passed out|faint|lost consciousness|syncopal/,
     SEPS: /seps|septic|fever|infection|uti|pneumonia/, FEVR: /fever|flu|febrile/, ETOH: /intox|etoh|alcohol|drunk/,
     PREG: /pregnan|eclamp|preeclamp|seiz|bleed|hemorrhag|pph|post ?partum|weeks/, BRTH: /labor|deliver|crown|birth|pregnan|contraction/, LABR: /labor|contraction|pregnan/, BABY: /newborn|baby|neonat/,
   };
   const FIND = {
     CPMI: /12 ?lead|stemi|st elevation/, CPSC: /12 ?lead|no stemi|st /, STRK: /lams|last (known|seen) well|lkw|facial|grip|drift|speech/, HYPO: /(sugar|glucose|bgl|dex|d stick)\b/, HYPR: /(sugar|glucose|bgl)\b/,
-    CANT: /rhythm|v ?fib|asystole|pea|shock|rosc|cpr/, ANPH: /hives|wheez|swell|stridor|angioedema/, ALRX: /hives|rash|itch|wheez/, SOBB: /wheez|lung sounds|breath sounds|tripod|accessory/, CHFF: /rales|crackles|lung sounds|edema|jvd/,
+    CANT: /rhythm|v ?fib|asystole|pea|shock|rosc|cpr/, ANPH: /hives|wheez|swell|stridor|angioedema/, ALRX: /hives|rash|itch|wheez/, DYRX: /torticollis|oculogyric|spasm|tongue|jaw|airway|new med|reglan|haldol|compazine|neuro|a ?& ?o|alert/, SOBB: /wheez|lung sounds|breath sounds|tripod|accessory/, CHFF: /rales|crackles|lung sounds|edema|jvd/,
     RDOT: /lung sounds|clear|tachy|leg|swelling|birth control|travel/, DYSR: /rhythm|brady|tachy|block|a ?fib|svt|v ?tach|paced|12 ?lead|polymorph|torsade|\bqt\b|delta wave|wpw/, ODPO: /pupil|pinpoint|resp|breathing|capno|etco2/, SEAC: /seiz|postictal|tongue|incontin/, SEPI: /seiz|postictal|etoh|alcohol/,
     SYNC: /orthostat|glucose|sugar|12 ?lead|rhythm|lacer|head/, SEPS: /temp|fever|sugar|glucose|lung|uri|etco2|capno/, FEVR: /temp|fever/, ETOH: /glucose|sugar|alcohol|etoh/, PREG: /blood pressure|bp|fundus|blood loss|ebl|headache|vision|weeks|reflex/, BRTH: /crown|contraction|weeks|ruptur|water|apgar|gravida|g ?\d|newborn/, LABR: /contraction|weeks|ruptur|water/,
   };
@@ -1427,7 +1437,7 @@ if (typeof module !== "undefined") module.exports = RADIO;
 const DEBRIEF = (() => {
   // education targets, seconds from first patient contact (scenario start). Only applied to items the scenario expects.
   const TARGET = { "t:cpr": 30, "t:defib": 120, "t:tourniquet": 60, "t:bvm": 90, "t:sga": 300, "t:naloxone": 240, "t:epi": 240, "t:pushepi": 300, "t:cpap": 240, "t:pace": 300, "x:ecap": 360, "a:mechcap": 420, "x:margin": 480, "t:cardiovert": 300, "x:converted": 360, "t:adenosine": 300, "t:atropine": 300,
-    "t:midaz": 240, "t:d10": 480, "t:oralglucose": 480, "t:glucagon": 480, "a:bgl": 300, "a:monitor": 240, "a:12lead": 600, "t:aspirin": 600, "t:notify": 720, "a:lams": 480, "a:stroke": 480, "t:albuterol": 300, "t:nitro": 600, "t:o2": 180, "t:nrb": 180, "t:calcium": 480, "t:removepatch": 300, "t:ns": 600, "t:base": 900, "t:transport": 1200 };
+    "t:midaz": 240, "t:diphen": 600, "t:d10": 480, "t:oralglucose": 480, "t:glucagon": 480, "a:bgl": 300, "a:monitor": 240, "a:12lead": 600, "t:aspirin": 600, "t:notify": 720, "a:lams": 480, "a:stroke": 480, "t:albuterol": 300, "t:nitro": 600, "t:o2": 180, "t:nrb": 180, "t:calcium": 480, "t:removepatch": 300, "t:ns": 600, "t:base": 900, "t:transport": 1200 };
   const DEFAULT_CRIT = 600;
   function timeline(checklist) {
     const rows = [];
@@ -1517,7 +1527,7 @@ const PROVIDER_IMPRESSIONS = {
   RDOT: ["Respiratory Distress / Other", "1237"], RARF: ["Respiratory Arrest / Respiratory Failure", "1237"], CHOK: ["Airway Obstruction", "1234"],
   ANPH: ["Anaphylaxis", "1219"], ALRX: ["Allergic Reaction", "1219"], HYPO: ["Hypoglycemia", "1203"], HYPR: ["Hyperglycemia", "1203"],
   ALOC: ["ALOC – Not Hypoglycemia or Seizure", "1229"], ODPO: ["Overdose / Poisoning / Ingestion", "1241"], ETOH: ["Alcohol Intoxication", "1241"],
-  STRK: ["Stroke / CVA / TIA", "1232"], SEAC: ["Seizure – Active", "1231"], SEPI: ["Seizure – Postictal", "1231"], SYNC: ["Syncope / Near Syncope", "1233"],
+  DYRX: ["Dystonic Reaction", "1239"], STRK: ["Stroke / CVA / TIA", "1232"], SEAC: ["Seizure – Active", "1231"], SEPI: ["Seizure – Postictal", "1231"], SYNC: ["Syncope / Near Syncope", "1233"],
   SEPS: ["Sepsis", "1204"], FEVR: ["Fever", "1204"], WEAK: ["Weakness – General", "1202"], DIZZ: ["Dizziness / Vertigo", "1230"],
   HYTN: ["Hypertension", "1202"], PREG: ["Pregnancy Complications", "1217"], BRTH: ["Childbirth (Mother)", "1215"], LABR: ["Pregnancy / Labor", "1218"], BABY: ["Newborn", "1216-P"], COMO: ["Carbon Monoxide", "1238"], SMOK: ["Smoke Inhalation", "1236"],
   NAVM: ["Nausea / Vomiting", "1205"], DRHA: ["Diarrhea", "1205"], TRMA: ["Traumatic Injury", "1244"], HOTN: ["Shock / Hypotension", "1207"], FAIL: ["Medical Device Malfunction – Fail", "1206"],
@@ -1560,7 +1570,7 @@ const NLU = (() => {
     [/\b(heads|hats|pats|that's|had some) on the patient\b/g, "pads on the patient"], [/\b(interior|and terrier|material) (pasteur year|posterior)\b/g, "anterior posterior"],
     [/\b(ephemeral|family|feminine) (pulse|polls|calls|house)\b/g, "femoral pulse"],
     [/\b(turn )?(the )?(paces|paces are|pencil|pacers are|pace is) off\b/g, " pacer off"], [/\bon the (out|dial)\b/g, "on the output"], [/\band out$/g, "on the output"], [/\b(increased?|give me \d+) ema\b/g, "$1 ma"],
-    [/\b(midas,? allam|metisol and|metisol|middizzollum|medizal in|medizal|midas allam|met is all and)\b/g, "midazolam"], [/\b(fenton r\.?|fenton are|benton out|fenton)\b(?= \d| fifty)/g, "fentanyl"],
+    [/\b(midas,? allam|metisol and|metisol|middizzollum|medizal in|medizal|midas allam|met is all and|mid as a lamb|mid as a lam|mid a zolam|midazolan|midazalam|midazelam|midazo lam)\b/g, "midazolam"], [/\b(diphen hydramine|die fen hydramine|diphenhydramin|diphenhydromine|diphenhydra mean|benadril|ben a drill|bennadryl|benedryl)\b/g, "diphenhydramine"], [/\b(fenton r\.?|fenton are|benton out|fenton)\b(?= \d| fifty)/g, "fentanyl"],
     [/\b(ml|m l) ants\b|\bmelee hamps\b|\bmilli hamps\b/g, "milliamps"], [/^ ?(chalking|chucking|shocking now|shock in)\.? ?$/g, " shocking "], [/^ ?(tink|tinkon|tink on|think on)\.? ?$/g, " sync on "],
     [/\bdump the chart\b/g, "dump the charge"], [/\bno catch yet\b/g, "no capture yet"], [/\b(from|for) a chemical capture\b/g, "for mechanical capture"], [/\bhads on\b/g, "pads on"],
     [/\bon the (out|it up|it out)$/g, "on the output"], [/\bup (\d+|ten|twenty) more\b/g, "up by $1 more"],
@@ -2002,7 +2012,7 @@ const NLU = (() => {
     return out;
   }
   function parseRoute(t) {
-    if (/\bin\b(?! (the|your|his|her|a|my|it|there|here|on|to|for|pain|and|\d))|\bin$|intranasal|nasal(ly)?\b(?! cannula| airway| trumpet)|nostril|atomiz|\bmad\b/.test(t) && !/nasal cannula/.test(t) && /narcan|naloxone|midaz|versed|fentanyl|morphine|ketorolac|toradol|zofran|ondansetron|glucagon|benadryl|diphenhydramine|intranasal|nostril|atomiz|nasal(ly)?\b(?! cannula)/.test(t)) return "IN";
+    if (/\bin\b(?! (the|your|his|her|a|my|it|there|here|on|to|for|pain|and|\d))|\bin$|intranasal|nasal(ly)?\b(?! cannula| airway| trumpet)|nostril|\b(in|up|into) (the|his|her|each|one|both) nose\b|atomiz|\bmad\b/.test(t) && !/nasal cannula/.test(t) && /narcan|naloxone|midaz|versed|fentanyl|morphine|ketorolac|toradol|zofran|ondansetron|glucagon|benadryl|diphenhydramine|intranasal|nostril|atomiz|nasal(ly)?\b(?! cannula)/.test(t)) return "IN";
     if (/\bim\b|intramuscular|thigh|deltoid|epipen/.test(t)) return "IM";
     if (/\bio\b|intraosseous/.test(t)) return "IO";
     if (/\biv\b|ivp|intravenous|push/.test(t)) return "IV";
@@ -2397,16 +2407,16 @@ const NLU = (() => {
     if (out.assess.includes("v4r")) { out.assess = out.assess.filter(a => a !== "12lead" && a !== "monitor"); out.tx = out.tx.filter(x => x.id !== "transport"); }
     { // v2.8: negated medication orders ("hold the nitro", "no nitro, RV infarct") must never give the drug
       // v2.10.2: + epi/epinephrine, push-dose/pressors, naloxone/narcan ("don't give epi", "hold the push dose", "not push dose epi, just fluids", "no narcan")
-      const NEG = /\b(?:hold(?:ing)?(?: off(?: on)?)?|withhold\w*|avoid|skip|without|contraindicat\w*|(?:don'?t|do not|let'?s not|not|no|never)(?: (?:give|giving|use|push|do|start|need|want|go with))?)(?: (?:the|any|more|his|her|a|an|that))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan)\b/g;
-      const map = { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "ns", fluids: "ns", bolus: "ns", naloxone: "naloxone", narcan: "naloxone" };
+      const NEG = /\b(?:hold(?:ing)?(?: off(?: on)?)?|withhold\w*|avoid|skip|without|contraindicat\w*|(?:don'?t|do not|let'?s not|not|no|never)(?: (?:give|giving|use|push|do|start|need|want|go with))?)(?: (?:the|any|more|his|her|a|an|that))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan|midazolam|midaz|versed|diphenhydramine|benadryl)\b/g;
+      const map = { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "ns", fluids: "ns", bolus: "ns", naloxone: "naloxone", narcan: "naloxone", midazolam: "midaz", midaz: "midaz", versed: "midaz", diphenhydramine: "diphen", benadryl: "diphen" };
       // v2.10.3: out.held = the drugs the medic held, named for the partner's acknowledgment ("Copy, holding the push-dose epi.")
-      const LABEL = w => /^push[- ]?dose|^pressor/.test(w) ? "push-dose epi" : /^epi/.test(w) ? "epi" : { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "fluids", fluids: "fluids", bolus: "fluids", naloxone: "naloxone", narcan: "Narcan" }[w];
+      const LABEL = w => /^push[- ]?dose|^pressor/.test(w) ? "push-dose epi" : /^epi/.test(w) ? "epi" : { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "fluids", fluids: "fluids", bolus: "fluids", naloxone: "naloxone", narcan: "Narcan", midazolam: "midazolam", midaz: "midazolam", versed: "Versed", diphenhydramine: "diphenhydramine", benadryl: "Benadryl" }[w];
       let m; const neg = new Set(), held = []; while ((m = NEG.exec(t))) { const w0 = m[1], w = w0.startsWith("nitro") ? "nitro" : w0;
         if (/^ ?allerg/.test(t.slice(NEG.lastIndex))) continue; // "no aspirin allergy" is history, not a hold
         if (/^push[- ]?dose|^pressor/.test(w)) neg.add("pushepi"); else if (/^epi/.test(w)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w]) neg.add(map[w]);
         const lb = LABEL(w); if (lb && !held.includes(lb)) held.push(lb);
         // coordinated list: "hold the nitro and the aspirin", "no fentanyl or morphine"
-        const DR = /^(?:,? (?:and|or|nor)|,)(?: (?:the|any|his|her))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan)\b/;
+        const DR = /^(?:,? (?:and|or|nor)|,)(?: (?:the|any|his|her))? (nitro\w*|ntg|aspirin|asa|fentanyl|morphine|fluids?|bolus|epi(?:nephrine)?|epi'?s|push[- ]?dose(?: (?:epi\w*|pressors?))?|pressors?|naloxone|narcan|midazolam|midaz|versed|diphenhydramine|benadryl)\b/;
         let k; while ((k = t.slice(NEG.lastIndex).match(DR))) { NEG.lastIndex += k[0].length; const w2 = k[1].startsWith("nitro") ? "nitro" : k[1];
           if (/^push[- ]?dose|^pressor/.test(w2)) neg.add("pushepi"); else if (/^epi/.test(w2)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w2]) neg.add(map[w2]);
           const l2 = LABEL(w2); if (l2 && !held.includes(l2)) held.push(l2); } }
@@ -2546,10 +2556,65 @@ const SIM = (() => {
     timer = setInterval(() => tick(1), 1000);
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
-  function addEffect(k, onsetOverride) { const d = EFFECTS[k]; if (!d) return; const w = k === "albuterol" && st.x.albW != null ? st.x.albW : 1; st.eff.push({ k, t0: st.t, onset: onsetOverride || d[0], dur: d[1], w }); }
+  function addEffect(k, onsetOverride) { const d = EFFECTS[k]; if (!d) return; const w = k === "albuterol" && st.x.albW != null ? st.x.albW : k === "midaz" && st.x.midazW != null ? st.x.midazW : 1; st.eff.push({ k, t0: st.t, onset: onsetOverride || d[0], dur: d[1], w }); }
+  /* v2.10.5 SEIZURE AIRWAY (TP 1231 #1-2, MCG 1302, MCG 1317.25 adverse effects). Actively seizing = hypoxic (high 70s-80s).
+   * Postictal / after midazolam the SpO2 stays low (snoring, secretions, hypoventilation) until the airway is managed:
+   * recovery position, suction, NPA/OPA, O2 (NRB), BVM when RR is inadequate. Without airway care it slowly worsens. */
+  function szCall() { return !!sc.seizureAirway || /^1231/.test(sc.protocol || ""); }
+  function szMd() { const d = st.x.szMidaz; if (!d || !d.length) return 0; const age = st.t - d[d.length - 1].t, fade = age < 600 ? 1 : Math.max(0.25, 1 - (age - 600) / 600);
+    const od = Math.max(1, (st.x.midazTotal || 0) / (sc.peds ? 99 : 20)); return Math.min(1.6, E(st, "midaz") * fade * od); }
+  function szSupport() { const ev = st.events, has = k => (ev[k] || []).some(t => t >= (st.x.szAirT0 ?? 0) - 1);
+    const pos = st.flags.position === "recovery" ? 1 : 0, suc = has("t:suction") ? 1 : 0, adj = (ev["t:opa"] || []).length ? 1 : 0;
+    const o2 = st.flags.o2 === "nrb" || st.flags.cpap ? 1 : st.flags.o2 === "nc" ? 0.5 : st.flags.o2 === "o2" ? 0.7 : 0, vent = st.flags.o2 === "bvm" || !!st.flags.sga;
+    return { pos, suc, adj, o2, vent, patency: Math.min(1, 0.35 * pos + 0.3 * suc + 0.45 * adj) }; }
+  function szAirway(tg) {
+    if (st.x.arrest || tg.spo2 == null || tg.pulse === false) return tg;
+    const m0 = sc.mental ? sc.mental(st) : "alert", sz = m0 === "seizing";
+    if (!szCall() && !sz) return tg;
+    const S0 = szSupport(); if (S0.patency >= 0.3 || S0.o2 || S0.vent) st.x.szAirCare = true;
+    const md = szMd(), post = sz ? 0 : m0 === "unresponsive" ? 1 : m0 === "confused" ? 0.6 : 0, load0 = sz ? 1 : Math.max(post, Math.min(1, md)),
+      // v2.10.5 (Adrian): postictal hypoxia does NOT fix itself. Until the airway has been managed it persists even as the patient wakes up
+      load = !sz && st.x.szPostT != null && !st.x.szAirCare && m0 !== "arrest" ? Math.max(load0, 0.7) : load0;
+    if (sz) { if (st.x.szOn == null) st.x.szOn = st.t; st.x.szAirT0 = st.x.szAirT0 || st.t; }
+    else if (st.x.szOn != null) { st.x.szOn = null; st.x.szPostT = st.t; st.x.szAirT0 = st.t; }
+    if (st.x.szPostT == null && !sz && load > 0) st.x.szPostT = st.t;
+    if (load <= 0) return tg;
+    const S = szSupport(); tg = Object.assign({}, tg);
+    let spo2;
+    if (sz) spo2 = 79 + 5 * S.patency + 6 * Math.max(S.o2, S.vent ? 0.8 : 0); // can't ventilate well through a clenched jaw
+    else {
+      const raw = 95 - 8 * load - 5 * Math.min(1, md) - 6 * Math.max(0, md - 1); // postictal/benzodiazepine hypoventilation
+      const worse = Math.min(load < 0.5 ? 2 : 5, Math.max(0, st.t - (st.x.szPostT ?? st.t)) / 60); // keeps sliding without airway care
+      const support = S.vent ? 1 : Math.min(md > 0.5 ? 0.55 : 1, 0.45 * S.patency + 0.55 * S.o2);
+      spo2 = raw - worse * (1 - support); spo2 += (98 - spo2) * support;
+      if (md > 0) { tg.rr = Math.min(tg.rr || 14, Math.max(4, 15 - 7 * md)); if (!S.vent) tg.etco2 = (tg.etco2 || 40) + 9 * Math.min(1, md); }
+      if (/vomit|blood|foreign/i.test(String(tg.airway || ""))) { /* curveball airway finding wins (vomitus etc.) */ }
+      else if (load > 0.5 && S.patency < 0.5 && !S.vent) tg.airway = "Snoring respirations; tongue and secretions partially obstructing (needs positioning, suction, NPA)";
+      else if (S.vent) tg.airway = "Patent with BVM support";
+      if (md > 0.5 && !S.vent) tg.lungs = "Shallow, slow respirations; poor tidal volume";
+    }
+    tg.spo2 = Math.min(100, spo2);
+    if (tg.spo2 < 90 && !/cyan|dusky/i.test(String(tg.skin || ""))) tg.skin = String(tg.skin || "Warm") + "; lips dusky";
+    return tg;
+  }
+  function szTick(dt) {
+    if (st.x.arrest || !(szCall() || mental() === "seizing") || !st.v.spo2) return;
+    const S = szSupport(), hyp = st.v.spo2 < 90;
+    // airway care is graded: hypoxic for 2 min with no O2/airway intervention, inadequate respirations after midazolam without BVM
+    if (hyp && !S.o2 && !S.vent && S.patency < 0.3) { st.x.szHypS = (st.x.szHypS || 0) + dt;
+      if (st.x.szHypS >= 120 && !st.x.szHypDev) { st.x.szHypDev = true; rec("x:szHypox"); ui.say([dev(`SpO2 ${Math.round(st.v.spo2)}% for 2 minutes on a seizure call with no airway management or O2. Position/suction/NPA and high-flow O2; BVM if respirations are inadequate.`, "1231 #1-2 / MCG 1302")]); } }
+    if (szMd() > 0.5 && st.v.rr < 10 && !S.vent) { st.x.szRrS = (st.x.szRrS || 0) + dt;
+      if (st.x.szRrS === dt) event(`Respirations are slow and shallow after the midazolam: RR ${Math.round(st.v.rr)}, SpO2 ${Math.round(st.v.spo2)}%.`, "find");
+      if (st.x.szRrS >= 90 && !st.x.szRrDev) { st.x.szRrDev = true; rec("x:midazNoBvm"); ui.say([dev(`Respiratory depression after midazolam (RR ${Math.round(st.v.rr)}) was not supported. Assist ventilations with BVM when RR/tidal volume is inadequate.`, "MCG 1317.25 / 1231 #1 / MCG 1302")]); } }
+    else if (S.vent && szMd() > 0.5) rec("x:midazBvm");
+    const d = st.x.szMidaz; if (d && d.length && mental() === "seizing") { const l = d[d.length - 1], wait = l.iv ? 120 : 300;
+      if (st.t - l.t >= wait && st.x.szStillCue !== l.t) { st.x.szStillCue = l.t; event(`Still seizing ${Math.round((st.t - l.t) / 60)} min after midazolam ${l.mg} mg ${l.route}.`, "find");
+        ui.say([{ speaker: "warn", text: l.iv ? "Instructor note: still seizing 2 min after IV midazolam. MCG 1317.25 allows a repeat of 5 mg IV/IO x1 (max 10 mg before Base). [LA County Ref. 1231 #6]" : "Instructor note: still seizing after IM/IN midazolam. CONTACT BASE for additional dosing (max 20 mg total with Base). [LA County Ref. 1231 #6 / MCG 1317.25]" }]); } }
+  }
   function computeTargets(snap) {
     let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
     if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
+    tg = szAirway(tg);
     // v2.10.1 push-dose epi (MCG 1317.17: onset < 2 min, duration 5-10 min IV): transient BP/HR rise for scenarios that don't model it themselves
     if (!st.x.arrest && tg.sbp) { const pe = (sc._pm != null ? sc._pm : (sc._pm = /pushepi/.test(String(sc.targets) + String(sc.drift)) || !!(sc.txResp && sc.txResp.pushepi))) ? 0 : Math.min(1.5, E(st, "pushepi")), od = E(st, "epiod"); // L7: rapid stacked pushes saturate (no 10x surge)
       if (pe || od) tg = Object.assign({}, tg, { sbp: tg.sbp + 18 * pe + 75 * od, dbp: (tg.dbp || tg.sbp * 0.6) + 8 * pe + 35 * od, hr: (tg.hr || 0) + 6 * pe + 40 * od }); }
@@ -2592,6 +2657,7 @@ const SIM = (() => {
     if (typeof COURSE !== "undefined") { COURSE.tick(st, sc, mental(), { rec, event }); }
     if (typeof DEVICE !== "undefined" && st.x.dv) DEVICE.tick(devC());
     computeTargets(false);
+    szTick(dt);
     if (typeof INTERP !== "undefined") ipTick();
     if (typeof RADIO !== "undefined") radioTick();
     if (typeof COURSE !== "undefined" && !st.ended) { const c = COURSE.cue(st, sc, mental()); if (c) { log("find", c); ui.say([{ speaker: "find", text: c, cue: true }]); } }
@@ -3171,14 +3237,26 @@ const SIM = (() => {
           if ((route === "IV" || route === "IO") && !st.flags.iv) { const cv = sc.protocol === "1213" || (st.x.dv && st.x.dv.sync); notes.push(dev(`IV midazolam needs IV access. Use IM/IN, and don't delay ${cv ? "cardioversion" : "TCP"} for access.`, cv ? "1213 #12" : "1212 #6", "caution")); }
           if (st.last.midaz != null && st.t - st.last.midaz < 285) notes.push(dev("Midazolam sedation repeat is in 5 min prn x1.", "1212 #9 / 1213", "caution"));
           st.x.midazTotal = (st.x.midazTotal || 0) + (mg || 5); if (st.x.midazTotal > 10 && !st.events["t:base"]) notes.push(dev("Max 10 mg midazolam before Base contact.", "1212 #9 / 1213"));
-        } else {
-        narr = `Midazolam ${mg || (route === "IV" || route === "IO" ? 5 : 10)} mg ${route}`;
-        if (mental() !== "seizing") notes.push(dev("Midazolam (seizure) is for active seizure witnessed by EMS.", "1231 #6"));
-        if (mg && (((route === "IM" || route === "IN") && mg !== 10) || ((route === "IV" || route === "IO") && mg !== 5))) notes.push(dev(`Midazolam dose per 1231: 10 mg IM/IN or 5 mg IV/IO (you said ${mg} mg ${route}).`, "1231 #6", "note"));
-        if ((route === "IV" || route === "IO") && !st.flags.iv) notes.push(dev("IV midazolam only with existing access. Give 10 mg IM/IN instead of delaying.", "1231 #6", "caution"));
-        st.x.midazTotal = (st.x.midazTotal || 0) + (mg || 10); if (st.x.midazTotal > 10 && !st.events["t:base"]) notes.push(dev("Max 10 mg midazolam before Base contact.", "1231 #6"));
+        } else { // v2.10.5 seizure: TP 1231 #6 (rev 07-01-26), MCG 1317.25 (rev 08-01-26), TP 1217 #18 ⓫
+        const ivR = route === "IV" || route === "IO", exp = ivR ? 5 : 10, given = mg || exp, peds = PEDS(), szNow = mental() === "seizing", base = !!st.events["t:base"];
+        narr = `Midazolam ${given} mg ${route}${route === "IN" ? " via atomizer (MAD), split between nostrils" : route === "IM" ? " (lateral thigh)" : ""}`;
+        if (!szNow && sc.protocol !== "1217") notes.push(dev(`Not indicated: midazolam is only for an ACTIVE seizure witnessed by EMS (1231 ❶ includes focal seizure with ALOC). This patient is ${mental()}, not seizing: support the airway, O2, check glucose.`, "1231 #5-6 / MCG 1317.25"));
+        if (!peds && mg) { const r = mg / exp;
+          if (r >= 10 || r <= 0.1) notes.push(dev(`Midazolam ${mg} mg ${route} is a ${r >= 10 ? Math.round(r) + "-fold overdose" : Math.round(1 / r) + "-fold underdose"}. Seizure dose is 10 mg (2 mL) IM/IN, or 5 mg (1 mL) IV/IO with existing access.`, "1231 #6 / MCG 1317.25", "critical"));
+          else if (Math.abs(mg - exp) > 0.01) notes.push(dev(`Wrong midazolam dose: the seizure dose is 10 mg IM/IN or 5 mg IV/IO (you said ${mg} mg ${route}).`, "1231 #6 / MCG 1317.25", "deviation")); }
+        if (ivR && !st.flags.iv) notes.push(dev("IV midazolam only with EXISTING access. Give 10 mg IM/IN instead of delaying for an IV.", "1231 #6", "caution"));
+        const prev = st.x.szMidaz || [], ivPrev = prev.filter(p => p.iv).length; let repDev = false;
+        if (prev.length && !peds) { const l = prev[prev.length - 1], dtp = st.t - l.t;
+          if (ivR && l.iv && ivPrev === 1) { if (dtp < 105) notes.push(dev(`IV midazolam repeat is x1 after 2 min prn (it has been ${Math.round(dtp)} s).`, "1231 #6 / MCG 1317.25", "caution")); }
+          else if (!base) { repDev = true; notes.push(dev(ivR ? "IV midazolam may be repeated only once (5 mg x1). Further doses need Base contact." : "Additional IM/IN midazolam needs Base contact (MCG 1317.25: contact Base for additional dosing).", "1231 #6 / MCG 1317.25")); }
+          else if (dtp < 105) notes.push(dev(`Midazolam repeated after ${Math.round(dtp)} s: give it time to work (IN onset 6-14 min, IV 3-5 min).`, "MCG 1317.25", "caution")); }
+        st.x.midazTotal = (st.x.midazTotal || 0) + given;
+        if (!peds) { if (st.x.midazTotal > 20) notes.push(dev(`Midazolam total ${st.x.midazTotal} mg exceeds the 20 mg maximum (with Base).`, "1231 #6 / MCG 1317.25"));
+          else if (st.x.midazTotal > 10 && !base && !repDev) notes.push(dev("Max 10 mg midazolam (all routes) before Base contact.", "1231 #6")); }
+        prev.push({ t: st.t, iv: ivR, mg: given, route }); st.x.szMidaz = prev;
+        st.x.midazW = peds ? 1 : Math.max(0.2, Math.min(1.5, given / exp));
         }
-        addEffect("midaz", route === "IV" || route === "IO" ? 45 : 150); st.count.midaz = (st.count.midaz || 0) + 1; st.last.midaz = st.t; rec("t:midaz");
+        addEffect("midaz", route === "IV" || route === "IO" ? 90 : route === "IN" ? 200 : 270); st.x.midazW = null; st.count.midaz = (st.count.midaz || 0) + 1; st.last.midaz = st.t; rec("t:midaz");
         break; }
       case "ondansetron": narr = "Ondansetron 4 mg ODT/IV"; { const mg = doseOf(tx, "mg"); if (mg && mg !== 4) notes.push(dev(`Ondansetron dose is 4 mg (you said ${mg}).`, "1211 #9", "note")); } break;
       case "fentanyl": {
@@ -3190,7 +3268,11 @@ const SIM = (() => {
         break; }
       case "morphine": narr = `Morphine ${doseOf(tx, "mg") || 4} mg ${tx.route || "IV"}`; if (sbp < 90) notes.push(dev("Opioid analgesia with SBP < 90.", "MCG 1345")); break;
       case "ketorolac": if (["stemi", "cardiac"].includes(sc.base)) notes.push(dev("Do NOT give ketorolac for cardiac chest pain.", "1211 ❺")); narr = `Ketorolac ${doseOf(tx, "mg") || (tx.route === "IM" ? 30 : 15)} mg ${tx.route || "IV"}`; break;
-      case "diphen": narr = "Diphenhydramine 50 mg slow IV"; if (sc.base === "anaph" && !n(st, "epi")) notes.push(dev("Diphenhydramine does not treat anaphylaxis. Epinephrine is the first priority.", "1219 ❸")); break;
+      case "diphen": { const mg = doseOf(tx, "mg"), route = tx.route === "IM" ? "IM" : "IV"; // MCG 1317.15 (rev 01-01-26), TP 1239 #5
+        narr = `Diphenhydramine ${mg || 50} mg ${route === "IM" ? "deep IM" : "slow IV push"}`;
+        if (sc.base === "anaph" && !n(st, "epi")) notes.push(dev("Diphenhydramine does not treat anaphylaxis. Epinephrine is the first priority.", "1219 ❸"));
+        if (route === "IV" && !st.flags.iv) notes.push(dev("Diphenhydramine IV needs vascular access. If unable to obtain access, give 50 mg deep IM.", "1239 #5 / MCG 1317.15", "caution"));
+        break; }
       case "atropine": narr = "Atropine 1 mg IV/IO"; if (!(st.v.hr < 60 && sbp < 100)) notes.push(dev("Atropine is for bradycardia with poor perfusion.", "1212 #8")); if (!st.flags.iv) notes.push(dev("Atropine IV/IO requires access. If no IV, proceed to TCP.", "1212 #8", "caution")); if (n(st, "atropine") >= 3) notes.push(dev("Atropine max 3 mg.", "1212 #8")); if (sc.chb && st.v.hr <= 40 && !(st.x.dv && st.x.dv.pace.on)) notes.push(dev("3rd-degree / 2nd-degree type II block with HR ≤ 40: atropine is unlikely to help; proceed immediately to TCP and don't delay it for atropine.", "1212 #8, ❸", "note")); break;
       case "adenosine": narr = "Adenosine 12 mg rapid IV push + NS flush"; if (!sc.allow || !sc.allow.adenosine) notes.push(dev("Adenosine is for regular narrow-complex SVT (or regular monomorphic WCT); not indicated for this rhythm (e.g., irregular AFib or sinus tach).", "1213")); if (!st.flags.iv) notes.push(dev("Adenosine requires IV access (antecubital preferred).", "1213", "caution")); { const mg = doseOf(tx, "mg"); if (mg && mg !== 12) notes.push(dev(`LA County adenosine dose is 12 mg (you said ${mg} mg).`, "1213 #10", "note")); } break;
       case "vagal": narr = "Modified Valsalva maneuver"; if (!sc.allow || !sc.allow.adenosine) notes.push(dev("Valsalva is for SVT with adequate perfusion.", "1213 #10", "note")); break;
@@ -3228,7 +3310,7 @@ const SIM = (() => {
     if (st.x.rosc) rec("t:" + id + "@rosc");
     st.last[id] = st.t;
     if ((id === "epi" || id === "pushepi") && st.x.epiOd) { addEffect("epiod"); st.x.epiOd = false; }
-    if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : undefined);
+    if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : id === "diphen" ? (tx.route === "IM" ? 300 : 120) : undefined);
     if (typeof COURSE !== "undefined") COURSE.onTreat(id, st, sc);
     if (sc.onTreat) { const r = sc.onTreat(id, st, tx, H); if (r && r.lines) notes.push(...r.lines); }
     log("tx", (narr || TX_LABEL[id] || id) + (tx.raw ? "" : ""));
@@ -3696,7 +3778,7 @@ const COURSE = (() => {
 const EXAM = (() => {
   const cap = s => s ? s[0].toUpperCase() + s.slice(1) : s;
   const end = s => { s = String(s).trim(); return /[.!?)]$/.test(s) ? s : s + "."; };
-  const DRUGS = "aspirin|nitroglycerin|nitro|lasix|furosemide|metoprolol|carvedilol|eliquis|apixaban|xarelto|rivaroxaban|warfarin|coumadin|lisinopril|losartan|amlodipine|atorvastatin|simvastatin|metformin|glipizide|insulin|lantus|humalog|albuterol|advair|symbicort|spiriva|prednisone|levothyroxine|synthroid|sertraline|zoloft|fluoxetine|propranolol|diltiazem|digoxin|keppra|levetiracetam|lamotrigine|dilantin|phenytoin|depakote|birth control|oxycodone|norco|hydrocodone|tramadol|gabapentin|omeprazole|plavix|clopidogrel|brilinta|amiodarone|hydrochlorothiazide|hctz|spironolactone|potassium|tamsulosin|flomax|donepezil|aricept|epipen|benadryl|cetirizine|zyrtec|amoxicillin|cipro|ciprofloxacin|bactrim|antibiotic|sildenafil|viagra|cialis|tadalafil|home oxygen|nebulizer|inhaler";
+  const DRUGS = "aspirin|nitroglycerin|nitro|lasix|furosemide|metoprolol|carvedilol|eliquis|apixaban|xarelto|rivaroxaban|warfarin|coumadin|lisinopril|losartan|amlodipine|atorvastatin|simvastatin|metformin|glipizide|insulin|lantus|humalog|albuterol|advair|symbicort|spiriva|prednisone|levothyroxine|synthroid|sertraline|zoloft|fluoxetine|propranolol|diltiazem|digoxin|keppra|levetiracetam|lamotrigine|dilantin|phenytoin|depakote|birth control|oxycodone|norco|hydrocodone|tramadol|gabapentin|omeprazole|plavix|clopidogrel|brilinta|amiodarone|hydrochlorothiazide|hctz|spironolactone|potassium|tamsulosin|flomax|donepezil|aricept|epipen|benadryl|cetirizine|zyrtec|amoxicillin|cipro|ciprofloxacin|bactrim|antibiotic|sildenafil|viagra|metoclopramide|reglan|haloperidol|haldol|prochlorperazine|compazine|promethazine|phenergan|droperidol|fluphenazine|hydroxyzine|ondansetron|ibuprofen|tylenol|acetaminophen|cialis|tadalafil|home oxygen|nebulizer|inhaler";
   const DRUG_RE = new RegExp("\\b(" + DRUGS + ")\\b", "ig");
   const val = (x, st) => typeof x === "function" ? x(st) : x;
 
@@ -3882,6 +3964,7 @@ const EXAM = (() => {
       const src = [val((sc.bystanderAnswers || {}).meds, st), val((sc.answers || {}).meds, st), val((sc.answers || {}).drugs, st)].filter(s => typeof s === "string").join(" ");
       const names = [...new Set((src.match(DRUG_RE) || []).map(s => s.toLowerCase()))].filter(n => !/^(nitro|inhaler|antibiotic)$/.test(n) || !src.match(new RegExp("no " + n, "i")));
       const onScene = /bottle|pill|pharmacy|medication|insulin|inhaler|nebulizer|concentrator/i.test((sc.scene || "") + " " + (sc.sceneMore || ""));
+      if (sc.medLabel) return `${onScene ? "Medications found on scene" : "Medications"}: ${sc.medLabel}`; // v2.10.5: label with start date (dystonic calls)
       if (names.length) return `${onScene ? "Medications found on scene" : "Medications (from the patient and family)"}: ${names.map(cap).join(", ")}.`;
       return onScene ? "There are medication bottles on scene; read the labels or ask the family." : "No medication bottles found on scene.";
     },
@@ -6576,7 +6659,7 @@ addS(G({
 }));
 
 addS(G({
-  id: "ob_eclampsia", protocol: "1217", refs: ["1217", "1231", "1200.2"], base: "ob", difficulty: "Advanced", ob: true, preeclampsia: true,
+  id: "ob_eclampsia", seizureAirway: true, protocol: "1217", refs: ["1217", "1231", "1200.2"], base: "ob", difficulty: "Advanced", ob: true, preeclampsia: true,
   dispatchTitle: "32 y/o female, seizure, pregnant", dispatchShort: "Lancaster home, seizure stopped per caller.",
   dispatch: "Engine 130 / Squad 130, respond to a residence on W. Avenue J, Lancaster. 32-year-old female, 35 weeks pregnant, had a seizure. Time of call 1527.",
   scene: "Scene safe. The patient is lying on the living-room couch, drowsy, with dried saliva on her chin. Her sister says she shook all over for about a minute. A blood pressure cuff from a home kit is on the table.",
@@ -6766,6 +6849,123 @@ addS(G({
     if (!st.x.seizing) { H.rec("t:midaz@noseizure"); H.devQuiet("Midazolam given to an eclamptic patient who is not actively seizing (airway risk). Magnesium is the treatment.", "1217 ⓫", "deviation"); return { lines: [{ speaker: "warn", text: "Instructor note (deviation): midazolam is only for active, ongoing seizure in eclampsia; magnesium sulfate is the treatment. [LA County Ref. 1217 ⓫]" }] }; }
     st.x.szStopT = st.t + 30; return null; };
   S("peds_anaph").onTreat = (id, st, tx, H) => { if (id === "diphen" && !st.count.epi) H.rec("t:diphen@beforeepi"); return null; };
+})();
+
+/* ===== scx_16_dystonic.js ===== */
+/* =====================================================================
+ * v2.10.5 DYSTONIC REACTION (TP 1239, rev 01-26-21; MCG 1317.15 Diphenhydramine, rev 01-01-26)
+ * Acute dystonia from a NEWLY STARTED medication on the TP 1239 ❶ list (metoclopramide, haloperidol,
+ * prochlorperazine...). Presentation per 1239 ❷: anxiety, involuntary spasm of head/neck/face/eyes,
+ * inability to retract the tongue, forced jaw opening, grimacing, eye deviation. Airway patent, A&O intact,
+ * vitals essentially normal, SpO2 mid-high 90s throughout (no desaturation).
+ * Treatment: airway (1302), vascular access prn, assess medication exposure, CONTACT BASE to confirm the
+ * impression (1239 #4), diphenhydramine 50 mg slow IV push, or 50 mg deep IM without access (1239 #5).
+ * Midazolam (no seizure) and naloxone (no opioid toxidrome) are NOT indicated.
+ * ===================================================================== */
+(() => {
+  const D = st => st.sev > 0.35, R = st => st.sev > 0.15 && st.sev <= 0.35;
+  const neg = {
+    sob: st => D(st) ? "(shakes head stiffly) Breathing ith fine... it'th my neck." : "No, breathing's fine. No trouble swallowing either.",
+    allergies: st => D(st) ? "(thick voice) No... no allergieth." : "No allergies. No hives, no itching, nothing like that.",
+    hives: "No hives or rash anywhere.", swelling: st => D(st) ? "(tongue pushing forward) Not thwollen... it jutht won't go back in." : "Nothing's swollen. It just wouldn't stay in my mouth.",
+    seizurehx: "No, never had a seizure. I didn't pass out or shake.", weakness: st => D(st) ? "(squeezes your hands hard) No... thtrong. Jutht can't control my neck." : "No weakness or numbness. I just couldn't control my neck and face.",
+    cp: "No chest pain.", headache: st => D(st) ? "Little... from the thpathm." : "Just sore from the spasm.", drugs: "No drugs. I barely drink.", trauma: "No, I didn't fall or hit anything.",
+    vision: st => D(st) ? "Eyeth keep... pulling." : "My vision is fine now.", nausea: "Not anymore.", consent: "Yeth. Pleathe.", feelnow: st => D(st) ? "(panicky) It won't thtop!" : R(st) ? "Better... it's letting go." : "So much better. It's gone.",
+  };
+  const base = (o) => G(Object.assign({
+    protocol: "1239", refs: ["1239", "1200.2", "1317.15"], base: "dystonic", difficulty: "Intermediate", dystonic: true,
+    startSev: 0.85, drift0: 0.004, pain: [3, 5], bgl: 104, temp: 98.7,
+    vit: { good: { hr: 82, sbp: 124, dbp: 78, rr: 16, spo2: 99, etco2: 37 }, bad: { hr: 108, sbp: 142, dbp: 88, rr: 20, spo2: 97, etco2: 34 } },
+    mentalFn: st => st.sev > 0.25 ? "anxious" : "alert", gcsFn: () => [4, 5, 6],
+    txResp: { diphen: { drift: -0.45, hr: -6 } }, o2Gain: 1,
+    airway: "Patent. Speaking in short, thick phrases; handling secretions without difficulty; no stridor; no oral or facial swelling",
+    skin: [[0.35, "Warm, dry, pink"], [9, "Warm, slightly diaphoretic, pink"]], lungs: "Clear and equal bilaterally",
+    allergies: [],
+  }, o));
+  const common = (sp) => ({
+    checklist: [
+      { label: "Airway assessed (patent, handling secretions, no stridor)", keys: ["a:airway"], ref: "1239 #1 / MCG 1302", critical: true },
+      { label: `Medication exposure: new ${sp} and when it was started`, keys: ["q:meds"], ref: "1239 #3 ❶", critical: true },
+      { label: "Pertinent negatives: no SOB, allergies, hives or swelling (not an allergic reaction)", keys: ["q:sob", "q:allergies", "q:swelling", "a:hives"], ref: "1239 ❷ / 1219" },
+      { label: "Stroke / seizure ruled out (neuro exam, A&O, no seizure history)", keys: ["a:neuro", "q:weakness", "q:seizurehx", "a:orient"], ref: "1239 ❷ (differential: 1232 / 1231)", critical: true },
+      { label: "Vascular access prn", keys: ["t:iv"], ref: "1239 #2 / MCG 1375" },
+      { label: "CONTACT BASE to confirm the provider impression", keys: ["t:base"], ref: "1239 #4", critical: true },
+      { label: "Diphenhydramine 50 mg slow IV push (50 mg deep IM if no access)", keys: ["t:diphen"], ref: "1239 #5 / MCG 1317.15", critical: true },
+      { label: "No midazolam (awake, not seizing)", keys: ["!t:midaz"], ref: "1239 / 1231 #6 / MCG 1317.25", critical: true },
+      { label: "No naloxone (no opioid toxidrome, normal RR)", keys: ["!t:naloxone"], ref: "1241 #4 / MCG 1317.29", critical: true },
+    ],
+    onTreat: (id, st, tx, H) => {
+      if (id === "diphen") { if (!st.events["t:base"]) return { lines: [H.devQuiet("Diphenhydramine before Base contact: TP 1239 requires Base contact to confirm the impression before treatment (step 4, then step 5).", "1239 #4", "caution")] }; if (!st.x.dysDiphT) st.x.dysDiphT = st.t; return null; }
+      if (id === "midaz") return { lines: [H.devQuiet("Dystonic reaction is not a seizure: the patient is awake, oriented and talking through the spasm. Treatment is diphenhydramine; midazolam only adds sedation and respiratory depression.", "1239 #5 / MCG 1317.25", "note")] };
+      return null;
+    },
+    tickExtra: (st, dt, H) => { if (st.x.dysDiphT != null && !st.x.dysBetter && st.sev < 0.3) { st.x.dysBetter = true; H.event("The spasm is easing: the neck is relaxing and the tongue is back in the mouth. Speech is clearer.", "find"); } },
+    pi: { correct: "DYRX", accept: [], differential: ["DYRX", "STRK", "SEAC", "ALRX"],
+      clues: { DYRX: `New ${sp} (a TP 1239 ❶ drug), sustained involuntary spasm, awake and oriented, airway patent, normal vitals.`, STRK: "No focal weakness, no droop, normal strength and sensation; the speech problem is mechanical (jaw/tongue spasm), not aphasia.", SEAC: "Awake, oriented and answering throughout; no clonic activity or postictal state.", ALRX: "No hives, wheeze, swelling or hypotension; the tongue protrudes from spasm, it isn't swollen." },
+      explain: `Acute dystonic reaction to ${sp} (TP 1239 ❶). Airway, vascular access prn, assess the medication exposure, CONTACT BASE to confirm, then diphenhydramine 50 mg slow IV push (50 mg deep IM if no access). Improvement over minutes.`, keyFindingKeys: ["q:meds", "a:neuro", "a:airway"] },
+  });
+  addS(base(Object.assign({
+    id: "dystonic_reglan", dispatchTitle: "24 y/o male, neck spasm, can't talk right", dispatchShort: "Northridge apartment, roommate calling.",
+    dispatch: "RA 87, respond to an apartment on Reseda Blvd, Northridge. 24-year-old male, neck stuck to one side, tongue sticking out, roommate says he can't talk right. Time of call 1415.",
+    scene: "Scene safe. A young man is sitting on the couch, frightened, head twisted and tilted to the left, tongue pushing out of his mouth. A pharmacy bag with discharge papers is on the coffee table. His roommate is on the phone.",
+    sceneMore: "Pharmacy bag: metoclopramide (Reglan) 10 mg, filled yesterday, with ED discharge papers for gastroenteritis.", medLabel: "metoclopramide (Reglan) 10 mg tablets, 1 by mouth every 6 hours as needed for nausea. Filled YESTERDAY (ED discharge, gastroenteritis); 2 doses taken, last this morning.",
+    patient: { name: "Diego Alvarez", age: 24, sex: "M" }, bystander: { name: "Kevin", role: "roommate", sex: "M" },
+    personality: "Frightened, alert, fully oriented, struggling to talk around the spasm; calms down as the spasm eases.",
+    neuro: [[0.35, "A&O x4. Neck relaxed; tongue control back; speech clear. Strength 5/5 and sensation intact all extremities, no facial droop"], [9, "A&O x4. Sustained involuntary spasm: head turned and tilted to the left (torticollis); tongue protruding, can't retract it; speech thick from jaw/tongue spasm. Strength 5/5 and sensation intact all extremities, no droop"]],
+    pupils: "PERRL, 4 mm; gaze conjugate",
+    answers: Object.assign({}, neg, {
+      greet: st => D(st) ? "(head pulled to the left, tongue out) Help... my neck... it won't thtop!" : "Hey... thank you. It's finally letting go.",
+      name: st => D(st) ? "Diego... Alvareth." : "Diego Alvarez.", age: "Twenty-four.", orient: st => D(st) ? "(thick) My plathe... Northridge... Tuethday... you're the paramedicth." : "My apartment in Northridge, Tuesday afternoon. You're the paramedics.",
+      cc: st => D(st) ? "(pointing at his neck) Neck... pulling... tongue won't go back in!" : "My neck kept twisting and my tongue kept sticking out. I couldn't control it.",
+      meds: st => D(st) ? "(slurred) Reglan... the ER... thtarted it yethterday... for throwing up." : "Just the Reglan, metoclopramide 10 milligrams. The ER started it yesterday for a stomach bug. I took it last night and again this morning.",
+      history: "Nothing. I'm healthy. I had a stomach bug and went to the ER yesterday.", onset: st => D(st) ? "About... an hour." : "About an hour ago. It came on maybe an hour after this morning's dose.",
+      events: "I took the Reglan this morning, then my neck started pulling and my tongue started pushing out. It kept getting worse.", lastoral: "Some crackers this morning.",
+      pregnant: "(gives you a look) ...I'm a guy.",
+    }),
+    bystanderAnswers: { cc: "His neck is stuck to the side and his tongue keeps sticking out. He's scared.", meds: "Just the stuff from the ER yesterday, Reglan. It's in the bag right there. He took it last night and this morning.", onset: "It started maybe an hour ago and kept getting worse.", seizurehx: "No, never. He didn't pass out or shake, he's been talking to me the whole time.", history: "Nothing. He's healthy, he just had a stomach bug.", drugs: "No, he doesn't do anything." },
+    ambient: st => D(st) ? pick(["(head jerks back to the left; he grabs his neck)", "(tongue pushes out; he tries to push it back with his fingers)", "(breathing fast, eyes wide: 'Make it thtop!')"]) : null,
+    expected: "Acute dystonic reaction to metoclopramide started yesterday (TP 1239). Airway, IV, med history, Base contact, diphenhydramine 50 mg slow IV. No midazolam, no naloxone.",
+  }, common("metoclopramide (Reglan)"))));
+  addS(base(Object.assign({
+    id: "dystonic_haldol", difficulty: "Intermediate", dispatchTitle: "31 y/o female, eyes rolling up, jaw stuck", dispatchShort: "Pasadena house, mother calling.",
+    dispatch: "RA 32, respond to a home on Allen Ave, Pasadena. 31-year-old female, eyes stuck looking up, jaw stuck open, family thinks she's having a stroke. Time of call 2005.",
+    scene: "Scene safe. A woman is sitting at the kitchen table, eyes deviated upward, neck arched back, jaw forced open, grimacing. She's awake and frightened and tries to look at you. Her mother has a new prescription bottle in her hand.",
+    sceneMore: "Prescription bottle: haloperidol (Haldol) 5 mg, started 3 days ago by her psychiatrist.", medLabel: "haloperidol (Haldol) 5 mg, twice daily, filled 3 DAYS AGO (new, from her psychiatrist); sertraline 100 mg daily (long-standing).",
+    patient: { name: "Renee Walker", age: 31, sex: "F" }, bystander: { name: "Linda", role: "mother", sex: "F" },
+    personality: "Terrified, fully oriented, answers by gestures and thick speech while the spasm lasts.",
+    neuro: [[0.35, "A&O x4. Eyes midline and tracking; jaw relaxed; speech clear. Strength 5/5, sensation intact, no facial droop"], [9, "A&O x4. Oculogyric crisis: eyes deviated upward; neck extended (retrocollis); jaw forced open with grimacing; speech thick from jaw spasm. Strength 5/5, sensation intact all extremities, no droop"]],
+    pupils: [[0.35, "PERRL, 4 mm; gaze conjugate, tracks normally"], [9, "PERRL, 4 mm; eyes deviated upward (oculogyric crisis), she can briefly pull them down"]],
+    answers: Object.assign({}, neg, {
+      greet: st => D(st) ? "(jaw stuck open, eyes rolled up) My eyeth... I can't... look down!" : "Oh thank God. I can see you now.",
+      name: "Renee.", age: "Thirty-one.", orient: st => D(st) ? "(thick) Mom'th houthe... Pathadena... night." : "My mom's house in Pasadena. Thursday night.",
+      cc: st => D(st) ? "Eyeth go up... jaw... thtuck open!" : "My eyes kept rolling up and my jaw got stuck open. It's easing now.",
+      meds: st => D(st) ? "(gestures at the bottle) Haldol... new... three dayth." : "Haloperidol, Haldol, 5 milligrams twice a day. My psychiatrist started it three days ago. Before that just sertraline.",
+      history: "Bipolar disorder. My psychiatrist switched my meds this week.", onset: "It started about forty minutes ago.", events: "I took my evening Haldol, and about an hour later my eyes started pulling up.", lastoral: "Dinner at six.",
+      pregnant: "No. Not pregnant.",
+    }),
+    bystanderAnswers: { cc: "Her eyes are stuck looking up and her jaw won't close. I thought it was a stroke.", meds: "The new pill, Haldol. Her psychiatrist started it Monday. Three days now. And the sertraline she's always taken.", onset: "About forty minutes ago.", seizurehx: "No, she's never had a seizure. She's been talking to me the whole time.", history: "Bipolar. Otherwise healthy." },
+    ambient: st => D(st) ? pick(["(eyes roll up again; she tilts her head down to try to see you)", "(jaw pulls open; she grimaces and holds it with her hand)"]) : null,
+    expected: "Acute dystonic reaction (oculogyric crisis) to haloperidol started 3 days ago (TP 1239). Not a stroke or seizure. Airway, IV, Base contact, diphenhydramine 50 mg slow IV.",
+  }, common("haloperidol (Haldol)"))));
+  addS(base(Object.assign({
+    id: "dystonic_compazine", difficulty: "Intermediate", startSev: 0.75, dispatchTitle: "19 y/o female, face twisting, tongue out", dispatchShort: "Long Beach dorm, roommate calling.",
+    dispatch: "RA 9, respond to a CSULB dorm, Long Beach. 19-year-old female, face twisting and tongue sticking out, very anxious. Time of call 1130.",
+    scene: "Scene safe. A young woman is sitting on her bed, grimacing, her tongue pushing out between her teeth, head pulling to the right. An ED discharge bracelet is still on her wrist. Her roommate is filming on her phone.",
+    sceneMore: "ED discharge papers: migraine, given prochlorperazine (Compazine) IV last night plus a 3-day prescription.", medLabel: "prochlorperazine (Compazine) 10 mg, every 6 hours as needed, 3-day supply, filled LAST NIGHT after an ED visit for migraine (also got a dose IV in the ED); oral contraceptive.",
+    patient: { name: "Maya Chen", age: 19, sex: "F" }, bystander: { name: "Jess", role: "roommate", sex: "F" },
+    personality: "Anxious, alert, embarrassed, oriented.",
+    neuro: [[0.35, "A&O x4. Face relaxed; tongue control back; speech clear. Strength 5/5, sensation intact, no facial droop"], [9, "A&O x4. Facial grimacing; tongue protrusion she can't retract; head pulling to the right; speech thick. Strength 5/5, sensation intact, no droop"]],
+    answers: Object.assign({}, neg, {
+      greet: st => D(st) ? "(grimacing, tongue out) Thorry... my fathe ith doing thith on itth own." : "Hi. It's stopping, finally.",
+      name: "Maya.", age: "Nineteen.", orient: st => D(st) ? "Dorm... Long Beach... Monday." : "My dorm in Long Beach, Monday morning.",
+      cc: st => D(st) ? "Tongue... won't go in... fathe twithting." : "My tongue kept sticking out and my face kept twisting.",
+      meds: st => D(st) ? "Compathine... for migraine... ER yethterday." : "Compazine, prochlorperazine. The ER gave it to me last night for a migraine and sent me home with pills. I took one this morning. And birth control.",
+      history: "Migraines.", headache: "The migraine's gone. Now it's this.", onset: "About an hour ago, after this morning's pill.", events: "Took the Compazine pill at nine, and by ten my tongue started pushing out.", lastoral: "Toast at nine.", pregnant: "No, I'm on birth control.",
+    }),
+    bystanderAnswers: { cc: "Her face keeps twisting and her tongue sticks out. She's freaking out.", meds: "The migraine pill from the ER, Compazine. She started it last night. And birth control.", onset: "Like an hour ago.", seizurehx: "No, she's been talking the whole time." },
+    ambient: st => D(st) ? pick(["(grimaces; tongue pushes out between her teeth)", "(head pulls to the right; she's breathing fast and crying)"]) : null,
+    expected: "Acute dystonic reaction to prochlorperazine given/started yesterday for migraine (TP 1239). Airway, IV, Base, diphenhydramine 50 mg slow IV.",
+  }, common("prochlorperazine (Compazine)"))));
 })();
 
 /* ===== scx_20_exam.js ===== */
@@ -6975,6 +7175,9 @@ addS(G(Object.assign({}, bradyBase, {
  * sc.approach = { see, track }. "track" matches the starting mental status.
  * ===================================================================== */
 const APPROACH = {
+  dystonic_reglan: ["Scene is safe: an apartment living room. A young man is sitting upright on the couch, head twisted and tilted to the left, tongue pushing out of his mouth. He's pink and breathing comfortably but looks terrified. A pharmacy bag sits on the coffee table.", "Eyes open and tracking you; he tries to turn toward you but his neck pulls him back."],
+  dystonic_haldol: ["Scene is safe: a kitchen. A woman in her early 30s is sitting at the table, neck arched back, eyes rolled upward, jaw forced open. Color is good and her breathing looks unlabored. Her mother is holding a prescription bottle.", "Awake: she tracks you by tilting her head down, because her eyes keep pulling up."],
+  dystonic_compazine: ["Scene is safe: a dorm room. A young woman is sitting on her bed, grimacing, tongue between her teeth, head pulling to the right. She's pink and breathing normally. An ED wristband is still on her wrist.", "Eyes open and tracking you; she's anxious and trying to talk."],
   ob_delivery: ["Scene is safe: a small bedroom at night. A woman in her late 20s is lying on her side on the bed, breathing hard and groaning through a contraction, clearly very pregnant. Wet towels are on the floor. Her husband is holding a hospital bag.", "Eyes open and tracking you between contractions; she's focused and breathing hard."],
   ob_eclampsia: ["Scene is safe: a living room. A visibly pregnant woman in her early 30s is lying on the couch, drowsy, with dried saliva on her chin. Her face and hands look puffy. A home blood-pressure cuff is on the table. Her sister is beside her, scared.", "Eyes half open; she looks toward you slowly but doesn't really track you yet."],
   ob_pph: ["Scene is safe: a bedroom after a home birth. A young woman is in bed, very pale, with blood-soaked towels and pads under her. A midwife is holding a wrapped, crying newborn. A bowl with the placenta is on the dresser.", "Eyes open and tracking you, but she looks weak and keeps closing them."],
@@ -7643,6 +7846,26 @@ addS({
   expected: "Open the airway (remove the loose denture) and ventilate with BMV + capnography FIRST (1241 ❶). Then naloxone 2-4 mg IN / 2 mg IM / 0.8-2 mg IV titrated to breathing (max 8 mg). Check BG (1241 #12) and the pill organizer/oxycodone ER count; bring the bottles (1241 #18). Oxycodone ER outlasts naloxone (MCG 1317.29: some narcotics outlast it), so reassess RR/SpO2/EtCO2 for re-sedation, repeat naloxone, and contact Base for additional doses if only a partial response (1241 #6).",
 });
 
+/* ===== scx_60_seizure_airway.js ===== */
+/* v2.10.5: every seizure call grades AIRWAY MANAGEMENT (TP 1231 #1-2 / 1231-P #1-2 / 1217 #16, MCG 1302).
+ * The physiology lives in sim.js szAirway(): actively seizing = SpO2 high 70s-80s; postictal / after midazolam
+ * SpO2 stays low and slowly worsens until positioning, suction, NPA, O2 (NRB) and BVM for inadequate RR. */
+(() => {
+  const AIR = ["t:recovery", "t:suction", "t:opa"];
+  SCENARIOS.forEach(sc => {
+    const pr = sc.protocol || (sc.refs || [])[0] || "";
+    if (!(sc.seizureAirway || /^1231/.test(pr))) return;
+    sc.seizureAirway = true;
+    const peds = /-P$/.test(pr), P = peds ? "1231-P" : pr === "1217" ? "1217 #16 / 1231" : "1231";
+    const keep = (sc.checklist || []).filter(c => !(c.keys.every(k => AIR.includes(k) || k === "a:airway" || k === "t:o2any") && !/1217/.test(c.ref || "")));
+    sc.checklist = [
+      { label: "Airway managed for hypoxia: positioning (recovery), suction, NPA", keys: AIR, ref: `${P} #1 / MCG 1302`, critical: true },
+      { label: "High-flow O2 (NRB); BVM if respirations inadequate", keys: ["t:o2any"], ref: `${P} #2 / MCG 1302`, critical: true },
+      ...keep,
+    ];
+  });
+})();
+
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
 const META = {
@@ -8141,7 +8364,7 @@ window.SPEECH_HINTS = (window.SPEECH_HINTS || []).concat([
   "jvd pedal edema palpate abdomen belly tender trauma head to toe injuries airway",
   "give administer push start an iv io saline normal fluid bolus liter milliliters cc",
   "aspirin nitro nitroglycerin sublingual albuterol nebulizer neb epi epinephrine im push dose amiodarone atropine adenosine",
-  "dextrose d ten d10 oral glucose glucagon narcan naloxone intranasal midazolam versed zofran ondansetron fentanyl morphine ketorolac benadryl diphenhydramine calcium chloride sodium bicarb bicarbonate",
+  "dextrose d ten d10 oral glucose glucagon narcan naloxone intranasal midazolam versed zofran ondansetron fentanyl morphine ketorolac benadryl diphenhydramine deep intramuscular nose atomizer haloperidol haldol metoclopramide reglan compazine prochlorperazine promethazine phenergan droperidol hydroxyzine dystonic dystonia torticollis oculogyric calcium chloride sodium bicarb bicarbonate",
   "milligrams milligram mg micrograms mcg grams per kilo",
   "oxygen non rebreather nasal cannula liters cpap bvm bag valve mask ventilate opa npa suction igel king airway intubate",
   "cpr compressions start stop pulse check defibrillate shock joules synchronized cardioversion cardiovert pace pacing transcutaneous vagal maneuver",
@@ -8551,11 +8774,11 @@ const NEXT = (() => {
     aspirin: ["Aspirin 325", "Give aspirin 325 milligrams chewed"], nitro: ["Nitro 0.4 SL", "Nitroglycerin 0.4 milligrams sublingual"],
     fentanyl: ["Fentanyl 50 mcg", "Fentanyl 50 micrograms IV"], morphine: ["Morphine 4 mg", "Morphine 4 milligrams IV"], ketorolac: ["Ketorolac 15 mg", "Ketorolac 15 milligrams IV"],
     cpap: ["CPAP", "Partner, set up CPAP"], ns: ["NS bolus", "Normal saline 250 milliliter bolus"], epi: ["Epi IM", "Epinephrine 0.5 milligrams IM"],
-    albuterol: ["Albuterol neb", "Albuterol 5 milligrams nebulized"], diphen: ["Benadryl 50 mg", "Diphenhydramine 50 milligrams IV"], d10: ["D10", "Dextrose 10 percent 125 milliliters IV"],
+    albuterol: ["Albuterol neb", "Albuterol 5 milligrams nebulized"], diphen: ["Benadryl 50 mg IV", "Diphenhydramine 50 milligrams slow IV push"], diphen_im: ["Benadryl 50 mg IM", "Diphenhydramine 50 milligrams deep IM"], d10: ["D10", "Dextrose 10 percent 125 milliliters IV"],
     glucagon: ["Glucagon 1 mg", "Glucagon 1 milligram IM"], oralglucose: ["Oral glucose", "Oral glucose 15 grams"], naloxone: ["Naloxone 2 mg IN", "Naloxone 2 milligrams intranasal"], nal_rep: ["Repeat naloxone", "Repeat naloxone 2 milligrams intranasal"],
-    midaz: ["Midazolam 5 mg IM", "Midazolam 5 milligrams IM"], ondansetron: ["Zofran 4 mg", "Ondansetron 4 milligrams ODT"], atropine: ["Atropine 1 mg", "Atropine 1 milligram IV"],
+    midaz: ["Midazolam 10 mg IN", "Midazolam 10 milligrams intranasal"], mid_im10: ["Midazolam 10 mg IM", "Midazolam 10 milligrams IM"], mid_iv5: ["Midazolam 5 mg IV", "Midazolam 5 milligrams IV"], mid_peds: ["Midazolam IN (color code)", "Midazolam intranasal per color code"], ondansetron: ["Zofran 4 mg", "Ondansetron 4 milligrams ODT"], atropine: ["Atropine 1 mg", "Atropine 1 milligram IV"],
     adenosine: ["Adenosine 6 mg", "Adenosine 6 milligrams rapid IV push"], vagal: ["Vagal maneuver", "Try a modified valsalva maneuver"], amio: ["Amiodarone", "Amiodarone 150 milligrams IV over 10 minutes"],
-    calcium: ["Calcium chloride", "Calcium chloride 1 gram IV"], bicarb: ["Sodium bicarb", "Sodium bicarbonate 50 milliequivalents IV"], magnesium: ["Magnesium", "Magnesium sulfate 2 grams IV"],
+    calcium: ["Calcium chloride", "Calcium chloride 1 gram IV"], bicarb: ["Sodium bicarb", "Sodium bicarbonate 50 milliequivalents IV"], magnesium: ["Magnesium 4 g IV", "Magnesium sulfate 4 grams IV over 20 minutes"],
     pushepi: ["Push-dose epi 10 mcg", "Push dose epinephrine 1 milliliter IV"], cardiovert: ["Sync cardioversion", "Synchronized cardioversion"], pace: ["Pace", "Transcutaneous pacing"],
     txa: ["TXA 1 g", "TXA 1 gram IV"], needle: ["Needle decompression", "Needle decompression second intercostal space midclavicular line"], tourniquet: ["Tourniquet", "Apply a tourniquet"],
     pelvicbinder: ["Pelvic binder", "Apply a pelvic binder"], smr: ["SMR", "Partner, spinal motion restriction"], bandage: ["Direct pressure", "Direct pressure and a pressure dressing"],
@@ -8570,7 +8793,7 @@ const NEXT = (() => {
     alb_bvm: ["Albuterol in-line BVM", "Albuterol 5 milligrams in line with the BVM"], alb_rep: ["Repeat albuterol", "Repeat albuterol 5 milligrams"],
   };
   // chip id -> treatment event it satisfies (variants map to the base drug/device)
-  const BASE_ID = { alb_cpap: "albuterol", alb_hhn: "albuterol", alb_nrb: "albuterol", alb_bvm: "albuterol", cpap_neb: "cpap", alb_rep: "albuterol#2", nal_rep: "naloxone#2" };
+  const BASE_ID = { alb_cpap: "albuterol", alb_hhn: "albuterol", alb_nrb: "albuterol", alb_bvm: "albuterol", cpap_neb: "cpap", alb_rep: "albuterol#2", nal_rep: "naloxone#2", mid_im10: "midaz", mid_iv5: "midaz", mid_peds: "midaz", diphen_im: "diphen" };
   /* Protocol treatment order (slots) per LA County TP. Each slot = one decision point in protocol sequence.
    * Slot chips = the scenario's correct item(s) + same-slot alternatives/distractors, shuffled inside the slot,
    * so the protocol sequence is visible but the right choice isn't always the first chip. */
@@ -8583,8 +8806,11 @@ const NEXT = (() => {
     "1219-P": [["epi", "diphen"], ["nrb", "supine", "fowler"], ["iv", "ns"], ["albuterol", "pushepi"]],
     "1241": [["opa", "suction", "bvm", "nrb", "recovery"], ["naloxone", "midaz"], ["iv", "ns"], ["d10", "oralglucose"]],
     "1203": [["oralglucose", "d10", "glucagon"], ["iv", "ns"]],
-    "1231": [["recovery", "suction", "nrb"], ["midaz", "naloxone"], ["d10", "oralglucose"], ["iv"]],
-    "1231-P": [["recovery", "suction", "nrb"], ["midaz", "naloxone"], ["d10", "oralglucose"], ["cooling"]],
+    // v2.10.5: TP 1231 #6 / MCG 1317.25 midazolam 10 mg IN/IM or 5 mg IV/IO; TP 1239 #5 / MCG 1317.15 diphenhydramine 50 mg IV / deep IM
+    "1231": [["recovery", "suction", "opa", "nrb"], ["midaz", "mid_im10", "mid_iv5", "naloxone"], ["bvm"], ["d10", "oralglucose"], ["iv"]],
+    "1231-P": [["recovery", "suction", "nrb"], ["mid_peds", "naloxone"], ["d10", "oralglucose"], ["cooling"]],
+    "1217-ecl": [["recovery", "suction", "nrb"], ["iv"], ["magnesium"], ["midaz", "mid_im10", "mid_iv5"]],
+    "1239": [["iv"], ["diphen", "diphen_im", "midaz", "naloxone"]],
     "1232": [["nc", "nrb", "supine", "fowler"], ["iv"], ["d10", "oralglucose"]],
     "1213": [["nrb", "nc"], ["iv"], ["vagal", "adenosine", "cardiovert"], ["amio", "pace", "atropine"]],
     "1204": [["nrb", "nc"], ["iv", "ns"], ["pushepi", "epi"], ["cooling", "blanket"]],
@@ -8617,7 +8843,7 @@ const NEXT = (() => {
       ["Temperature", "Check a temperature"], ["Rhythm check", "Rhythm check"], ["Pulse check", "Pulse check"], ["Shock 200 J", "Defibrillate at 200 joules"], ["Sync cardioversion", "Synchronized cardioversion"],
       ["Pace", "Transcutaneous pacing"], ["Vector change", "Change pad position to anterior posterior"]]],
     ["Meds", ["iv", "io", "aspirin", "nitro", "fentanyl", "ondansetron", "albuterol", "alb_cpap", "alb_hhn", "alb_nrb", "cpap_neb", "alb_bvm", "epi", ["Epi 1 mg IV/IO", "Epinephrine 1 milligram IV push"], "pushepi", ["Amiodarone 300 mg", "Amiodarone 300 milligrams IV push"], "amio",
-      "adenosine", "atropine", "naloxone", ["Naloxone 2 mg IM", "Naloxone 2 milligrams IM"], ["Naloxone 1 mg IV", "Naloxone 1 milligram IV push"], "d10", "glucagon", "oralglucose", "diphen", "midaz", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
+      "adenosine", "atropine", "naloxone", ["Naloxone 2 mg IM", "Naloxone 2 milligrams IM"], ["Naloxone 1 mg IV", "Naloxone 1 milligram IV push"], "d10", "glucagon", "oralglucose", "diphen", "diphen_im", "midaz", "mid_im10", "mid_iv5", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
       .map(x => Array.isArray(x) ? x : TXSAY[x])],
     ["Transport / Radio", [["Transport", "Let's transport, load and go"], ["Contact Base", "Base, this is Medic 12, how copy?"], ["Notify hospital", "Notify the receiving hospital"],
       ["Head up 30°", "Elevate the head of the gurney 30 degrees"], ["Keep warm", "Put a blanket on and keep warm"], ["Terminate (Base)", "Terminate resuscitation"]]],
@@ -8727,7 +8953,11 @@ const NEXT = (() => {
     // v2.10.2: ANY call with altered mental status + hypoventilation offers naloxone (TP 1241 #4), BMV first when RR < 8 / hypoxic (1241 ❶)
     const m = sim.mental ? sim.mental() : "alert", hypoAlt = hypoAltered(sim);
     if (hypoAlt) { want.add("naloxone"); if (st.v.rr < 8 || st.v.spo2 < 90) want.add("bvm"); }
-    let slots = SLOTS[proto];
+    // v2.10.5: an adult actively seizing in front of EMS gets the midazolam slot on ANY call (1231 #6); peds use the color code (MCG 1309)
+    if (m === "seizing" && !sc.peds) { want.add("midaz"); want.add("recovery"); want.add("suction"); }
+    let slots = SLOTS[sc.preeclampsia && proto === "1217" ? "1217-ecl" : proto];
+    if (slots && m === "seizing" && !sc.peds && !slots.some(sl => sl.includes("midaz"))) slots = [slots[0], ["midaz", "mid_im10", "mid_iv5"], ...slots.slice(1)];
+    if (slots && sc.peds) slots = slots.map(sl => [...new Set(sl.map(id => /^mid(az|_im10|_iv5)$/.test(id) ? "mid_peds" : id))]);
     if (!slots) { const seen = new Set(); slots = []; (sc.checklist || []).forEach(c => c.keys.forEach(k => { const m = k.match(/^t:(\w+)$/); if (m && TXSAY[m[1]] && !seen.has(m[1])) { seen.add(m[1]); slots.push([m[1]]); } })); }
     // L3: push-dose epi only once a BP shows SBP < 90
     slots = slots.map(sl => sl.filter(id => TXSAY[id] && (id !== "alb_bvm" || st.flags.o2 === "bvm") && (id !== "pushepi" || (!!st.rev.bp && st.v.sbp < 90))));
@@ -8746,19 +8976,22 @@ const NEXT = (() => {
       const live = sl.filter(id => !used.has(id) && !done(id)); if (!live.length) return;
       if (sl.some(correct) && !live.some(correct)) return; // this protocol step is done: its alternatives drop off with it
       const good = live.filter(correct), alts = live.filter(id => !correct(id));
-      const isAlb = good.some(id => BASE_ID[id] === "albuterol" && id !== "alb_rep");
+      const B = id => (BASE_ID[id] || id).replace(/#\d$/, ""), isAlb = good.some(id => BASE_ID[id] === "albuterol" && id !== "alb_rep") || (good.length > 1 && good.every(id => B(id) === B(good[0]))); // same drug, several routes/doses: show them all
       let pick = isAlb ? good.filter(id => id !== "albuterol") : good.slice(0, 2);
-      if (!good.length) pick = alts.slice(0, 1); else if (!isAlb) { let alt = alts[0]; while (!alt && di < dpool.length) { const d = dpool[di++]; if (!used.has(d)) alt = d; } if (alt) pick.push(alt); }
+      if (!good.length) pick = alts.slice(0, 1); else if (!isAlb || !good.some(id => BASE_ID[id] === "albuterol")) { let alt = alts[0]; while (!alt && di < dpool.length) { const d = dpool[di++]; if (!used.has(d)) alt = d; } if (alt) pick.push(alt); }
       pick.forEach(id => used.add(id));
       out.push(...shuffle(pick, sc.id + "#" + si).map(id => ({ ...C(TXSAY[id][0], TXSAY[id][1], "meds"), slot: si })));
     });
     while (out.length < 3 && di < dpool.length) { const d = dpool[di++]; if (!used.has(d) && TXSAY[d]) { used.add(d); out.push({ ...C(TXSAY[d][0], TXSAY[d][1], "meds"), slot: 99 }); } }
-    out = out.slice(0, Math.max(4, 10 - prefix.length));
+    let lim = Math.max(4, 10 - prefix.length); const split = l => l < out.length && out[l].slot !== 99 && out[l].slot === out[l - 1].slot;
+    // never cut a protocol step in half (e.g. the 3 midazolam routes): grow into the 12-chip budget, else stop before that step
+    while (split(lim) && prefix.length + lim + 2 < 12) lim++; if (split(lim)) { let b = lim; while (b > 1 && out[b - 1].slot === out[lim].slot) b--; if (b >= 3) lim = b; }
+    out = out.slice(0, lim);
     return [...prefix, ...out, C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Transport", "Let's transport, load and go", "radio")];
   }
   function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => ({ label: l, say: pron(s, F) }))]); }
   function aeiouChips() { return AE_SAY; }
-  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle };
+  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips };
 })();
 
 /* ===== ui.js ===== */
