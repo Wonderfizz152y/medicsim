@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.9-nextstep 53139582c6">
+<meta name="medicsim-version" content="2.9.1-polish a3a190f9e2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -2134,7 +2134,7 @@ const NLU = (() => {
 
   // EMT partner scope (LA County EMT): what the partner does when told to; anything else ALS is declined/set up
   const PARTNER_A = new Set(["bp", "spo2", "rr", "vitals", "bgl", "temp", "monitor", "12lead", "etco2", "recheck", "pulsecheck"]);
-  const PARTNER_T = new Set(["nrb", "nc", "o2", "bvm", "cpap", "opa", "suction", "cpr", "stopcpr", "switchcpr", "pelvicbinder", "pads", "bandage", "tourniquet", "fowler", "supine", "recovery", "smr", "gurney", "transport", "cooling", "protect", "removepatch", "removeheat", "obkit", "drynewborn", "fundal", "skintoskin"]);
+  const PARTNER_T = new Set(["nrb", "nc", "o2", "bvm", "hypervent", "cpap", "opa", "suction", "cpr", "stopcpr", "switchcpr", "pelvicbinder", "pads", "bandage", "tourniquet", "fowler", "supine", "recovery", "smr", "gurney", "transport", "cooling", "protect", "removepatch", "removeheat", "obkit", "drynewborn", "fundal", "skintoskin"]);
   // ---- monitor/defibrillator operations (DEVICE) ----
   function deviceParse(t, out) {
     const ops = [], add = (op, val) => { if (!ops.some(o => o.op === op)) ops.push(val == null ? { op } : { op, val }); };
@@ -2329,7 +2329,7 @@ const NLU = (() => {
       if (T("needle")) { dropT(["cpr", "iv"]); out.assess = out.assess.filter(a => !["expabd", "expchest", "lungs"].includes(a)); }
       if (T("pelvicbinder")) out.assess = out.assess.filter(a => a !== "pelvis");
       if (T("vector")) dropT(["pads", "defib"]);
-      if (T("hypervent") && !/\b(no|not|don'?t|avoid)\b[^.]{0,12}hyperventilat/.test(t)) { if (!T("bvm")) out.tx.push({ id: "bvm", doses: [], route: null }); } else if (T("hypervent")) dropT(["hypervent", "bvm"]);
+      if (T("hypervent") && !/\b(no|not|don'?t|avoid)\b[^.]{0,12}hyperventilat/.test(t)) dropT(["bvm"]); else if (T("hypervent")) dropT(["hypervent", "bvm"]); // hyperventilation = BMV done fast (one action, one line)
       if (T("terminate")) dropT(["stopcpr", "cpr"]); }
     if (out.assess.includes("v4r")) { out.assess = out.assess.filter(a => a !== "12lead" && a !== "monitor"); out.tx = out.tx.filter(x => x.id !== "transport"); }
     { // v2.8: negated medication orders ("hold the nitro", "no nitro, RV infarct") must never give the drug
@@ -2859,7 +2859,7 @@ const SIM = (() => {
         if (!alert) notes.push(dev("CPAP requires an alert patient who can follow commands.", "MCG 1315"));
         if (sc.base === "anaph") notes.push(dev("CPAP held for upper airway edema/obstruction.", "1237 #8"));
         st.flags.cpap = true; st.flags.o2 = "cpap"; rec("t:o2any"); narr = "CPAP applied (titrated per manufacturer)"; break;
-      case "bvm": st.flags.o2 = "bvm"; rec("t:o2any"); narr = "BMV with 15 L/min O2 at 10 breaths/min"; if (alert && st.v.rr > 10) notes.push(dev("BMV on an alert patient with adequate respirations.", "MCG 1302", "caution")); break;
+      case "bvm": st.flags.o2 = "bvm"; rec("t:o2any"); narr = st.x.hypervT === st.t ? "" : "BMV with 15 L/min O2 at 10 breaths/min"; if (alert && st.v.rr > 10) notes.push(dev("BMV on an alert patient with adequate respirations.", "MCG 1302", "caution")); break;
       case "sga": st.flags.sga = true; st.flags.o2 = "bvm"; rec("t:o2any"); st.rev.etco2 = { t: st.t }; narr = "i-gel placed, ventilating; waveform capnography confirmed"; if (alert || m === "confused") notes.push(dev("Advanced airway in a patient with a gag reflex/responsive.", "MCG 1302")); break;
       case "aspirin": {
         const mg = doseOf(tx, "mg");
@@ -2932,7 +2932,7 @@ const SIM = (() => {
         break; }
       case "chestseal": narr = "Vented chest seal applied over the open chest wound (1244 #14 ❺)"; st.x.seal = st.t; break;
       case "pelvicbinder": narr = "Pelvic binder applied, centered over the greater trochanters"; if (!sc.pelvicFx) notes.push(dev("Pelvic binder without signs of an unstable pelvic fracture.", "standard practice* (pelvic binder)", "note")); break;
-      case "hypervent": { st.x.hypervT = st.t; narr = "Ventilating fast (hyperventilation)";
+      case "hypervent": { st.x.hypervT = st.t; st.flags.o2 = "bvm"; rec("t:bvm"); rec("t:o2any"); narr = "BMV with 15 L/min O2, ventilating FAST (hyperventilation, ~25-30/min)";
         if (st.x.arrest) notes.push(dev("Hyperventilation during CPR reduces venous return and worsens outcomes: ventilate no more than 10/min, just enough for chest rise.", "1210 ❸", "deviation"));
         else if (/head|scalp|skull|ear/i.test(String(st.tg.trauma || ""))) notes.push(dev("Hyperventilation in head injury reduces cerebral blood flow and worsens outcomes. Ventilate to an EtCO2 of 35-45 mmHg.", "1244 ❿", "deviation"));
         else notes.push(dev("Ventilate about 10/min with just enough volume for chest rise; avoid hyperventilation.", "MCG 1302", "caution"));
@@ -3031,9 +3031,9 @@ const SIM = (() => {
     if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : undefined);
     if (typeof COURSE !== "undefined") COURSE.onTreat(id, st, sc);
     if (sc.onTreat) { const r = sc.onTreat(id, st, tx, H); if (r && r.lines) notes.push(...r.lines); }
-    log("tx", narr + (tx.raw ? "" : ""));
+    log("tx", (narr || TX_LABEL[id] || id) + (tx.raw ? "" : ""));
     if (id === "nc" || id === "nrb" || id === "o2" || id === "cpap" || id === "sga") st.rev.spo2 = st.rev.spo2; // no auto reveal
-    out.push({ speaker: "narrator", text: "✓ " + narr });
+    if (narr) out.push({ speaker: "narrator", text: "✓ " + narr });
     out.push(...notes);
     const PAINFUL = { io: 1.4, iv: 0.6, pace: 1.6, cardiovert: 1.6, defib: 0, epi: 0.4, glucagon: 0.3, midaz: 0.3 };
     if (PAINFUL[id] && ["alert", "anxious", "confused", "aphasic"].includes(m)) { st.x.painT = st.t; st.x.painMag = PAINFUL[id]; }
@@ -3112,7 +3112,7 @@ const SIM = (() => {
       bvm: o.capno ? "Copy, bagging with in-line capno." : "Copy, bagging.", cpap: "Copy, setting up CPAP.", opa: /\bnpa\b|nasal (airway|trumpet)|nasopharyngeal/.test(raw) ? "Copy, NPA." : "Copy, OPA.",
       suction: "Suctioning.", cpr: "Starting compressions!", stopcpr: "Holding compressions.", pads: "Pads going on.", bandage: "Copy, bleeding control.", tourniquet: "Tourniquet, copy.",
       fowler: `Sitting ${him()} up, position of comfort.`, supine: `Laying ${him()} flat.`, recovery: `Rolling ${him()} onto ${his()} side.`, smr: "Copy, SMR: collar and secure to the gurney.",
-      gurney: "Going for the gurney.", transport: "Copy, packaging for transport.", cooling: "Copy, cooling measures.", protect: `Protecting ${his()} head.`, removepatch: "Copy, pulling the patch.", switchcpr: "Switching! Fresh compressor on the chest.", pelvicbinder: "Copy, pelvic binder over the greater trochanters.", blanket: "Blanket on, keeping them warm.", removeheat: "Pulling the heating pad.", obkit: "Copy, opening the OB kit.", drynewborn: "Drying and rubbing the baby down.", fundal: "Copy, fundal massage.", skintoskin: "Baby on mom's chest, covering them both." };
+      gurney: "Going for the gurney.", transport: "Copy, packaging for transport.", cooling: "Copy, cooling measures.", protect: `Protecting ${his()} head.`, removepatch: "Copy, pulling the patch.", hypervent: "Copy, bagging fast.", switchcpr: "Switching! Fresh compressor on the chest.", pelvicbinder: "Copy, pelvic binder over the greater trochanters.", blanket: "Blanket on, keeping them warm.", removeheat: "Pulling the heating pad.", obkit: "Copy, opening the OB kit.", drynewborn: "Drying and rubbing the baby down.", fundal: "Copy, fundal massage.", skintoskin: "Baby on mom's chest, covering them both." };
     return A[o.id] || `Copy, checking ${(FOCUS_LABEL[o.id] || o.id).toLowerCase()}.`;
   }
   function partnerDecline(tx) {
@@ -3173,7 +3173,7 @@ const SIM = (() => {
     if (id === "tourniquet" && !hasBleeding()) { say("I don't see any bleeding that needs a tourniquet, medic."); return out; }
     const res = treat(tx);
     const T = { nrb: "NRB is on at 15 liters.", nc: `Cannula's on at ${/\b([1-6]) ?(l|liters|lpm)\b/.test(o.raw || "") ? RegExp.$1 : 4} liters.`, o2: `Oxygen's on: ${o2Name()}.`,
-      bvm: "Bagging at 10 a minute with 15 liters. Good chest rise.", cpap: "CPAP's on at 5 of PEEP, good seal.", opa: /\bnpa\b|nasal|nasopharyngeal/.test(o.raw || "") ? "NPA's in, right nare, lubed." : "OPA's in, sized, no gag.",
+      bvm: "Bagging at 10 a minute with 15 liters. Good chest rise.", hypervent: "Bagging fast, about 30 a minute, 15 liters.", cpap: "CPAP's on at 5 of PEEP, good seal.", opa: /\bnpa\b|nasal|nasopharyngeal/.test(o.raw || "") ? "NPA's in, right nare, lubed." : "OPA's in, sized, no gag.",
       suction: "Suctioned. Airway's clear now.", cpr: "Compressions going, 100 to 120.", stopcpr: "Off the chest.", pads: "Pads are on, monitor's up.", bandage: "Pressure dressing's on. Bleeding's controlled.",
       tourniquet: `Tourniquet's on, high and tight. Time is ${fmtT(st.t)} into the call.`, fowler: `${He()}'s sitting up.`, supine: `${He()}'s flat.`, recovery: `${He()}'s on ${his()} side.`, smr: "Collar's on, SMR's done.",
       gurney: "Gurney's at the bedside, ready when you are.", transport: "Packaged and ready to roll.", cooling: "Cooling measures going.", protect: `${His()} head's protected.`, removepatch: "Patch is off and bagged.", removeheat: "Heating pad's off." };
@@ -3312,29 +3312,48 @@ const SIM = (() => {
 const COURSE = (() => {
   const MENT = { alert: 0, anxious: 0.05, aphasic: 0.3, confused: 0.3, combative: 0.35, seizing: 0.8, unresponsive: 0.7, arrest: 1 };
   // 0 = stable/good .. 1+ = critical; only things a medic can see or measure
-  function index(st, m) {
-    const v = st.v; if (st.x.arrest || (st.tg && st.tg.pulse === false)) return 1.5; let s = 0;
-    if (v.spo2 != null) s += Math.max(0, (94 - v.spo2) / 25); if (v.sbp != null) s += Math.max(0, (90 - v.sbp) / 40) + Math.max(0, (v.sbp - 200) / 80);
-    if (v.hr != null) s += Math.max(0, (45 - v.hr) / 30) + Math.max(0, (v.hr - 130) / 60); if (v.rr != null) s += Math.max(0, (10 - v.rr) / 10) + Math.max(0, (v.rr - 28) / 20);
-    if (v.bgl != null) s += Math.max(0, (60 - v.bgl) / 40); s += MENT[m] || 0; return Math.min(1.5, s);
+  // 0 = stable/good .. 1+ = critical; only things a medic can see or measure. parts() splits it by system so a cue
+  // can't call the patient "improving" on color alone while perfusion or mentation is getting worse.
+  function parts(st, m) {
+    const v = st.v, P = { spo2: 0, perf: 0, rr: 0, ment: MENT[m] || 0, bgl: 0 };
+    if (v.spo2 != null) P.spo2 = Math.max(0, (94 - v.spo2) / 25);
+    if (v.sbp != null) P.perf += Math.max(0, (90 - v.sbp) / 40) + Math.max(0, (v.sbp - 200) / 80);
+    if (v.hr != null) P.perf += Math.max(0, (45 - v.hr) / 30) + Math.max(0, (v.hr - 130) / 60);
+    if (v.rr != null) P.rr = Math.max(0, (10 - v.rr) / 10) + Math.max(0, (v.rr - 28) / 20);
+    if (v.bgl != null) P.bgl = Math.max(0, (60 - v.bgl) / 40);
+    return P;
   }
+  function index(st, m) { if (st.x.arrest || (st.tg && st.tg.pulse === false)) return 1.5; const P = parts(st, m); return Math.min(1.5, P.spo2 + P.perf + P.rr + P.ment + P.bgl); }
   // ---------- deterioration / improvement cues ----------
-  // Every 30 s compare with the last cue; a clear change (what you'd see at the bedside) gets one instructor line.
+  // Every 75 s compare with the last cue. The direction reflects the OVERALL trend: "improving" only when no major system
+  // (oxygenation, perfusion, mentation) got worse; any major system worsening makes it "worse" even if color improved.
   function cue(st, sc, m) {
-    const c = st.x.course = st.x.course || { t: 0, i: index(st, m), v: Object.assign({}, st.v), m };
+    const c = st.x.course = st.x.course || { t: 0, i: index(st, m), v: Object.assign({}, st.v), m, P: parts(st, m) };
     if (st.x.arrest || m === "arrest" || st.t < 60) return null;
-    if (st.t - c.t < 75 || st.t % 15) return null;
-    const i = index(st, m), d = i - c.i; if (Math.abs(d) < 0.2) return null;
-    const v = st.v, p = c.v, he = sc.patient.sex === "F" ? "She" : "He", parts = [];
-    const worse = d > 0;
-    if (MENT[m] !== MENT[c.m]) parts.push(MENT[m] > MENT[c.m] ? (m === "unresponsive" ? "no longer responding to voice" : m === "seizing" ? "starting to seize" : "more confused and harder to rouse") : (c.m === "unresponsive" ? "starting to respond, eyes opening" : "more alert and answering more clearly"));
-    if (v.spo2 != null && p.spo2 != null && Math.abs(v.spo2 - p.spo2) >= 4) parts.push(v.spo2 < p.spo2 ? "lips and nail beds look duskier" : "color is pinking up");
-    if (v.rr != null && p.rr != null && Math.abs(v.rr - p.rr) >= 5) parts.push(v.rr > p.rr ? (v.rr > 24 ? "breathing faster and working harder" : "breathing faster") : (v.rr < 10 ? "breathing is slowing and getting shallow" : "breathing is calmer, less work"));
-    if (v.sbp != null && p.sbp != null && Math.abs(v.sbp - p.sbp) >= 18) parts.push(v.sbp < p.sbp ? "paler and clammier" : "skin color and warmth improving");
-    if (!parts.length) parts.push(worse ? "looking worse overall" : "looking better overall");
-    st.x.course = { t: st.t, i, v: Object.assign({}, v), m };
-    (st.x.trend = st.x.trend || []).push({ t: st.t, dir: worse ? "worse" : "better", text: parts.join("; ") });
-    return `${worse ? "Reassess: " + he + "'s getting worse" : "Reassess: " + he + "'s improving"}: ${parts.join(", ")}.`;
+    if (st.t - c.t < 30 || st.t % 15) return null;
+    const i = index(st, m), d = i - c.i, P = parts(st, m), P0 = c.P || P, v = st.v, p = c.v;
+    const MAJOR = ["spo2", "perf", "ment"], EPS = 0.06;
+    const up = MAJOR.filter(k => P[k] - P0[k] > EPS), down = [...MAJOR, "rr"].filter(k => P0[k] - P[k] > EPS);
+    let dir = null;
+    if (up.length && (d > 0.05 || up.includes("perf") || up.includes("ment") || P.spo2 - P0.spo2 > 0.12)) dir = "worse";
+    else if (!up.length && d < -0.2 && down.length) dir = "better";
+    else if (d > 0.2) dir = "worse";
+    if (!dir) return null;
+    // a reversal to WORSE after an "improving" cue is reported quickly (30 s); everything else waits 75 s
+    if (st.t - c.t < (dir === "worse" && c.dir === "better" ? 30 : 75)) return null;
+    const he = sc.patient.sex === "F" ? "She" : "He", out = [], worse = dir === "worse";
+    const mW = MENT[m] > MENT[c.m], mB = MENT[m] < MENT[c.m];
+    if (worse ? mW : mB) out.push(mW ? (m === "unresponsive" ? "no longer responding to voice" : m === "seizing" ? "starting to seize" : "more confused and harder to rouse") : (c.m === "unresponsive" ? "starting to respond, eyes opening to voice" : "more alert and answering more clearly"));
+    if (v.sbp != null && p.sbp != null && Math.abs(v.sbp - p.sbp) >= 12 && (worse ? P.perf > P0.perf : P.perf < P0.perf)) out.push(worse ? "weaker radial pulse, paler and clammier" : "stronger radial pulse, skin warming");
+    else if (worse && P.perf - P0.perf > EPS) out.push("perfusion is worsening: paler, cooler, weaker pulse");
+    if (v.spo2 != null && p.spo2 != null && Math.abs(v.spo2 - p.spo2) >= 3 && (worse ? v.spo2 < p.spo2 : v.spo2 > p.spo2)) out.push(worse ? "lips and nail beds look duskier" : "color is pinking up");
+    if (v.rr != null && p.rr != null && Math.abs(v.rr - p.rr) >= 5 && (worse ? P.rr >= P0.rr : P.rr <= P0.rr)) out.push(v.rr > p.rr ? (v.rr > 24 ? "breathing faster and working harder" : "breathing faster") : (v.rr < 10 ? "breathing is slowing and getting shallow" : "breathing is calmer, less work"));
+    if (!out.length) out.push(worse ? "looking worse overall" : "looking better overall");
+    // mixed picture: name what is still going the wrong way so a good color never hides a falling BP
+    if (worse && down.includes("spo2") && v.spo2 > p.spo2 + 2) out.push("even though the color looks a little better");
+    st.x.course = { t: st.t, i, v: Object.assign({}, v), m, P, dir };
+    (st.x.trend = st.x.trend || []).push({ t: st.t, dir: worse ? "worse" : "better", text: out.join("; ") });
+    return `${worse ? "Reassess: " + he + "'s getting worse" : "Reassess: " + he + "'s improving"}: ${out.join(", ")}.`;
   }
   // ---------- curveballs ----------
   const VOMIT = ["opioid", "fent_patch", "etoh", "postictal_etoh", "stroke", "stroke_post", "stroke_lams5", "seizure", "focal_sz", "hypo", "hypo_elder", "dka", "stemi", "nstemi", "stemi_brady", "anaph_gi", "bb_od", "urosepsis", "vasovagal", "chf_cp"];
@@ -6833,7 +6852,7 @@ function needleTx(st, tx, H, side, label) {
   else H.rec("x:needlesite");
   if (used !== side) { notes.push(H.devQuiet(`Needle placed on the WRONG side: breath sounds are absent on the ${side.toUpperCase()}. No improvement.`, "MCG 1335 2.1a", "deviation")); return { narr, notes }; }
   if (sd || st.events["a:lungs"]) H.rec("x:needleside");
-  if (!st.x.needleOk) { st.x.needleOk = Math.max(st.t, 0.01); setTimeout(() => SIM.event(`Rush of air through the catheter! Over the next minute: SpO2 climbing, BP coming up, neck veins flattening, breath sounds returning on the ${side}.`, "find"), 1500); H.rec("x:needleok"); }
+  if (!st.x.needleOk) { st.x.needleOk = Math.max(st.t, 0.01); st.x.mAtNeedle = st.x.arrest ? "arrest" : SIM.mental(); setTimeout(() => SIM.event(`Rush of air through the catheter! Over the next minute: SpO2 climbing, BP coming up, neck veins flattening, breath sounds returning on the ${side}.`, "find"), 1500); H.rec("x:needleok"); }
   if (st.events["a:lungs"]) { const t0 = st.events["a:lungs"][0]; if (st.t - t0 <= 180) H.rec("x:needlefast"); }
   return { narr, notes };
 }
@@ -6953,7 +6972,13 @@ addS(G({
     allergies: [], startSev: 0.55, drift0: 0.07, pain: [7, 8], bgl: 124, temp: 98.0, txaOk: true,
     vit: { good: { hr: 108, sbp: 118, dbp: 76, rr: 24, spo2: 94, etco2: 34 }, bad: { hr: 148, sbp: 52, dbp: 34, rr: 42, spo2: 70, etco2: 24 } },
     flagResp: { nrb: { drift: -0.004 } },
-    mentalFn: st => st.x.arrest ? "arrest" : st.sev < 0.7 ? "anxious" : st.sev < 0.88 ? "confused" : "unresponsive",
+    // mentation recovers gradually after decompression (brain reperfusion lags the vitals): never jumps straight to anxious/alert
+    mentalFn: st => { if (st.x.arrest) return "arrest";
+      const base = st.sev < 0.7 ? "anxious" : st.sev < 0.88 ? "confused" : "unresponsive", R = { anxious: 0, confused: 1, unresponsive: 2 };
+      if (!st.x.needleOk) return base;
+      const since = st.t - (st.x.roscT != null ? st.x.roscT : st.x.needleOk), m0 = st.x.mAtNeedle;
+      const lag = m0 === "arrest" ? (since < 120 ? "unresponsive" : since < 300 ? "confused" : "anxious") : m0 === "unresponsive" ? (since < 75 ? "unresponsive" : since < 180 ? "confused" : "anxious") : m0 === "confused" ? (since < 90 ? "confused" : "anxious") : "anxious";
+      return R[lag] > R[base] ? lag : base; },
     skin: [[0.55, "Pale, cool, diaphoretic"], [1, "Cyanotic, cold, clammy"]],
     lungs: [[0.4, "Diminished on the LEFT; right clear"], [1, "ABSENT breath sounds on the LEFT; right clear; hyperresonant on the left"]],
     edema: [[0.5, "Neck veins mildly distended"], [1, "JVD: neck veins markedly distended"]],
@@ -8163,6 +8188,7 @@ const NEXT = (() => {
   function codeChips(sim) {
     const st = sim.state, cs = sim.code() || {}, ev = st.events, out = [];
     if (!st.flags.cpr) out.push(C("Start compressions", "Partner, start compressions", "partner"));
+    else if (st.x.byCpr) out.push(C("Take over compressions", "Partner, take over compressions", "partner"));
     if (!st.rev.monitor && !st.flags.pads) out.push(C("Pads + monitor", "Partner, apply the pads and put him on the monitor", "monitor"));
     if (cs.cycle != null && cs.cycle >= 100) out.push(C("Rhythm check", "Rhythm check", "monitor"));
     if (cs.tired) out.push(C("Switch compressors", "Switch compressors", "partner"));
@@ -8172,7 +8198,9 @@ const NEXT = (() => {
     // decisions stay with the medic: always offer both shock and no-shock options plus the alternatives
     out.push(C("Shock 200 J", "Defibrillate at 200 joules", "monitor"), C("Pulse check", "Pulse check", "monitor"), C("Amiodarone 300", "Amiodarone 300 milligrams IV push", "meds"),
       C("Rhythm check", "Rhythm check", "monitor"), C("i-gel", "Partner, insert an i-gel", "partner"), C("Contact Base", "Base, this is Medic 12, how copy?", "radio"));
-    const seen = new Set(); return out.filter(c => !seen.has(c.say) && seen.add(c.say)).slice(0, 6);
+    const seen = new Set(), uniq = out.filter(c => !seen.has(c.say) && seen.add(c.say));
+    const must = uniq.filter(c => /^(Shock 200 J|Pulse check)$/.test(c.label)), rest = uniq.filter(c => !must.includes(c));
+    return [...rest.slice(0, 6 - must.length), ...must];
   }
 
   function suggest(sim) {
@@ -8180,8 +8208,22 @@ const NEXT = (() => {
     const F = sc.patient && sc.patient.sex === "F", ev = st.events;
     const fin = (step, title, chips) => ({ step, title, chips: chips.slice(0, 6).map(c => ({ ...c, say: pron(c.say, F), label: c.label })) });
     const cs = sim.code && sim.code();
-    if (st.x.arrest || (cs && cs.roscT != null && !cs.roscRecT)) return fin("code", "Code: CPR running", codeChips(sim));
+    if (st.x.arrest || (cs && cs.roscT != null && !cs.roscRecT)) return fin("code", st.flags.cpr ? "Code: CPR running" : "Code: cardiac arrest", codeChips(sim));
     const f = sim.flow(), step = f.steps.find(s => !s.done && !s.na) || { id: "radio" };
+    // unresponsive / not-tracking patient: AVPU stimulus and ABC/pulse checks come before intro/consent (intro stays available, last)
+    const m = sim.mental ? sim.mental() : "alert", notTracking = !["alert", "anxious"].includes(m) && !st.x.avpuAuto;
+    if (notTracking && ["track", "intro", "pulses", "skin", "partner", "cc", "avpu"].includes(step.id)) {
+      const done = id => { const s = f.steps.find(x => x.id === id); return s && s.done; }, ch = [];
+      if (!done("avpu")) ch.push(C("Can you hear me?", "Can you hear me? Open your eyes"), C("Sternal rub", "Sternal rub"));
+      if (!done("pulses")) ch.push(C("Radial + carotid", "Checking radial and carotid pulses"));
+      if (!ev["a:airway"]) ch.push(C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"));
+      if (!done("skin")) ch.push(C("Skin / forehead", "Feeling the forehead, checking skin signs"));
+      if (!done("partner")) ch.push(C("BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate", "partner"));
+      if (done("avpu") && !done("abc")) ch.push(C("NRB 15 L", "Partner, nonrebreather at 15 liters", "partner"), C("BVM + capno", "Partner, bag him with the BVM and put capno on", "partner"));
+      const top = ch.slice(0, 5);
+      if (!done("intro")) top.push(C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"));
+      return fin(done("avpu") ? "abc" : "avpu", done("avpu") ? "Not tracking: ABCs / pulses" : "Not tracking: AVPU + ABCs", top);
+    }
     switch (step.id) {
       case "track": return fin("track", "Approach", [C("Is he tracking me?", "Is he tracking me as I walk up?"), C("Scene safe?", "Is the scene safe?"), C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?")]);
       case "intro": return fin("intro", "Introduce + consent", [C("Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"), C("Radial + carotid", "Checking radial and carotid pulses"), C("Skin / forehead", "Feeling the forehead, checking skin signs")]);
