@@ -38,6 +38,13 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.10.6-dysim
+- Dystonic reaction calls (TP 1239 / MCG 1317.15): diphenhydramine 50 mg **deep IM** (lateral thigh / gluteus) is now the expected, fully correct route (instructor standard); 50 mg slow IV push is still accepted (IV without access still gets the caution). Plain "IM" gets credit with a small note to say "deep"; the deltoid gets credit with a large-muscle tip; no route stated is treated as deep IM with a tip to state the route. Voice accepts "deep IM", "IM", "intramuscular", "in the thigh/deltoid/glute", "deep I am", "deep eye em", "deep in". The Base-contact caution (1239 #4) is unchanged. IM onset is slower than IV (easing ~6 min vs ~2 min).
+- Chip label "Benadryl 50 mg deep IM", listed first; ondansetron/Zofran no longer offered as a distractor chip on dystonic calls (giving it gets a note: not part of TP 1239).
+- New question "when did you start it / that medication / how long have you been taking it" answers the drug's start date and time (patient and bystander); "when did this start" stays symptom onset. Other calls fall back to the medications answer.
+- Drug start is 1–2 days ago on every dystonic call: Reglan yesterday afternoon (ED), Haldol 2 days ago (Tuesday), Compazine yesterday in the ED (IV dose, then pills). Consistent across the meds answer, start-date answer, bottle/discharge papers, scene text and debrief.
+- Tests: tests/sim_v2106.js (146 checks), tests/browser/v2106_ui.mjs.
+
 ### 2.10.5-szdys
 - Seizure calls: midazolam **10 mg IN** (atomizer, split between nostrils) is accepted and graded correct by voice or chip; so are 10 mg IM and 5 mg IV/IO with existing access (TP 1231 #6, MCG 1317.25). Mishears handled: "medazolam", "midaz", "versed", "mid as a lamb", "in the nose". Chips show 10 mg IN / 10 mg IM / 5 mg IV in shuffled order; peds calls show "Midazolam IN (color code)" and skip adult dose checks.
 - Midazolam grading: wrong dose = deviation, 10× error = critical, not seizing = "not indicated", IV with no line = caution, repeat x1 (IV after 2 min; further IM/IN or > 10 mg needs Base; 20 mg max). Holds and negations ("hold the versed", "no midaz") give nothing and aren't graded.

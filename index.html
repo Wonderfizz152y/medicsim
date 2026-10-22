@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.5-szdys 44087a0587">
+<meta name="medicsim-version" content="2.10.6-dysim ff18ca2cf4">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -899,10 +899,10 @@ const PROTOCOLS = {
     keyPoints: ["Seizure (TP 1231): 10 mg IM/IN (IN split between nostrils via atomizer) or 5 mg IV/IO with existing access; repeat x1 in 2 min; max 10 mg before Base, 20 mg total with Base", "Onset: IV 3–5 min, IM 15–20 min, IN 6–14 min (IN still beats IV when there is no line)", "Contact Base for additional IM/IN dosing", "Adverse effect: respiratory depression / hypotension: watch RR, SpO2 and EtCO2; BVM if respirations become inadequate"]},
   "1317.15": { title: "MCG 1317.15 Diphenhydramine", revised: "01-01-26",
     url: "https://file.lacounty.gov/SDSInter/dhs/1053938_1317.15-Diphenhydramine2018-07-01.pdf",
-    keyPoints: ["Adult: 50 mg slow IV push, or 50 mg deep IM if no vascular access", "Indications include dystonic reaction (TP 1239) and allergic reaction (TP 1219)", "Onset 15–30 min; sedation is common"]},
+    keyPoints: ["Adult: 50 mg slow IV push or 50 mg IM; give the IM dose deep into a large muscle group (lateral thigh, gluteus)", "Dystonic reaction (TP 1239) in this sim: 50 mg deep IM is the expected route; IV also accepted", "Indications include dystonic reaction (TP 1239) and allergic reaction (TP 1219)", "Onset 15–30 min; sedation is common"]},
   "1239": { title: "Dystonic Reaction", revised: "01-26-21",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040417_1239DystonicReaction2018-04-24.pdf",
-    keyPoints: ["Base contact REQUIRED to confirm the provider impression before treatment (step 4)", "Airway; vascular access prn; assess for medication exposure (step 3)", "Common causes: prochlorperazine (Compazine), hydroxyzine, promethazine (Phenergan), haloperidol (Haldol), thioridazine, alprazolam, metoclopramide (Reglan), droperidol, fluphenazine", "Signs: torticollis, oculogyric crisis, jaw/tongue protrusion, trouble speaking, anxiety; patient awake and oriented (rule out stroke and seizure)", "Diphenhydramine 50 mg slow IV push, or 50 mg deep IM if no access (step 5)", "NOT a seizure: no midazolam. NOT an opioid toxidrome: no naloxone"]},
+    keyPoints: ["Base contact REQUIRED to confirm the provider impression before treatment (step 4)", "Airway; vascular access prn; assess for medication exposure (step 3)", "Common causes: prochlorperazine (Compazine), hydroxyzine, promethazine (Phenergan), haloperidol (Haldol), thioridazine, alprazolam, metoclopramide (Reglan), droperidol, fluphenazine", "Signs: torticollis, oculogyric crisis, jaw/tongue protrusion, trouble speaking, anxiety; patient awake and oriented (rule out stroke and seizure)", "Diphenhydramine 50 mg DEEP IM into a large muscle (lateral thigh or gluteus) is the expected route here; 50 mg slow IV push is also accepted (step 5; the PDF lists slow IV push first and deep IM if no access)", "NOT a seizure: no midazolam. NOT an opioid toxidrome: no naloxone"]},
   "1317.24": { title: "MCG 1317.24 Magnesium Sulfate", revised: "per county PDF",
     url: "https://file.lacounty.gov/SDSInter/dhs/1212486_1317.24MagnesiumSulfate.pdf",
     keyPoints: ["Standing-order indication: preeclampsia/eclampsia only (≥ 20 wk pregnant to 6 wk postpartum)", "Polymorphic VT (e.g. torsades de pointes): \"may be indicated, only with Base Physician order, in select cases\"", "Dose: 4 g in 100 mL NS or SW IV over 20 min (10 g IM if no vascular access)", "Contraindications: known heart block, myasthenia gravis; caution in severe kidney disease"]},
@@ -1808,6 +1808,8 @@ const NLU = (() => {
     ["name", /what'?s (your|his|her) (full |first |last )?name|your (full |first |last )?name|(his|her) name|who are you|call you|what should i call|first and last name/],
     ["age", /how old|your age|(his|her) age|(birthday|date of birth|dob)\b|when were you born|what year were you born/],
     ["cc", /what'?s (going on|wrong|happening|the problem|up|the matter)|what is (wrong|the matter|going on|the problem|bothering)|(?<!(know|remember|recall|recollect) )what happened(?! to you)|why (did|'d) (you|they|someone|you guys|y'all) call|why (are|were) (we|you guys) (called|here)|what'?s (been )?bothering|what (brings|brought) (us|you|ya)|what (seems to be|is) the (problem|issue|trouble)|what'?s the (issue|trouble)|made you call|what brings|chief complaint|how can (i|we) help|what can (i|we) do for you|what seems to be|tell me what('?s| is)? (going on|happened|wrong)|how are you (feeling|doing)(?! now)|how (do|are) you feel(?! (any )?better)|what'?s bothering|what'?s got you (feeling|down|worried)|are you (ok|okay|alright)\b|call (911|9 1 1|us)( today)?\b|^ ?what happened ?\??$/],
+    // v2.10.6: "when did you start it / that medication" = when the drug was started (not symptom onset)
+    ["medstart", /\bwhen did (you|she|he|they|u|we) (first )?(start|begin|get started on|get put on|first take|get prescribed|get) (it|that|them|those|on (it|that|this)|taking|the (new )?(med|medication|medicine|pill|pills|prescription|drug|tablets?)s?\b|(that|this|your|her|his|the new) (new )?(med|medication|medicine|pill|pills|prescription|drug|tablets?)s?\b|((the|that|this|your|her|his) )?(reglan|haldol|compazine|metoclopramide|haloperidol|prochlorperazine))|\bwhen (was|were) (it|that|they|the (new )?(med|medication|medicine|pill|pills|prescription|drug)s?|(that|this|your|her|his) (new )?(med|medication|medicine|pill|pills|prescription|drug)s?|reglan|haldol|compazine) (started|prescribed|filled|first given)|\bhow long (have|has) (you|she|he|they) been (on|taking) (it|that|this|them|those|the|your|her|his|reglan|haldol|compazine)|\bwhen did (the|that|this|your|her|his) (new )?(med|medication|medicine|pill|pills|prescription|drug|reglan|haldol|compazine)s? (start|get started|begin)|\bwhen did (they|the (er|ed|doctor|hospital|psychiatrist)|your (doctor|psychiatrist)|(her|his) (doctor|psychiatrist)) (start|put|prescribe|give) (you|her|him|that|it|the)|\bwhat day did (you|she|he) (start|begin)/],
     ["onset", /when did (it|this|the pain|that|the \w+|your \w+|symptoms|all (of )?this) (start|begin|began|happen|come on|kick in|kick off|kicked off)|how long ago|what time did|since when|\bsudden(ly)?\b|all at once|gradual(ly)?|come on|came on|\bonset\b|how long (has|have|did) (it|this|you|the|she|he) ?(been|had|felt|feeling|lasted)?|when did (it|this|all this) (start|begin)|start(ed)? (suddenly|gradually)|how long (have )?(you|ya)( have| been|'ve been)/],
     ["provocation", /(worse|better) (when|with|if)|what makes it (worse|better)|makes it (worse|better)|anything (make|makes|that makes) it|better or worse|worse or better|\bprovok|\bpalliat|when you (breath|move|press|walk|lie|lay|sit|cough)|when i (push|press|touch)|(push|press)(ing)? (here|on)|does it hurt (when|to|more)|hurt more when|change when|exertion|at rest|\brelieve/],
     ["quality", /describe (it|the pain|your pain|what)|what does (it|the pain) feel like|feel like\b(?! (throwing|you|i'?m))|\b(sharp|dull|crushing|stabbing|tearing|ripping|burning|aching|squeezing)\b(?! (when|with))|(a|of a|like a|more of a) pressure|pressure or|quality|kind of pain|type of pain/],
@@ -2012,8 +2014,11 @@ const NLU = (() => {
     return out;
   }
   function parseRoute(t) {
+    if (/\bdeep (i am|eye ?em|eye am|i em|aim|in|em)\b/.test(t) && !/\bnose|nostril|nasal|atomiz/.test(t)) return "IM";
     if (/\bin\b(?! (the|your|his|her|a|my|it|there|here|on|to|for|pain|and|\d))|\bin$|intranasal|nasal(ly)?\b(?! cannula| airway| trumpet)|nostril|\b(in|up|into) (the|his|her|each|one|both) nose\b|atomiz|\bmad\b/.test(t) && !/nasal cannula/.test(t) && /narcan|naloxone|midaz|versed|fentanyl|morphine|ketorolac|toradol|zofran|ondansetron|glucagon|benadryl|diphenhydramine|intranasal|nostril|atomiz|nasal(ly)?\b(?! cannula)/.test(t)) return "IN";
     if (/\bim\b|intramuscular|thigh|deltoid|epipen/.test(t)) return "IM";
+    // v2.10.6: "deep I am / eye em / aim / in" (deep IM mishears) and large-muscle sites (MCG 1317.15) = IM
+    if (/\bdeep (i am|i\.? ?m\b\.?|eye ?em|eye am|i em|aim|in|em|intra ?muscular|muscle)\b|\b(glutes?|gluteal|gluteus|buttocks?|butt|vastus|large muscle)\b|\b(\d+|mg|milligrams?) (i am|eye em)\b/.test(t)) return "IM";
     if (/\bio\b|intraosseous/.test(t)) return "IO";
     if (/\biv\b|ivp|intravenous|push/.test(t)) return "IV";
     if (/\bsl\b|sublingual|under (the|your|his|her) tongue/.test(t)) return "SL";
@@ -2065,7 +2070,8 @@ const NLU = (() => {
       return !isQuestion; // imperative / telegraphic statement ("nasal cannula at 2 liters")
     });
     const route = parseRoute(t);
-    out.tx.forEach(x => { x.doses = doses; x.route = route; });
+    const deep = /\bdeep\b/.test(t), site = (t.match(/\b(deltoid|lateral thigh|thigh|glutes?|gluteal|gluteus|buttocks?|butt|vastus)\b/) || [])[1] || null;
+    out.tx.forEach(x => { x.doses = doses; x.route = route; x.deep = deep; x.site = site; });
     for (const [id, re] of A) if (re.test(t)) out.assess.push(id);
     if (out.tx.some(x => ["d10", "oralglucose", "glucagon"].includes(x.id)) && !/check|level|sugar is|finger/.test(t)) out.assess = out.assess.filter(a => a !== "bgl");
     if (out.tx.some(x => x.id === "transport") && out.assess.includes("monitor") && !/monitor/.test(t)) out.assess = out.assess.filter(a => a !== "monitor");
@@ -2080,6 +2086,7 @@ const NLU = (() => {
     if (has("severity")) rm("chestpain");
     if (has("pde5")) rm("meds", "drugs");
     if (has("allergies") && !/\b(what|which) (medic\w*|meds)\b.*\b(take|on)\b|\b(take|taking) any\b|\bmeds do\b|\bmedications or\b|, meds\b|\bmeds,|\bmeds or\b/.test(t)) rm("meds");
+    if (has("medstart")) rm("onset", "time", "meds", "events");
     if (has("lkw")) rm("onset", "time");
     if (has("onset")) rm("time");
     if (has("syncope")) rm("time", "dizzy");
@@ -3268,7 +3275,10 @@ const SIM = (() => {
         break; }
       case "morphine": narr = `Morphine ${doseOf(tx, "mg") || 4} mg ${tx.route || "IV"}`; if (sbp < 90) notes.push(dev("Opioid analgesia with SBP < 90.", "MCG 1345")); break;
       case "ketorolac": if (["stemi", "cardiac"].includes(sc.base)) notes.push(dev("Do NOT give ketorolac for cardiac chest pain.", "1211 ❺")); narr = `Ketorolac ${doseOf(tx, "mg") || (tx.route === "IM" ? 30 : 15)} mg ${tx.route || "IV"}`; break;
-      case "diphen": { const mg = doseOf(tx, "mg"), route = tx.route === "IM" ? "IM" : "IV"; // MCG 1317.15 (rev 01-01-26), TP 1239 #5
+      case "diphen": { const mg = doseOf(tx, "mg"), route = tx.route === "IM" ? "IM" : tx.route === "IV" || tx.route === "IO" ? "IV" : sc.dystonic && !tx.route ? "IM" : "IV"; // MCG 1317.15 (rev 01-01-26), TP 1239 #5
+        const noRoute = !tx.route; if (noRoute) tx.route = route; // v2.10.6: dystonic calls default to deep IM (primary route per Adrian)
+        if (sc.dystonic && noRoute) notes.push(dev("Credit given (deep IM assumed). Tip: always state the route: \"diphenhydramine 50 mg deep IM\".", "1239 #5 / MCG 1317.15", "note"));
+        else if (sc.dystonic && route === "IM" && !tx.deep && !/thigh|glute|butt|vastus/.test(tx.site || "")) notes.push(dev(/deltoid/.test(tx.site || "") ? "Credit given for diphenhydramine 50 mg IM. Tip: MCG 1317.15 says deep IM into a large muscle group (lateral thigh or gluteus) rather than the deltoid; say \"50 mg deep IM\"." : "Credit given for diphenhydramine 50 mg IM. Tip: say \"deep IM\": TP 1239 #5 specifies 50 mg deep IM, into a large muscle (lateral thigh or gluteus) per MCG 1317.15.", "1239 #5 / MCG 1317.15", "note"));
         narr = `Diphenhydramine ${mg || 50} mg ${route === "IM" ? "deep IM" : "slow IV push"}`;
         if (sc.base === "anaph" && !n(st, "epi")) notes.push(dev("Diphenhydramine does not treat anaphylaxis. Epinephrine is the first priority.", "1219 ❸"));
         if (route === "IV" && !st.flags.iv) notes.push(dev("Diphenhydramine IV needs vascular access. If unable to obtain access, give 50 mg deep IM.", "1239 #5 / MCG 1317.15", "caution"));
@@ -3310,7 +3320,7 @@ const SIM = (() => {
     if (st.x.rosc) rec("t:" + id + "@rosc");
     st.last[id] = st.t;
     if ((id === "epi" || id === "pushepi") && st.x.epiOd) { addEffect("epiod"); st.x.epiOd = false; }
-    if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : id === "diphen" ? (tx.route === "IM" ? 300 : 120) : undefined);
+    if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : id === "diphen" ? (tx.route === "IM" ? 900 : 120) : undefined);
     if (typeof COURSE !== "undefined") COURSE.onTreat(id, st, sc);
     if (sc.onTreat) { const r = sc.onTreat(id, st, tx, H); if (r && r.lines) notes.push(...r.lines); }
     log("tx", (narr || TX_LABEL[id] || id) + (tx.raw ? "" : ""));
@@ -6859,7 +6869,8 @@ addS(G({
  * inability to retract the tongue, forced jaw opening, grimacing, eye deviation. Airway patent, A&O intact,
  * vitals essentially normal, SpO2 mid-high 90s throughout (no desaturation).
  * Treatment: airway (1302), vascular access prn, assess medication exposure, CONTACT BASE to confirm the
- * impression (1239 #4), diphenhydramine 50 mg slow IV push, or 50 mg deep IM without access (1239 #5).
+ * impression (1239 #4), diphenhydramine 50 mg (1239 #5; MCG 1317.15). v2.10.6: per Adrian's course standard, 50 mg DEEP IM
+ * (lateral thigh / gluteus) is the expected primary route; 50 mg slow IV push is also accepted. Med started 1-2 days ago on every call.
  * Midazolam (no seizure) and naloxone (no opioid toxidrome) are NOT indicated.
  * ===================================================================== */
 (() => {
@@ -6885,30 +6896,31 @@ addS(G({
   const common = (sp) => ({
     checklist: [
       { label: "Airway assessed (patent, handling secretions, no stridor)", keys: ["a:airway"], ref: "1239 #1 / MCG 1302", critical: true },
-      { label: `Medication exposure: new ${sp} and when it was started`, keys: ["q:meds"], ref: "1239 #3 ❶", critical: true },
+      { label: `Medication exposure: new ${sp} and when it was started`, keys: ["q:meds", "q:medstart"], ref: "1239 #3 ❶", critical: true },
       { label: "Pertinent negatives: no SOB, allergies, hives or swelling (not an allergic reaction)", keys: ["q:sob", "q:allergies", "q:swelling", "a:hives"], ref: "1239 ❷ / 1219" },
       { label: "Stroke / seizure ruled out (neuro exam, A&O, no seizure history)", keys: ["a:neuro", "q:weakness", "q:seizurehx", "a:orient"], ref: "1239 ❷ (differential: 1232 / 1231)", critical: true },
-      { label: "Vascular access prn", keys: ["t:iv"], ref: "1239 #2 / MCG 1375" },
+      { label: "Vascular access prn (not required for deep IM)", keys: ["t:iv"], ref: "1239 #2 / MCG 1375" },
       { label: "CONTACT BASE to confirm the provider impression", keys: ["t:base"], ref: "1239 #4", critical: true },
-      { label: "Diphenhydramine 50 mg slow IV push (50 mg deep IM if no access)", keys: ["t:diphen"], ref: "1239 #5 / MCG 1317.15", critical: true },
+      { label: "Diphenhydramine 50 mg deep IM (lateral thigh / gluteus); 50 mg slow IV push also accepted", keys: ["t:diphen"], ref: "1239 #5 / MCG 1317.15", critical: true },
       { label: "No midazolam (awake, not seizing)", keys: ["!t:midaz"], ref: "1239 / 1231 #6 / MCG 1317.25", critical: true },
       { label: "No naloxone (no opioid toxidrome, normal RR)", keys: ["!t:naloxone"], ref: "1241 #4 / MCG 1317.29", critical: true },
     ],
     onTreat: (id, st, tx, H) => {
       if (id === "diphen") { if (!st.events["t:base"]) return { lines: [H.devQuiet("Diphenhydramine before Base contact: TP 1239 requires Base contact to confirm the impression before treatment (step 4, then step 5).", "1239 #4", "caution")] }; if (!st.x.dysDiphT) st.x.dysDiphT = st.t; return null; }
+      if (id === "ondansetron") return { lines: [H.devQuiet("Ondansetron isn't part of TP 1239: it doesn't treat dystonia. Treatment is diphenhydramine 50 mg deep IM (or slow IV) after Base contact.", "1239 #5", "note")] };
       if (id === "midaz") return { lines: [H.devQuiet("Dystonic reaction is not a seizure: the patient is awake, oriented and talking through the spasm. Treatment is diphenhydramine; midazolam only adds sedation and respiratory depression.", "1239 #5 / MCG 1317.25", "note")] };
       return null;
     },
     tickExtra: (st, dt, H) => { if (st.x.dysDiphT != null && !st.x.dysBetter && st.sev < 0.3) { st.x.dysBetter = true; H.event("The spasm is easing: the neck is relaxing and the tongue is back in the mouth. Speech is clearer.", "find"); } },
     pi: { correct: "DYRX", accept: [], differential: ["DYRX", "STRK", "SEAC", "ALRX"],
       clues: { DYRX: `New ${sp} (a TP 1239 ❶ drug), sustained involuntary spasm, awake and oriented, airway patent, normal vitals.`, STRK: "No focal weakness, no droop, normal strength and sensation; the speech problem is mechanical (jaw/tongue spasm), not aphasia.", SEAC: "Awake, oriented and answering throughout; no clonic activity or postictal state.", ALRX: "No hives, wheeze, swelling or hypotension; the tongue protrudes from spasm, it isn't swollen." },
-      explain: `Acute dystonic reaction to ${sp} (TP 1239 ❶). Airway, vascular access prn, assess the medication exposure, CONTACT BASE to confirm, then diphenhydramine 50 mg slow IV push (50 mg deep IM if no access). Improvement over minutes.`, keyFindingKeys: ["q:meds", "a:neuro", "a:airway"] },
+      explain: `Acute dystonic reaction to ${sp} (TP 1239 ❶). Airway, vascular access prn, assess the medication exposure, CONTACT BASE to confirm, then diphenhydramine 50 mg deep IM (slow IV push also accepted). Improvement over several minutes (slower after IM than IV).`, keyFindingKeys: ["q:meds", "a:neuro", "a:airway"] },
   });
   addS(base(Object.assign({
     id: "dystonic_reglan", dispatchTitle: "24 y/o male, neck spasm, can't talk right", dispatchShort: "Northridge apartment, roommate calling.",
     dispatch: "RA 87, respond to an apartment on Reseda Blvd, Northridge. 24-year-old male, neck stuck to one side, tongue sticking out, roommate says he can't talk right. Time of call 1415.",
     scene: "Scene safe. A young man is sitting on the couch, frightened, head twisted and tilted to the left, tongue pushing out of his mouth. A pharmacy bag with discharge papers is on the coffee table. His roommate is on the phone.",
-    sceneMore: "Pharmacy bag: metoclopramide (Reglan) 10 mg, filled yesterday, with ED discharge papers for gastroenteritis.", medLabel: "metoclopramide (Reglan) 10 mg tablets, 1 by mouth every 6 hours as needed for nausea. Filled YESTERDAY (ED discharge, gastroenteritis); 2 doses taken, last this morning.",
+    sceneMore: "Pharmacy bag: metoclopramide (Reglan) 10 mg, filled yesterday, with ED discharge papers for gastroenteritis.", medLabel: "metoclopramide (Reglan) 10 mg tablets, 1 by mouth every 6 hours as needed for nausea. Prescribed and filled YESTERDAY afternoon (ED discharge, gastroenteritis); first dose last night ~2200, second today ~1230.",
     patient: { name: "Diego Alvarez", age: 24, sex: "M" }, bystander: { name: "Kevin", role: "roommate", sex: "M" },
     personality: "Frightened, alert, fully oriented, struggling to talk around the spasm; calms down as the spasm eases.",
     neuro: [[0.35, "A&O x4. Neck relaxed; tongue control back; speech clear. Strength 5/5 and sensation intact all extremities, no facial droop"], [9, "A&O x4. Sustained involuntary spasm: head turned and tilted to the left (torticollis); tongue protruding, can't retract it; speech thick from jaw/tongue spasm. Strength 5/5 and sensation intact all extremities, no droop"]],
@@ -6918,19 +6930,20 @@ addS(G({
       name: st => D(st) ? "Diego... Alvareth." : "Diego Alvarez.", age: "Twenty-four.", orient: st => D(st) ? "(thick) My plathe... Northridge... Tuethday... you're the paramedicth." : "My apartment in Northridge, Tuesday afternoon. You're the paramedics.",
       cc: st => D(st) ? "(pointing at his neck) Neck... pulling... tongue won't go back in!" : "My neck kept twisting and my tongue kept sticking out. I couldn't control it.",
       meds: st => D(st) ? "(slurred) Reglan... the ER... thtarted it yethterday... for throwing up." : "Just the Reglan, metoclopramide 10 milligrams. The ER started it yesterday for a stomach bug. I took it last night and again this morning.",
-      history: "Nothing. I'm healthy. I had a stomach bug and went to the ER yesterday.", onset: st => D(st) ? "About... an hour." : "About an hour ago. It came on maybe an hour after this morning's dose.",
-      events: "I took the Reglan this morning, then my neck started pulling and my tongue started pushing out. It kept getting worse.", lastoral: "Some crackers this morning.",
+      medstart: st => D(st) ? "(thick) Yethterday... ER gave it... firtht pill latht night... ten." : "Yesterday. The ER prescribed it yesterday afternoon. I took the first pill last night around ten, and the second one this morning around twelve-thirty.",
+      history: "Nothing. I'm healthy. I had a stomach bug and went to the ER yesterday.", onset: st => D(st) ? "About... an hour." : "About an hour ago. It came on maybe half an hour after my second pill.",
+      events: "I took the Reglan around twelve-thirty, then my neck started pulling and my tongue started pushing out. It kept getting worse.", lastoral: "Some crackers this morning.",
       pregnant: "(gives you a look) ...I'm a guy.",
     }),
-    bystanderAnswers: { cc: "His neck is stuck to the side and his tongue keeps sticking out. He's scared.", meds: "Just the stuff from the ER yesterday, Reglan. It's in the bag right there. He took it last night and this morning.", onset: "It started maybe an hour ago and kept getting worse.", seizurehx: "No, never. He didn't pass out or shake, he's been talking to me the whole time.", history: "Nothing. He's healthy, he just had a stomach bug.", drugs: "No, he doesn't do anything." },
+    bystanderAnswers: { cc: "His neck is stuck to the side and his tongue keeps sticking out. He's scared.", meds: "Just the stuff from the ER yesterday, Reglan. It's in the bag right there. He took it last night and this morning.", medstart: "Yesterday. The ER gave him the prescription yesterday afternoon; first pill last night around ten.", onset: "It started maybe an hour ago and kept getting worse.", seizurehx: "No, never. He didn't pass out or shake, he's been talking to me the whole time.", history: "Nothing. He's healthy, he just had a stomach bug.", drugs: "No, he doesn't do anything." },
     ambient: st => D(st) ? pick(["(head jerks back to the left; he grabs his neck)", "(tongue pushes out; he tries to push it back with his fingers)", "(breathing fast, eyes wide: 'Make it thtop!')"]) : null,
-    expected: "Acute dystonic reaction to metoclopramide started yesterday (TP 1239). Airway, IV, med history, Base contact, diphenhydramine 50 mg slow IV. No midazolam, no naloxone.",
+    expected: "Acute dystonic reaction to metoclopramide started yesterday (TP 1239). Airway, med history, Base contact, diphenhydramine 50 mg deep IM (slow IV also accepted). No midazolam, no naloxone.",
   }, common("metoclopramide (Reglan)"))));
   addS(base(Object.assign({
     id: "dystonic_haldol", difficulty: "Intermediate", dispatchTitle: "31 y/o female, eyes rolling up, jaw stuck", dispatchShort: "Pasadena house, mother calling.",
     dispatch: "RA 32, respond to a home on Allen Ave, Pasadena. 31-year-old female, eyes stuck looking up, jaw stuck open, family thinks she's having a stroke. Time of call 2005.",
     scene: "Scene safe. A woman is sitting at the kitchen table, eyes deviated upward, neck arched back, jaw forced open, grimacing. She's awake and frightened and tries to look at you. Her mother has a new prescription bottle in her hand.",
-    sceneMore: "Prescription bottle: haloperidol (Haldol) 5 mg, started 3 days ago by her psychiatrist.", medLabel: "haloperidol (Haldol) 5 mg, twice daily, filled 3 DAYS AGO (new, from her psychiatrist); sertraline 100 mg daily (long-standing).",
+    sceneMore: "Prescription bottle: haloperidol (Haldol) 5 mg twice daily, filled 2 days ago (Tuesday) from her psychiatrist.", medLabel: "haloperidol (Haldol) 5 mg, twice daily, NEW: filled 2 DAYS AGO (Tuesday) from her psychiatrist, first dose Tuesday evening; sertraline 100 mg daily (long-standing).",
     patient: { name: "Renee Walker", age: 31, sex: "F" }, bystander: { name: "Linda", role: "mother", sex: "F" },
     personality: "Terrified, fully oriented, answers by gestures and thick speech while the spasm lasts.",
     neuro: [[0.35, "A&O x4. Eyes midline and tracking; jaw relaxed; speech clear. Strength 5/5, sensation intact, no facial droop"], [9, "A&O x4. Oculogyric crisis: eyes deviated upward; neck extended (retrocollis); jaw forced open with grimacing; speech thick from jaw spasm. Strength 5/5, sensation intact all extremities, no droop"]],
@@ -6939,19 +6952,20 @@ addS(G({
       greet: st => D(st) ? "(jaw stuck open, eyes rolled up) My eyeth... I can't... look down!" : "Oh thank God. I can see you now.",
       name: "Renee.", age: "Thirty-one.", orient: st => D(st) ? "(thick) Mom'th houthe... Pathadena... night." : "My mom's house in Pasadena. Thursday night.",
       cc: st => D(st) ? "Eyeth go up... jaw... thtuck open!" : "My eyes kept rolling up and my jaw got stuck open. It's easing now.",
-      meds: st => D(st) ? "(gestures at the bottle) Haldol... new... three dayth." : "Haloperidol, Haldol, 5 milligrams twice a day. My psychiatrist started it three days ago. Before that just sertraline.",
+      meds: st => D(st) ? "(gestures at the bottle) Haldol... new... two dayth." : "Haloperidol, Haldol, 5 milligrams twice a day. My psychiatrist started it two days ago, on Tuesday. Before that just sertraline.",
+      medstart: st => D(st) ? "(holds up two fingers) Two dayth... Tuethday... night." : "Two days ago. Tuesday. I took the first one Tuesday evening around seven.",
       history: "Bipolar disorder. My psychiatrist switched my meds this week.", onset: "It started about forty minutes ago.", events: "I took my evening Haldol, and about an hour later my eyes started pulling up.", lastoral: "Dinner at six.",
       pregnant: "No. Not pregnant.",
     }),
-    bystanderAnswers: { cc: "Her eyes are stuck looking up and her jaw won't close. I thought it was a stroke.", meds: "The new pill, Haldol. Her psychiatrist started it Monday. Three days now. And the sertraline she's always taken.", onset: "About forty minutes ago.", seizurehx: "No, she's never had a seizure. She's been talking to me the whole time.", history: "Bipolar. Otherwise healthy." },
+    bystanderAnswers: { cc: "Her eyes are stuck looking up and her jaw won't close. I thought it was a stroke.", meds: "The new pill, Haldol. Her psychiatrist started it Tuesday. Two days now. And the sertraline she's always taken.", medstart: "Tuesday, two days ago. She took the first one Tuesday evening.", onset: "About forty minutes ago.", seizurehx: "No, she's never had a seizure. She's been talking to me the whole time.", history: "Bipolar. Otherwise healthy." },
     ambient: st => D(st) ? pick(["(eyes roll up again; she tilts her head down to try to see you)", "(jaw pulls open; she grimaces and holds it with her hand)"]) : null,
-    expected: "Acute dystonic reaction (oculogyric crisis) to haloperidol started 3 days ago (TP 1239). Not a stroke or seizure. Airway, IV, Base contact, diphenhydramine 50 mg slow IV.",
+    expected: "Acute dystonic reaction (oculogyric crisis) to haloperidol started 2 days ago (Tuesday) (TP 1239). Not a stroke or seizure. Airway, med history, Base contact, diphenhydramine 50 mg deep IM (slow IV also accepted).",
   }, common("haloperidol (Haldol)"))));
   addS(base(Object.assign({
     id: "dystonic_compazine", difficulty: "Intermediate", startSev: 0.75, dispatchTitle: "19 y/o female, face twisting, tongue out", dispatchShort: "Long Beach dorm, roommate calling.",
     dispatch: "RA 9, respond to a CSULB dorm, Long Beach. 19-year-old female, face twisting and tongue sticking out, very anxious. Time of call 1130.",
     scene: "Scene safe. A young woman is sitting on her bed, grimacing, her tongue pushing out between her teeth, head pulling to the right. An ED discharge bracelet is still on her wrist. Her roommate is filming on her phone.",
-    sceneMore: "ED discharge papers: migraine, given prochlorperazine (Compazine) IV last night plus a 3-day prescription.", medLabel: "prochlorperazine (Compazine) 10 mg, every 6 hours as needed, 3-day supply, filled LAST NIGHT after an ED visit for migraine (also got a dose IV in the ED); oral contraceptive.",
+    sceneMore: "ED discharge papers dated YESTERDAY: migraine, given prochlorperazine (Compazine) 10 mg IV in the ED yesterday afternoon plus a 3-day prescription.", medLabel: "prochlorperazine (Compazine) 10 mg, every 6 hours as needed, 3-day supply, started YESTERDAY: 10 mg IV in the ED yesterday ~1500, prescription filled yesterday evening, pills last night ~2200 and this morning ~0900; oral contraceptive.",
     patient: { name: "Maya Chen", age: 19, sex: "F" }, bystander: { name: "Jess", role: "roommate", sex: "F" },
     personality: "Anxious, alert, embarrassed, oriented.",
     neuro: [[0.35, "A&O x4. Face relaxed; tongue control back; speech clear. Strength 5/5, sensation intact, no facial droop"], [9, "A&O x4. Facial grimacing; tongue protrusion she can't retract; head pulling to the right; speech thick. Strength 5/5, sensation intact, no droop"]],
@@ -6959,12 +6973,13 @@ addS(G({
       greet: st => D(st) ? "(grimacing, tongue out) Thorry... my fathe ith doing thith on itth own." : "Hi. It's stopping, finally.",
       name: "Maya.", age: "Nineteen.", orient: st => D(st) ? "Dorm... Long Beach... Monday." : "My dorm in Long Beach, Monday morning.",
       cc: st => D(st) ? "Tongue... won't go in... fathe twithting." : "My tongue kept sticking out and my face kept twisting.",
-      meds: st => D(st) ? "Compathine... for migraine... ER yethterday." : "Compazine, prochlorperazine. The ER gave it to me last night for a migraine and sent me home with pills. I took one this morning. And birth control.",
+      meds: st => D(st) ? "Compathine... for migraine... ER yethterday." : "Compazine, prochlorperazine. The ER gave it to me yesterday afternoon for a migraine and sent me home with pills. I took one last night and one this morning. And birth control.",
+      medstart: st => D(st) ? "Yethterday... ER... afternoon." : "Yesterday. They gave me a dose in the IV at the ER yesterday around three, then I took a pill last night around ten and one this morning at nine.",
       history: "Migraines.", headache: "The migraine's gone. Now it's this.", onset: "About an hour ago, after this morning's pill.", events: "Took the Compazine pill at nine, and by ten my tongue started pushing out.", lastoral: "Toast at nine.", pregnant: "No, I'm on birth control.",
     }),
-    bystanderAnswers: { cc: "Her face keeps twisting and her tongue sticks out. She's freaking out.", meds: "The migraine pill from the ER, Compazine. She started it last night. And birth control.", onset: "Like an hour ago.", seizurehx: "No, she's been talking the whole time." },
+    bystanderAnswers: { cc: "Her face keeps twisting and her tongue sticks out. She's freaking out.", meds: "The migraine pill from the ER, Compazine. She started it yesterday. And birth control.", medstart: "Yesterday. The ER gave her some in the IV yesterday afternoon, and she took the pills last night and this morning.", onset: "Like an hour ago.", seizurehx: "No, she's been talking the whole time." },
     ambient: st => D(st) ? pick(["(grimaces; tongue pushes out between her teeth)", "(head pulls to the right; she's breathing fast and crying)"]) : null,
-    expected: "Acute dystonic reaction to prochlorperazine given/started yesterday for migraine (TP 1239). Airway, IV, Base, diphenhydramine 50 mg slow IV.",
+    expected: "Acute dystonic reaction to prochlorperazine started yesterday in the ED for migraine (TP 1239). Airway, med history, Base, diphenhydramine 50 mg deep IM (slow IV also accepted).",
   }, common("prochlorperazine (Compazine)"))));
 })();
 
@@ -7991,6 +8006,7 @@ const RuleBasedPatient = (() => {
   function answerFor(q, ctx) {
     const { scenario: sc, state: st, mental, parsed } = ctx;
     const by = sc.bystander, byAns = sc.bystanderAnswers || {};
+    if (q === "medstart" && (sc.answers || {}).medstart == null && byAns.medstart == null) q = "meds"; // v2.10.6: only dystonic calls author a drug start date
     const talk = CAN_TALK.includes(mental);
     if ((q === "pregnant" || q === "lmp") && sc.patient.sex === "M") return talk ? [{ speaker: "patient", text: "(gives you a strange look) ...I'm a guy." }] : [];
     if ((q === "pregnant" || q === "lmp") && sc.patient.age > 58 && !(sc.answers || {})[q] && talk && mental !== "confused") return [{ speaker: "patient", text: "(laughs) Not for many, many years." }];
@@ -8774,7 +8790,7 @@ const NEXT = (() => {
     aspirin: ["Aspirin 325", "Give aspirin 325 milligrams chewed"], nitro: ["Nitro 0.4 SL", "Nitroglycerin 0.4 milligrams sublingual"],
     fentanyl: ["Fentanyl 50 mcg", "Fentanyl 50 micrograms IV"], morphine: ["Morphine 4 mg", "Morphine 4 milligrams IV"], ketorolac: ["Ketorolac 15 mg", "Ketorolac 15 milligrams IV"],
     cpap: ["CPAP", "Partner, set up CPAP"], ns: ["NS bolus", "Normal saline 250 milliliter bolus"], epi: ["Epi IM", "Epinephrine 0.5 milligrams IM"],
-    albuterol: ["Albuterol neb", "Albuterol 5 milligrams nebulized"], diphen: ["Benadryl 50 mg IV", "Diphenhydramine 50 milligrams slow IV push"], diphen_im: ["Benadryl 50 mg IM", "Diphenhydramine 50 milligrams deep IM"], d10: ["D10", "Dextrose 10 percent 125 milliliters IV"],
+    albuterol: ["Albuterol neb", "Albuterol 5 milligrams nebulized"], diphen: ["Benadryl 50 mg IV", "Diphenhydramine 50 milligrams slow IV push"], diphen_im: ["Benadryl 50 mg deep IM", "Diphenhydramine 50 milligrams deep IM"], d10: ["D10", "Dextrose 10 percent 125 milliliters IV"],
     glucagon: ["Glucagon 1 mg", "Glucagon 1 milligram IM"], oralglucose: ["Oral glucose", "Oral glucose 15 grams"], naloxone: ["Naloxone 2 mg IN", "Naloxone 2 milligrams intranasal"], nal_rep: ["Repeat naloxone", "Repeat naloxone 2 milligrams intranasal"],
     midaz: ["Midazolam 10 mg IN", "Midazolam 10 milligrams intranasal"], mid_im10: ["Midazolam 10 mg IM", "Midazolam 10 milligrams IM"], mid_iv5: ["Midazolam 5 mg IV", "Midazolam 5 milligrams IV"], mid_peds: ["Midazolam IN (color code)", "Midazolam intranasal per color code"], ondansetron: ["Zofran 4 mg", "Ondansetron 4 milligrams ODT"], atropine: ["Atropine 1 mg", "Atropine 1 milligram IV"],
     adenosine: ["Adenosine 6 mg", "Adenosine 6 milligrams rapid IV push"], vagal: ["Vagal maneuver", "Try a modified valsalva maneuver"], amio: ["Amiodarone", "Amiodarone 150 milligrams IV over 10 minutes"],
@@ -8810,7 +8826,7 @@ const NEXT = (() => {
     "1231": [["recovery", "suction", "opa", "nrb"], ["midaz", "mid_im10", "mid_iv5", "naloxone"], ["bvm"], ["d10", "oralglucose"], ["iv"]],
     "1231-P": [["recovery", "suction", "nrb"], ["mid_peds", "naloxone"], ["d10", "oralglucose"], ["cooling"]],
     "1217-ecl": [["recovery", "suction", "nrb"], ["iv"], ["magnesium"], ["midaz", "mid_im10", "mid_iv5"]],
-    "1239": [["iv"], ["diphen", "diphen_im", "midaz", "naloxone"]],
+    "1239": [["diphen_im", "diphen", "midaz", "naloxone"], ["iv"]], // v2.10.6: deep IM is the primary route (Adrian); slow IV accepted
     "1232": [["nc", "nrb", "supine", "fowler"], ["iv"], ["d10", "oralglucose"]],
     "1213": [["nrb", "nc"], ["iv"], ["vagal", "adenosine", "cardiovert"], ["amio", "pace", "atropine"]],
     "1204": [["nrb", "nc"], ["iv", "ns"], ["pushepi", "epi"], ["cooling", "blanket"]],
@@ -8968,7 +8984,7 @@ const NEXT = (() => {
       slots = slots.map(sl => sl.includes("naloxone") ? [...sl, "nal_rep"] : sl);
     }
     if (st.flags.o2 === "bvm" && slots.some(sl => sl.includes("alb_hhn"))) slots = slots.map(sl => sl.includes("alb_hhn") ? [...sl, "alb_bvm"] : sl);
-    const used = new Set(), dpool = shuffle(DISTRACT.filter(k => !want.has(k) && !ev["t:" + k]), sc.id + "|d"); let di = 0, out = [], prefix = [];
+    const used = new Set(), dpool = shuffle(DISTRACT.filter(k => !want.has(k) && !ev["t:" + k] && !(sc.dystonic && k === "ondansetron")), sc.id + "|d"); let di = 0, out = [], prefix = [];
     // anything still missing from history (allergies before meds) comes before treatment
     vitalChips(sim).filter(c => c.label !== "BP, SpO₂, RR").forEach(c => prefix.push(c));
     [["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"]].forEach(([l, s2, k]) => { if (!ev[k]) prefix.push(C(l, s2)); });
