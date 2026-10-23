@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.10.9 0e4b000d75">
+<meta name="medicsim-version" content="2.11.0-lungs 8fbdabf456">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -572,6 +572,30 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 .dest-panel .tr-btn.on{background:#143326;border:2px solid #34d399;color:#ecfdf5}
 .dest-panel .tr-btn.on .tr-code{background:#065f46;color:#6ee7b7}
 
+/* v2.11.0 Stethoscope Lung Sound Auscultation Player */
+#btnLungReplay[hidden],#btnLungRight[hidden],#btnLungLeft[hidden]{display:none!important}
+.as[data-k="lungs"]{cursor:pointer;transition:border-color .18s,box-shadow .18s}
+.as[data-k="lungs"]:hover{border-color:#38bdf8}
+.as[data-k="lungs"].playing,#btnSteth.playing{border-color:#34d399!important;box-shadow:0 0 0 2px rgba(52,211,153,.32)}
+.lung-player{margin-top:.5em;padding:.48em .62em;border-radius:9px;background:rgba(8,26,38,.88);border:1px solid #1e4b6b;display:flex;flex-direction:column;gap:.38em}
+.lung-player.playing{border-color:#34d399;background:rgba(7,34,30,.92);box-shadow:0 0 0 2px rgba(52,211,153,.22)}
+.lung-player .lp-head{display:flex;align-items:center;justify-content:space-between;gap:.5em;flex-wrap:wrap;font-size:.82em;font-weight:700;color:#bae6fd}
+.lung-player.playing .lp-head{color:#6ee7b7}
+.lung-player .lp-badge{display:inline-flex;align-items:center;gap:.35em;line-height:1.25}
+.lung-player .lp-wave{display:inline-flex;align-items:flex-end;gap:2px;height:14px;opacity:.35}
+.lung-player.playing .lp-wave{opacity:1}
+.lung-player .lp-wave i{display:block;width:3px;height:4px;border-radius:2px;background:#38bdf8;transition:height .15s}
+.lung-player.playing .lp-wave i{background:#34d399;animation:lpWave .75s ease-in-out infinite alternate}
+.lung-player.playing .lp-wave i:nth-child(2){animation-delay:.12s}
+.lung-player.playing .lp-wave i:nth-child(3){animation-delay:.24s}
+.lung-player.playing .lp-wave i:nth-child(4){animation-delay:.36s}
+.lung-player.playing .lp-wave i:nth-child(5){animation-delay:.48s}
+@keyframes lpWave{0%{height:3px}100%{height:14px}}
+.lung-player .lp-btns{display:flex;align-items:center;gap:.35em;flex-wrap:wrap}
+.lung-player .lp-btn{font-size:.78em;padding:.26em .62em;min-height:28px;border-radius:7px;background:#122b40;border:1px solid #2b587c;color:#e0f2fe;font-weight:700;cursor:pointer}
+.lung-player .lp-btn:hover{background:#193b57;border-color:#38bdf8}
+.lung-player .lp-btn.active{background:#065f46;border-color:#34d399;color:#ecfdf5;box-shadow:0 0 0 2px rgba(52,211,153,.28)}
+
 </style>
 </head>
 <body>
@@ -613,6 +637,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
             <span class="mon-mode" id="monMode">MONITOR</span>
             <span class="mon-prompt" id="monPrompt" aria-live="polite"></span>
             <span class="mon-status" id="monStatus">NO LEADS</span><span id="brosChip" hidden></span><span id="driftCd" class="drift-cd" hidden></span>
+            <button class="mon-icon" id="btnSteth" title="Auscultate lung sounds (stethoscope)" aria-label="Auscultate lung sounds">🩺</button>
             <button class="mon-icon" id="btnBeep" title="QRS tone" aria-label="QRS tone">🔇</button>
           </div>
           <div class="mon-main">
@@ -658,7 +683,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
               <div class="as" data-k="pupils"><label>Pupils</label><b>--</b></div>
               <div class="as" data-k="pain"><label>Pain</label><b>--</b></div>
               <div class="as wide" data-k="skin"><label>Skin</label><b>--</b></div>
-              <div class="as wide" data-k="lungs"><label>Lung sounds</label><b>--</b></div>
+              <div class="as wide" data-k="lungs" title="Tap to auscultate or replay lung sounds"><label>Lung sounds</label><b>--</b><button type="button" class="tiny" id="btnLungReplay" hidden>🔊 Replay</button><button type="button" class="tiny" id="btnLungRight" hidden>🔊 Right</button><button type="button" class="tiny" id="btnLungLeft" hidden>🔊 Left</button></div>
               <div class="as wide" data-k="ecg"><label>Rhythm / 12-lead</label><b>--</b><button class="tiny" id="btn12" hidden>View 12-lead</button><button class="tiny" id="btnV4R" hidden>Move V4 → V4R</button><button class="tiny" id="btnV789" hidden>Move V4, V5, V6 → V7, V8, V9</button></div>
               <div class="as wide" data-k="neuro"><label>Neuro / stroke exam</label><b>--</b></div>
             </div>
@@ -676,7 +701,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
         <div class="dest-panel" id="destPanel" hidden aria-label="Post-Transport Destination and Trauma Triage (Ref. 506) selector"></div>
         <div class="next-bar" id="nextBar" hidden aria-label="Next step suggestions (tap = same as saying it)"><div class="next-head"><span class="lbl">Next</span><span class="next-step" id="nextStep"></span><button type="button" class="next-ae" id="btnAeiou" hidden>AEIOU-TIPS</button><button type="button" class="next-all" id="btnAll">All actions ▾</button></div><div class="next-chips" id="nextChips"></div></div>
         <div class="assess-row" id="assessRow" aria-label="Quick assess (tap = same as saying it)"><span class="lbl">Assess</span>
-          <button type="button" data-say="Checking radial pulse">Radial</button><button type="button" data-say="Checking carotid pulse">Carotid</button><button type="button" data-say="Checking skin signs">Skin</button><button type="button" data-say="Feeling the forehead">Forehead</button><button type="button" data-say="Checking pupils">Pupils</button><button type="button" data-say="Open your mouth, checking the airway">Mouth/airway</button><button type="button" data-say="Listening to lung sounds">Lung sounds</button><button type="button" data-say="Expose the patient">Expose</button><button type="button" data-say="Palpate the abdomen">Abdomen</button><button type="button" data-say="Is the patient tracking me?">Tracking?</button><button type="button" data-say="What do I see?">What do I see?</button>
+          <button type="button" data-say="Checking radial pulse">Radial</button><button type="button" data-say="Checking carotid pulse">Carotid</button><button type="button" data-say="Listening to lung sounds">🩺 Lungs</button><button type="button" data-say="Checking skin signs">Skin</button><button type="button" data-say="Feeling the forehead">Forehead</button><button type="button" data-say="Checking pupils">Pupils</button><button type="button" data-say="Open your mouth, checking the airway">Mouth/airway</button><button type="button" data-say="Expose the patient">Expose</button><button type="button" data-say="Palpate the abdomen">Abdomen</button><button type="button" data-say="Is the patient tracking me?">Tracking?</button><button type="button" data-say="What do I see?">What do I see?</button>
           <button type="button" class="help" id="btnHelp">❓ What can I say?</button></div>
         <div class="assess-row partner-row" id="partnerRow" aria-label="Partner (EMT) quick orders (tap = same as saying it)"><span class="lbl">Partner</span>
           <button type="button" data-say="Partner, get me a set of vitals">Vitals</button><button type="button" data-say="Partner, count respirations">RR</button><button type="button" data-sheet="o2">O₂ ▾</button><button type="button" data-say="Partner, bag him with the BVM and put capno on">BVM + capno</button><button type="button" data-say="Partner, suction the airway">Suction</button><button type="button" data-sheet="oa">OPA/NPA ▾</button><button type="button" data-say="Partner, get a glucometer reading">Glucose</button><button type="button" data-say="Partner, get me a 12-lead">12-lead</button><button type="button" data-say="Partner, move V4 to V4R">Move V4 to V4R</button><button type="button" data-say="Partner, move V4, V5, V6 to the back and label them V7, V8, V9">Move V4, V5, V6 to V7, V8, V9</button><button type="button" data-sheet="mon">Monitor/pads ▾</button><button type="button" data-say="Partner, recheck vitals every 5 minutes">Recheck q5</button></div>
@@ -3453,7 +3478,7 @@ const SIM = (() => {
       case "gcs": R("gcs", gcsStr()); out.push(`GCS ${gcsStr()}: ${gcsDetail()}. Mental status: ${mental()}.`); break;
       case "pupils": R("pupils", tg.pupils); out.push(X("pupils")); break;
       case "skin": R("skin", tg.skin); out.push(X("skin")); break;
-      case "lungs": R("lungs", tg.lungs); out.push(X("lungs")); break;
+      case "lungs": R("lungs", tg.lungs); if (typeof LUNGS !== "undefined") st.x.lastLungs = LUNGS.classify(sc, st, lastText); out.push(X("lungs")); break;
       case "neuro": {
         const t = lastText, full = /lams|mlapss|lapss|stroke (scale|screen|assessment|exam)|\bstroke\b(?! (alert|center))|cincinnati|be ?fast|neuro|fast exam/.test(t);
         const pD = NLU.DRIFT_RE.test(t), pG = /grip|squeeze|grab (my|both)/.test(t), pS = /droop|smile|facial|\bface\b|show me (your|ur) teeth/.test(t);
@@ -4037,7 +4062,7 @@ const SIM = (() => {
         case "monitor": { const r = assess("monitor"); say("Leads are on, monitor's up. Take a look."); out.push({ speaker: "find", text: r.join(" ") }); break; }
         case "12lead": { const r = assess("12lead"); say(st.tg.twelve ? "12-lead's done. Here you go." : "Can't get a clean 12-lead right now, medic."); out.push({ speaker: "find", text: r.join(" ") }); break; }
         case "etco2": { assess("etco2"); const inl = st.flags.o2 === "bvm" || st.flags.sga; say(`${inl ? "In-line" : "Nasal"} capno is on. EtCO2 ${Math.round(st.v.etco2)}, waveform's up.`); break; }
-        default: { const r = assess(o.id).join(" "); say(r || "Nothing remarkable, medic."); }
+        default: { const r = assess(o.id).join(" "); const extra = o.id === "lungs" && typeof LUNGS !== "undefined" ? { lungAudio: LUNGS.classify(sc, st, o.raw || "") } : null; say(r || "Nothing remarkable, medic.", extra); }
       }
       lastText = saveT;
       return out;
@@ -4144,7 +4169,7 @@ const SIM = (() => {
     }
     if (devOps) { reactions.push(...DEVICE.run(devC(), devOps, { interp: parsed.interp })); computeTargets(false); }
     const out = [...pOut.lines, ...pre];
-    if (find.length) out.push({ speaker: "find", text: (parsed.byCrew ? "Your partner reports: " : "") + find.join("\n") });
+    if (find.length) { const lungAudio = parsed.assess.includes("lungs") && typeof LUNGS !== "undefined" ? (st.x.lastLungs = LUNGS.classify(sc, st, text)) : null; out.push(Object.assign({ speaker: "find", text: (parsed.byCrew ? "Your partner reports: " : "") + find.join("\n") }, lungAudio ? { lungAudio } : {})); }
     const ctx = { utterance: text, parsed, scenario: sc, state: st, mental: mental(), reactions, history: ui.history(), complied: pre.length > 0 };
     const replies = parsed.rosHandled && !parsed.questions.length ? [...reactions] : await PatientEngine.reply(ctx);
     out.push(...rosLines);
@@ -4385,7 +4410,7 @@ const SIM = (() => {
     st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() };
   }
 
-  return { start, stop, handle, end, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
+  return { start, stop, handle, end, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -4805,6 +4830,887 @@ const EXAM = (() => {
     return pulseCombo(x, sites);
   }
   return { find, pulses, has: k => !!D[KEYMAP[k] || k] || ["radial", "carotid", "femoral", "pedal"].includes(k), D, EXAM_X };
+})();
+
+/* ===== lungs.js ===== */
+/* =====================================================================
+ * LUNGS: Realistic offline stethoscope lung-sound synthesizer & player
+ * Covers all 75 scenarios + dynamic physiologic transitions (v2.11.0)
+ * ===================================================================== */
+const LUNGS = (() => {
+  const PROFILES = {
+    clear: {
+      id: "clear",
+      label: "Clear and equal vesicular breath sounds",
+      short: "Clear vesicular",
+      badge: "Clear",
+      desc: "Soft, low-pitched breezy inspiration (150–450 Hz) with 3:1 I:E ratio"
+    },
+    kussmaul: {
+      id: "kussmaul",
+      label: "Deep, rapid Kussmaul respirations (clear bilaterally)",
+      short: "Clear (Kussmaul)",
+      badge: "Kussmaul",
+      desc: "Deep, high-volume rapid vesicular breath sounds (acidotic hyperpnea)"
+    },
+    cheyne_stokes: {
+      id: "cheyne_stokes",
+      label: "Clear breath sounds with irregular Cheyne-Stokes pattern & pauses",
+      short: "Clear (Cheyne-Stokes)",
+      badge: "Cheyne-Stokes",
+      desc: "Waxing and waning vesicular breaths separated by an apneic pause"
+    },
+    diminished: {
+      id: "diminished",
+      label: "Diminished vesicular breath sounds",
+      short: "Diminished",
+      badge: "Diminished",
+      desc: "Reduced air entry with muffled, quiet vesicular airflow"
+    },
+    wheeze: {
+      id: "wheeze",
+      label: "Diffuse polyphonic wheezes with prolonged expiration",
+      short: "Diffuse wheezes",
+      badge: "Wheezes",
+      desc: "Musical polyphonic bronchial reed harmonics (380/530/680 Hz) and prolonged expiration"
+    },
+    wheeze_mild: {
+      id: "wheeze_mild",
+      label: "Scattered end-expiratory wheezes with good air movement",
+      short: "End-expiratory wheeze",
+      badge: "Mild wheeze",
+      desc: "Good vesicular air entry with a soft musical wheeze at end-expiration"
+    },
+    tight_wheeze: {
+      id: "tight_wheeze",
+      label: "Tight bronchospasm (diminished airflow + high-pitched wheezes)",
+      short: "Tight wheezes",
+      badge: "Tight wheeze",
+      desc: "Markedly restricted airflow with high-pitched musical wheezes"
+    },
+    silent: {
+      id: "silent",
+      label: "Severely diminished / nearly silent chest",
+      short: "Silent chest",
+      badge: "Silent chest",
+      desc: "Critically reduced air movement with a faint, tight end-expiratory squeak"
+    },
+    stridor: {
+      id: "stridor",
+      label: "High-pitched inspiratory stridor",
+      short: "Inspiratory stridor",
+      badge: "Stridor",
+      desc: "Harsh, monophonic high-pitched inspiratory crowing (~650 Hz)"
+    },
+    stridor_wheeze: {
+      id: "stridor_wheeze",
+      label: "Inspiratory stridor + diffuse expiratory wheezes (diminished airflow)",
+      short: "Stridor + wheezes",
+      badge: "Stridor + Wheeze",
+      desc: "Harsh monophonic inspiratory stridor followed by tight expiratory wheezes"
+    },
+    wheeze_rhonchi: {
+      id: "wheeze_rhonchi",
+      label: "Coarse rhonchi + diffuse expiratory wheezes",
+      short: "Wheezes & rhonchi",
+      badge: "Rhonchi + Wheeze",
+      desc: "Low-pitched snoring bronchial secretions (~150 Hz) with musical expiratory wheezes"
+    },
+    rhonchi: {
+      id: "rhonchi",
+      label: "Coarse low-pitched rhonchi",
+      short: "Coarse rhonchi",
+      badge: "Rhonchi",
+      desc: "Low-pitched continuous rumbling/snoring airway secretions (~140–190 Hz)"
+    },
+    crackles_coarse: {
+      id: "crackles_coarse",
+      label: "Coarse bubbling inspiratory crackles / rales",
+      short: "Coarse rales",
+      badge: "Coarse rales",
+      desc: "Discontinuous explosive popping/bubbling inspiratory rales across lung fields"
+    },
+    crackles: {
+      id: "crackles",
+      label: "Inspiratory crackles / rales (lower & middle lobes)",
+      short: "Inspiratory rales",
+      badge: "Rales / Crackles",
+      desc: "Discontinuous mid-to-late inspiratory crackles over vesicular breath sounds"
+    },
+    crackles_fine: {
+      id: "crackles_fine",
+      label: "Fine late-inspiratory crackles / rales at the bases",
+      short: "Fine basal rales",
+      badge: "Fine rales",
+      desc: "High-frequency Velcro-like late-inspiratory crackles at the bases"
+    },
+    wheeze_rales: {
+      id: "wheeze_rales",
+      label: "Coarse inspiratory rales + expiratory wheezes (pulmonary edema)",
+      short: "Rales + wheezes",
+      badge: "Rales + Wheeze",
+      desc: "Wet alveolar crackles on inspiration followed by expiratory wheezes"
+    },
+    crackles_diminished: {
+      id: "crackles_diminished",
+      label: "Diminished breath sounds with coarse crackles (pulmonary contusion)",
+      short: "Diminished + crackles",
+      badge: "Contusion crackles",
+      desc: "Reduced vesicular airflow with focal coarse inspiratory crackles"
+    },
+    snoring: {
+      id: "snoring",
+      label: "Slow, shallow snoring respirations (diminished breath sounds)",
+      short: "Snoring / shallow",
+      badge: "Snoring",
+      desc: "Upper-airway palatal snoring resonance over slow, shallow breath sounds"
+    },
+    gurgling: {
+      id: "gurgling",
+      label: "Coarse upper-airway gurgling secretions",
+      short: "Gurgling airway",
+      badge: "Gurgling",
+      desc: "Wet bubbling/gurgling upper-airway secretions obscuring vesicular sounds"
+    },
+    bvm: {
+      id: "bvm",
+      label: "Equal breath sounds with BVM positive-pressure ventilation",
+      short: "BVM ventilated (equal)",
+      badge: "BVM Equal",
+      desc: "Symmetric positive-pressure BVM inflation and passive exhalation"
+    },
+    bvm_faint: {
+      id: "bvm_faint",
+      label: "Faint BVM breath sounds (neck flexed — positional airway obstruction)",
+      short: "BVM faint (flexed neck)",
+      badge: "BVM Faint",
+      desc: "Poor air entry during BVM squeeze due to infant/toddler occiput neck flexion"
+    },
+    agonal: {
+      id: "agonal",
+      label: "Apneic with occasional agonal gasps",
+      short: "Agonal gasps",
+      badge: "Agonal",
+      desc: "No normal breathing — isolated brief brainstem gasping effort"
+    },
+    absent: {
+      id: "absent",
+      label: "Absent breath sounds",
+      short: "Absent",
+      badge: "Absent",
+      desc: "Complete absence of alveolar breath sounds over the hemithorax"
+    },
+    apneic: {
+      id: "apneic",
+      label: "Apneic — no spontaneous breath sounds",
+      short: "Apneic (silent)",
+      badge: "Apneic",
+      desc: "No spontaneous air movement across the chest"
+    }
+  };
+
+  function stripNegated(s) {
+    return String(s || "")
+      .replace(/\bno\s+(?:wheez\w*|stridor|crackl\w*|rales|rhonchi|gurgling|snoring)(?:\s+(?:or|and|,)\s+(?:wheez\w*|stridor|crackl\w*|rales|rhonchi|gurgling|snoring))*/gi, " ")
+      .replace(/\bwithout\s+(?:wheez\w*|stridor|crackl\w*|rales|rhonchi)/gi, " ");
+  }
+
+  function classifySideClause(clause) {
+    const c = stripNegated(clause).toLowerCase();
+    if (/\babsent\b/.test(c)) return "absent";
+    if (/diminished.*crackl|crackl.*diminished|contusion/.test(c)) return "crackles_diminished";
+    if (/coarse\s+(?:crackl|rales)|bronchial\s+breath/.test(c)) return "crackles_coarse";
+    if (/fine\s+(?:crackl|rales)|faint\s+(?:crackl|rales)/.test(c)) return "crackles_fine";
+    if (/crackl|rales/.test(c)) return "crackles";
+    if (/returning|diminished|decreased|reduced/.test(c)) return "diminished";
+    if (/wheez/.test(c)) return "wheeze";
+    if (/\bclear\b|\bequal\b|\bnormal\b/.test(c)) return "clear";
+    return null;
+  }
+
+  // Determine right/left/overall acoustic profile from scenario, live state, and optional utterance text
+  function classify(sc, st, utterText) {
+    const tg = (st && st.tg) || {};
+    const lungsRaw = String(tg.lungs != null ? tg.lungs : (sc && typeof sc.lungs === "string" ? sc.lungs : "Clear and equal bilaterally"));
+    const airwayRaw = String(tg.airway != null ? tg.airway : (sc && typeof sc.airway === "string" ? sc.airway : ""));
+    const utter = String(utterText || "");
+    const rr = (st && st.v && st.v.rr != null) ? Number(st.v.rr) : 16;
+    const hr = (st && st.v && st.v.hr != null) ? Number(st.v.hr) : 80;
+    const arrest = !!(st && (st.x && st.x.arrest || tg.pulse === false));
+    const hasPulse = !arrest && hr > 0;
+
+    let requestedSide = "both";
+    if (/\bleft\b/i.test(utter) && !/\bright\b/i.test(utter)) requestedSide = "left";
+    else if (/\bright\b/i.test(utter) && !/\bleft\b/i.test(utter)) requestedSide = "right";
+
+    // Check if user specifically auscultated only the apices or bases when findings are localized
+    const askApices = /apices|apex|upper|top/i.test(utter);
+    const askBases = /\bbases?\b|lower|bottom/i.test(utter);
+    if (askApices && /bases|lower/i.test(lungsRaw) && !/apices|throughout|diffuse|left|right/i.test(lungsRaw)) {
+      const p = PROFILES.clear;
+      return {
+        id: "clear",
+        profile: "clear",
+        unilateral: false,
+        right: "clear",
+        left: "clear",
+        rightProfile: "clear",
+        leftProfile: "clear",
+        rightLabel: p.short,
+        leftLabel: p.short,
+        label: "Clear in both apices",
+        badge: "Clear (apices)",
+        desc: p.desc,
+        rawText: lungsRaw,
+        requestedSide,
+        rr,
+        hr,
+        hasPulse
+      };
+    }
+    if (askBases && /apices|upper/i.test(lungsRaw) && !/bases|throughout|diffuse|left|right/i.test(lungsRaw)) {
+      const p = PROFILES.clear;
+      return {
+        id: "clear",
+        profile: "clear",
+        unilateral: false,
+        right: "clear",
+        left: "clear",
+        rightProfile: "clear",
+        leftProfile: "clear",
+        rightLabel: p.short,
+        leftLabel: p.short,
+        label: "Clear in both bases",
+        badge: "Clear (bases)",
+        desc: p.desc,
+        rawText: lungsRaw,
+        requestedSide,
+        rr,
+        hr,
+        hasPulse
+      };
+    }
+
+    // 1. Check unilateral patterns (mentioning left and/or right hemithorax)
+    const hasLeft = /\bleft\b/i.test(lungsRaw);
+    const hasRight = /\bright\b/i.test(lungsRaw);
+    if (hasLeft || hasRight) {
+      let rightProf = "clear";
+      let leftProf = "clear";
+      const parts = lungsRaw.split(/[;.]/).map(s => s.trim()).filter(Boolean);
+      for (const part of parts) {
+        const pLeft = /\bleft\b/i.test(part);
+        const pRight = /\bright\b/i.test(part);
+        if (pLeft && !pRight) {
+          const cp = classifySideClause(part);
+          if (cp) leftProf = cp;
+        } else if (pRight && !pLeft) {
+          const cp = classifySideClause(part);
+          if (cp) rightProf = cp;
+        } else if (pLeft && pRight) {
+          const sub = part.split(/,|and\b/i);
+          for (const s of sub) {
+            if (/\bleft\b/i.test(s)) { const cp = classifySideClause(s); if (cp) leftProf = cp; }
+            if (/\bright\b/i.test(s)) { const cp = classifySideClause(s); if (cp) rightProf = cp; }
+          }
+        }
+      }
+      if (rightProf !== leftProf) {
+        const rP = PROFILES[rightProf] || PROFILES.clear;
+        const lP = PROFILES[leftProf] || PROFILES.clear;
+        const activeProf = requestedSide === "right" ? rightProf : requestedSide === "left" ? leftProf : (rightProf === "clear" ? leftProf : rightProf);
+        return {
+          id: `${rightProf}__${leftProf}`,
+          profile: activeProf,
+          unilateral: true,
+          right: rightProf,
+          left: leftProf,
+          rightProfile: rightProf,
+          leftProfile: leftProf,
+          rightLabel: rP.short,
+          leftLabel: lP.short,
+          label: `Right: ${rP.short} · Left: ${lP.short}`,
+          badge: `R: ${rP.badge} / L: ${lP.badge}`,
+          desc: `Unilateral asymmetry — Right chest: ${rP.short}; Left chest: ${lP.short}`,
+          rawText: lungsRaw,
+          requestedSide,
+          rr,
+          hr,
+          hasPulse
+        };
+      }
+    }
+
+    // 2. Bilateral classification
+    const cleanLungs = stripNegated(lungsRaw);
+    const cleanAirway = stripNegated(airwayRaw);
+    let prof = "clear";
+
+    if (/apneic,\s*agonal|agonal\s+gasp/i.test(cleanLungs)) {
+      prof = "agonal";
+    } else if (/^apneic\b|no\s+spontaneous\s+breath\s+sounds/i.test(cleanLungs)) {
+      prof = "apneic";
+    } else if (/poor\s+chest\s+rise\s+with\s+bmv|breath\s+sounds\s+faint\s*\(neck\s+flexed\)/i.test(cleanLungs)) {
+      prof = "bvm_faint";
+    } else if (/with\s+ventilation/i.test(cleanLungs)) {
+      if (/crackl|rales/i.test(cleanLungs)) prof = "crackles_coarse";
+      else if (/wheez|tight/i.test(cleanLungs)) prof = "tight_wheeze";
+      else prof = "bvm";
+    } else if (/\bstridor\b/i.test(cleanLungs) || /\bstridor\b/i.test(cleanAirway)) {
+      prof = /wheez/i.test(cleanLungs) ? "stridor_wheeze" : "stridor";
+    } else if (/nearly\s+silent\s+chest|severely\s+diminished|markedly\s+diminished\s+air\s+movement/i.test(cleanLungs)) {
+      prof = "silent";
+    } else if (/(?:rales|crackl)/i.test(cleanLungs) && /wheez/i.test(cleanLungs)) {
+      if (/coarse\s+rales.*faint\s+expiratory\s+wheez/i.test(cleanLungs)) prof = "crackles_coarse";
+      else prof = "wheeze_rales";
+    } else if (/coarse\s+(?:rales|crackl)|rales\s+bilaterally\s+to\s+the\s+apices|rales\s+to\s+the\s+apices/i.test(cleanLungs)) {
+      prof = "crackles_coarse";
+    } else if (/fine\s+(?:rales|crackl)|faint\s+(?:rales|crackl)/i.test(cleanLungs)) {
+      prof = "crackles_fine";
+    } else if (/\b(?:rales|crackl)\w*\b/i.test(cleanLungs)) {
+      prof = "crackles";
+    } else if (/wheez/i.test(cleanLungs) && /rhonchi/i.test(cleanLungs)) {
+      prof = "wheeze_rhonchi";
+    } else if (/\brhonchi\b/i.test(cleanLungs)) {
+      prof = "rhonchi";
+    } else if (/tight\s+air\s+movement|diminished\s+air\s+movement\s+with\s+faint\s+wheez|very\s+tight/i.test(cleanLungs)) {
+      prof = "tight_wheeze";
+    } else if (/faint\s+(?:end-)?expiratory\s+wheez|scattered\s+(?:end-)?expiratory\s+wheez|clear,\s*scattered/i.test(cleanLungs)) {
+      prof = "wheeze_mild";
+    } else if (/wheez/i.test(cleanLungs)) {
+      prof = "wheeze";
+    } else if (/gurgling|coarse\s+after\s+vomiting/i.test(cleanLungs)) {
+      prof = "gurgling";
+    } else if (/snoring/i.test(cleanLungs)) {
+      prof = "snoring";
+    } else if (/kussmaul|deep\s+rapid/i.test(cleanLungs)) {
+      prof = "kussmaul";
+    } else if (/cheyne-stokes|irregular\s+with\s+pauses/i.test(cleanLungs)) {
+      prof = "cheyne_stokes";
+    } else if (/diminished/i.test(cleanLungs) && !/^clear\b/i.test(cleanLungs)) {
+      prof = "diminished";
+    } else if (arrest && rr <= 0) {
+      prof = "apneic";
+    }
+
+    const p = PROFILES[prof] || PROFILES.clear;
+    return {
+      id: prof,
+      profile: prof,
+      unilateral: false,
+      right: prof,
+      left: prof,
+      rightProfile: prof,
+      leftProfile: prof,
+      rightLabel: p.short,
+      leftLabel: p.short,
+      label: p.label,
+      badge: p.badge,
+      desc: p.desc,
+      rawText: lungsRaw,
+      requestedSide,
+      rr,
+      hr,
+      hasPulse
+    };
+  }
+
+  // ---------- Acoustic DSP Synthesis (Float32 PCM) ----------
+  function makeRng(seed) {
+    let s = (seed >>> 0) || 0x6d2b79f5;
+    return () => {
+      s ^= s << 13;
+      s ^= s >>> 17;
+      s ^= s << 5;
+      return ((s >>> 0) / 2147483648) - 1;
+    };
+  }
+
+  // Chamberlin 2-pole state-variable filter (stable for f < sr/3)
+  function makeSvf(sr) {
+    let low = 0, band = 0;
+    return (x, cutoff, q) => {
+      const f = Math.min(0.75, 2 * Math.sin(Math.PI * Math.min(cutoff, sr * 0.35) / sr));
+      const damp = Math.max(0.05, 1 / Math.max(0.5, q || 1));
+      low = low + f * band;
+      const high = x - low - damp * band;
+      band = f * high + band;
+      return { low, band, high };
+    };
+  }
+
+  // Synthesize a single hemithorax segment of duration `durSec` for `profileId`
+  function synthSegment(profileId, durSec, sr, opts) {
+    const N = Math.max(1, Math.floor(durSec * sr));
+    const out = new Float32Array(N);
+    const rng = makeRng((opts && opts.seed) || 1337);
+    const svf1 = makeSvf(sr);
+    const svf2 = makeSvf(sr);
+    const svf3 = makeSvf(sr);
+    const chestLp = makeSvf(sr);
+
+    const hasPulse = opts && opts.hasPulse !== false;
+    const hr = Math.max(35, Math.min(200, (opts && opts.hr) || 84));
+    const beatPeriod = 60 / hr;
+
+    // Breath cycle timing
+    let cycleSec = 1.65;
+    if (profileId === "kussmaul") cycleSec = 1.1;
+    else if (profileId === "snoring") cycleSec = 2.1;
+    else if (profileId === "cheyne_stokes") cycleSec = 1.15;
+
+    // Pre-generate discontinuous crackle impulse schedule when applicable
+    const crackleEvents = [];
+    const hasCoarseCrackles = profileId === "crackles_coarse" || profileId === "wheeze_rales" || profileId === "crackles_diminished";
+    const hasMedCrackles = profileId === "crackles";
+    const hasFineCrackles = profileId === "crackles_fine";
+
+    if (hasCoarseCrackles || hasMedCrackles || hasFineCrackles) {
+      const nCycles = Math.ceil(durSec / cycleSec);
+      for (let c = 0; c < nCycles; c++) {
+        const t0 = c * cycleSec;
+        const count = hasCoarseCrackles ? 34 : hasFineCrackles ? 26 : 20;
+        for (let k = 0; k < count; k++) {
+          const u = (rng() + 1) * 0.5;
+          // Fine crackles cluster in mid-to-late inspiration (0.28..0.55); coarse span 0.12..0.56 + some early exp
+          const ph = hasFineCrackles
+            ? (0.30 + 0.25 * Math.pow(u, 0.85))
+            : (k < count * 0.82 ? (0.12 + 0.44 * u) : (0.60 + 0.22 * u));
+          const tImp = t0 + ph * cycleSec;
+          if (tImp < durSec - 0.015) {
+            const freq = hasFineCrackles
+              ? (520 + ((rng() + 1) * 0.5) * 520)
+              : hasCoarseCrackles
+                ? (170 + ((rng() + 1) * 0.5) * 290)
+                : (260 + ((rng() + 1) * 0.5) * 340);
+            const tau = hasFineCrackles ? 0.0014 : hasCoarseCrackles ? 0.0032 : 0.0022;
+            const scale = profileId === "crackles_diminished" ? 0.52 : (hasCoarseCrackles ? 1.15 : 0.9);
+            const amp = (0.32 + 0.38 * ((rng() + 1) * 0.5)) * scale;
+            crackleEvents.push({ idx: Math.floor(tImp * sr), freq, tau, amp });
+          }
+        }
+      }
+    }
+
+    // Pink noise state
+    let b0 = 0, b1 = 0, b2 = 0;
+    // Continuous oscillator phases
+    let ph1 = 0, ph2 = 0, ph3 = 0, phMod = 0;
+
+    for (let i = 0; i < N; i++) {
+      const t = i / sr;
+      const w = rng();
+      b0 = 0.99765 * b0 + w * 0.0990460;
+      b1 = 0.96300 * b1 + w * 0.2965164;
+      b2 = 0.57000 * b2 + w * 1.0526913;
+      const pink = (b0 + b1 + b2 + w * 0.1848) * 0.24;
+
+      let sample = 0;
+
+      // 1. Stethoscope diaphragm placement thump at t = 0..0.055s
+      if (t < 0.055) {
+        const thEnv = Math.exp(-t / 0.012) * Math.sin(2 * Math.PI * 62 * t);
+        sample += 0.22 * thEnv;
+      }
+
+      // 2. Subtle transmitted cardiac S1-S2 heart sounds in background when patient has a pulse
+      if (hasPulse && profileId !== "apneic" && profileId !== "absent") {
+        const bPh = (t % beatPeriod) / beatPeriod;
+        if (bPh < 0.055) {
+          const s1 = Math.sin(2 * Math.PI * 52 * (bPh * beatPeriod)) * Math.exp(-(bPh * beatPeriod) / 0.016);
+          sample += 0.028 * s1;
+        } else if (bPh >= 0.30 && bPh < 0.35) {
+          const dt = (bPh - 0.30) * beatPeriod;
+          const s2 = Math.sin(2 * Math.PI * 68 * dt) * Math.exp(-dt / 0.012);
+          sample += 0.020 * s2;
+        }
+      }
+
+      // 3. Respiratory cycle phase & profile synthesis
+      const cycIdx = Math.floor(t / cycleSec);
+      const ph = (t % cycleSec) / cycleSec;
+
+      if (profileId === "absent" || profileId === "apneic") {
+        // Only faint chest-wall ambient floor (no alveolar breath sounds)
+        const amb = svf1(pink, 110, 0.8).low;
+        sample += 0.004 * amb;
+      } else if (profileId === "agonal") {
+        // Isolated harsh brainstem gasp around t = 0.55..1.15s, silence otherwise
+        if (t >= 0.50 && t <= 1.18) {
+          const gPh = (t - 0.50) / 0.68;
+          const env = Math.sin(Math.PI * gPh) * Math.pow(1 - gPh, 0.4);
+          const gaspNoise = svf1(pink, 260 + 140 * gPh, 1.4).band + 0.5 * svf2(pink, 140, 2.2).band;
+          ph1 += (2 * Math.PI * (145 + 35 * Math.sin(2 * Math.PI * 18 * t))) / sr;
+          sample += env * (0.85 * gaspNoise + 0.26 * Math.sin(ph1));
+        } else {
+          sample += 0.005 * svf1(pink, 110, 0.8).low;
+        }
+      } else {
+        // Active breath cycle profiles
+        const prolongedExp = ["wheeze", "tight_wheeze", "silent", "wheeze_rales", "wheeze_rhonchi", "stridor_wheeze"].includes(profileId);
+        const inspEnd = prolongedExp ? 0.36 : 0.54;
+        const expStart = prolongedExp ? 0.39 : 0.58;
+        const expEnd = prolongedExp ? 0.94 : 0.88;
+
+        let inspEnv = 0;
+        let expEnv = 0;
+        if (ph >= 0.05 && ph <= inspEnd) {
+          const u = (ph - 0.05) / (inspEnd - 0.05);
+          inspEnv = Math.sin(Math.PI * u);
+        } else if (ph >= expStart && ph <= expEnd) {
+          const u = (ph - expStart) / (expEnd - expStart);
+          expEnv = Math.sin(Math.PI * u) * (1 - 0.35 * u);
+        }
+
+        // Cheyne-Stokes waxing/waning modulation across cycles
+        let cycScale = 1.0;
+        if (profileId === "cheyne_stokes") {
+          cycScale = cycIdx === 0 ? 0.65 : cycIdx === 1 ? 1.25 : 0.08;
+        } else if (profileId === "kussmaul") {
+          cycScale = 1.35;
+        } else if (profileId === "diminished" || profileId === "crackles_diminished") {
+          cycScale = 0.28;
+        } else if (profileId === "bvm_faint") {
+          cycScale = 0.20;
+        } else if (profileId === "silent") {
+          cycScale = 0.10;
+        } else if (profileId === "tight_wheeze") {
+          cycScale = 0.38;
+        }
+
+        // Base vesicular airflow (160–420 Hz filtered turbulence)
+        const vFreq = inspEnv > 0 ? (240 + 140 * inspEnv) : (180 + 70 * expEnv);
+        const vBand = svf1(pink, vFreq, 1.0).band;
+        const vLow = svf2(pink, 310, 0.8).low;
+        const expWeight = (profileId === "kussmaul" || profileId === "bvm") ? 0.65 : 0.36;
+        const vesic = (inspEnv * 1.0 + expEnv * expWeight) * cycScale * (1.15 * vBand + 0.80 * vLow);
+        sample += vesic;
+
+        // Polyphonic Wheezes (bronchial reed harmonics)
+        if (["wheeze", "wheeze_mild", "tight_wheeze", "silent", "wheeze_rales", "wheeze_rhonchi", "stridor_wheeze"].includes(profileId)) {
+          let wEnv = 0;
+          if (profileId === "wheeze_mild") {
+            // Scattered end-expiratory wheeze in second half of expiration
+            if (ph >= 0.66 && ph <= 0.89) {
+              wEnv = Math.sin(Math.PI * (ph - 0.66) / 0.23) * 0.55;
+            }
+          } else if (profileId === "silent") {
+            // Faint high-pitched end-expiratory squeak
+            if (ph >= 0.55 && ph <= 0.88) {
+              wEnv = Math.sin(Math.PI * (ph - 0.55) / 0.33) * 0.22;
+            }
+          } else {
+            // Diffuse inspiratory + prolonged expiratory wheezes
+            wEnv = 0.38 * inspEnv + 0.95 * expEnv;
+          }
+
+          if (wEnv > 0.001) {
+            const expProg = expEnv > 0 ? (ph - expStart) / Math.max(0.01, expEnd - expStart) : 0;
+            const bend = Math.sin(Math.PI * expProg) * 42 - 18 * expProg;
+            const baseF1 = (profileId === "tight_wheeze" || profileId === "silent") ? 590 : 395;
+            const baseF2 = (profileId === "tight_wheeze" || profileId === "silent") ? 760 : 535;
+            const baseF3 = 685;
+
+            phMod += (2 * Math.PI * 6.5) / sr;
+            const vib = 4.5 * Math.sin(phMod);
+            ph1 += (2 * Math.PI * (baseF1 + bend + vib)) / sr;
+            ph2 += (2 * Math.PI * (baseF2 + bend * 1.2 - vib * 0.7)) / sr;
+            ph3 += (2 * Math.PI * (baseF3 + bend * 0.8)) / sr;
+
+            const reed1 = Math.sin(ph1) + 0.28 * Math.sin(2 * ph1);
+            const reed2 = Math.sin(ph2) + 0.20 * Math.sin(2 * ph2);
+            const reed3 = (profileId === "wheeze_mild" || profileId === "silent") ? 0 : 0.45 * Math.sin(ph3);
+            const wTone = (0.48 * reed1 + 0.36 * reed2 + 0.16 * reed3) * (0.85 + 0.15 * pink);
+            sample += wEnv * 0.36 * wTone;
+          }
+        }
+
+        // Inspiratory Stridor (harsh high-pitched monophonic crowing on inspiration)
+        if (profileId === "stridor" || profileId === "stridor_wheeze") {
+          if (inspEnv > 0.01) {
+            const u = (ph - 0.05) / Math.max(0.01, inspEnd - 0.05);
+            const sFreq = 640 + 95 * Math.sin(Math.PI * u);
+            ph3 += (2 * Math.PI * sFreq) / sr;
+            const crow = Math.sin(ph3) + 0.42 * Math.sin(2 * ph3 + 0.3) + 0.18 * Math.sin(3 * ph3);
+            sample += inspEnv * 0.44 * crow;
+          }
+        }
+
+        // Rhonchi / Snoring / Gurgling (low-pitched modulated airway secretions/flutter)
+        if (["rhonchi", "wheeze_rhonchi", "snoring", "gurgling"].includes(profileId)) {
+          const rEnv = profileId === "snoring" ? inspEnv : (0.85 * inspEnv + 0.75 * expEnv);
+          if (rEnv > 0.01) {
+            const modF = profileId === "gurgling" ? 28 : profileId === "snoring" ? 21 : 25;
+            const carF = profileId === "snoring" ? 118 : profileId === "gurgling" ? 210 : 152;
+            phMod += (2 * Math.PI * modF) / sr;
+            ph2 += (2 * Math.PI * (carF + 18 * Math.sin(phMod))) / sr;
+            const flutter = (0.55 + 0.45 * Math.sin(phMod)) * (Math.sin(ph2) + 0.45 * Math.sin(2 * ph2));
+            const wetNoise = svf3(pink, profileId === "gurgling" ? 340 : 180, 2.0).band;
+            sample += rEnv * (0.32 * flutter + (profileId === "gurgling" ? 0.58 : 0.26) * wetNoise);
+          }
+        }
+      }
+
+      // Chest-wall acoustic lowpass (~1100 Hz)
+      sample = chestLp(sample, 1100, 0.75).low;
+      out[i] = sample;
+    }
+
+    // 4. Add discontinuous crackle / rale impulse trains on top of breath waveform
+    for (let e = 0; e < crackleEvents.length; e++) {
+      const ev = crackleEvents[e];
+      const maxLen = Math.min(N - ev.idx, Math.floor(sr * 0.012));
+      for (let k = 0; k < maxLen; k++) {
+        const dt = k / sr;
+        const snap = Math.exp(-dt / ev.tau) * Math.sin(2 * Math.PI * ev.freq * dt);
+        out[ev.idx + k] += ev.amp * snap;
+      }
+    }
+
+    // 5. Soft-clip & normalize within realistic stethoscope dynamic range
+    for (let i = 0; i < N; i++) {
+      const x = out[i] * 1.45;
+      out[i] = Math.tanh(x);
+    }
+    return out;
+  }
+
+  // Synthesize full auscultation buffer (supports unilateral Right -> Left comparison or single side)
+  function synthesize(specOrProfile, opts) {
+    const o = opts || {};
+    const sr = o.sampleRate || 24000;
+    const spec = typeof specOrProfile === "string"
+      ? { profile: specOrProfile, unilateral: false, right: specOrProfile, left: specOrProfile, hasPulse: true, hr: 84 }
+      : (specOrProfile || { profile: "clear", unilateral: false, right: "clear", left: "clear", hasPulse: true, hr: 84 });
+
+    const side = o.side || spec.requestedSide || "both";
+    const durSec = o.durationSec || o.duration || (side === "both" && spec.unilateral ? 3.5 : 3.2);
+
+    if (side === "right" || side === "left" || !spec.unilateral) {
+      const prof = side === "right" ? spec.right : side === "left" ? spec.left : spec.profile;
+      const samples = synthSegment(prof, durSec, sr, { seed: side === "left" ? 2027 : 1337, hasPulse: spec.hasPulse, hr: spec.hr });
+      return {
+        sampleRate: sr,
+        durationSec: samples.length / sr,
+        side,
+        unilateral: !!spec.unilateral,
+        rightProfile: spec.right,
+        leftProfile: spec.left,
+        samples
+      };
+    }
+
+    // Unilateral "both" mode: Right chest (first half) -> brief chestpiece move -> Left chest (second half)
+    const halfSec = Math.max(1.4, (durSec - 0.16) / 2);
+    const gapSamples = Math.floor(0.16 * sr);
+    const rSamples = synthSegment(spec.right, halfSec, sr, { seed: 1337, hasPulse: spec.hasPulse, hr: spec.hr });
+    const lSamples = synthSegment(spec.left, halfSec, sr, { seed: 2027, hasPulse: spec.hasPulse, hr: spec.hr });
+    const total = rSamples.length + gapSamples + lSamples.length;
+    const combined = new Float32Array(total);
+    combined.set(rSamples, 0);
+    combined.set(lSamples, rSamples.length + gapSamples);
+
+    return {
+      sampleRate: sr,
+      durationSec: total / sr,
+      side: "both",
+      unilateral: true,
+      rightProfile: spec.right,
+      leftProfile: spec.left,
+      rightEndSec: rSamples.length / sr,
+      leftStartSec: (rSamples.length + gapSamples) / sr,
+      samples: combined
+    };
+  }
+
+  // Compute RMS energy metrics (used for tests & waveform visualization)
+  function analyzeBuffer(buf) {
+    const s = buf && buf.samples ? buf.samples : buf;
+    if (!s || !s.length) return { rms: 0, peak: 0, rightRms: 0, leftRms: 0 };
+    const sr = (buf && buf.sampleRate) || 24000;
+    const skip = Math.min(Math.floor(s.length * 0.12), Math.floor(sr * 0.08)); // skip initial placement thump
+    let sum = 0, peak = 0, cnt = 0, hasNaN = false;
+    for (let i = 0; i < s.length; i++) {
+      if (Number.isNaN(s[i])) hasNaN = true;
+      if (i < skip) continue;
+      const v = Math.abs(s[i]);
+      if (v > peak) peak = v;
+      sum += s[i] * s[i];
+      cnt++;
+    }
+    const rEnd = (buf && buf.rightEndSec) ? Math.floor(buf.rightEndSec * sr) : Math.floor(s.length / 2);
+    const lStart = (buf && buf.leftStartSec) ? Math.floor(buf.leftStartSec * sr) : Math.floor(s.length / 2);
+    let rSum = 0, rCnt = 0, lSum = 0, lCnt = 0;
+    for (let i = skip; i < rEnd; i++) { rSum += s[i] * s[i]; rCnt++; }
+    for (let i = lStart + skip; i < s.length; i++) { lSum += s[i] * s[i]; lCnt++; }
+    const rightRms = rCnt ? Math.sqrt(rSum / rCnt) : 0;
+    const leftRms = lCnt ? Math.sqrt(lSum / lCnt) : 0;
+    return {
+      samples: s.length,
+      hasNaN,
+      rms: cnt ? Math.sqrt(sum / cnt) : 0,
+      peak,
+      rightRms,
+      leftRms,
+      firstHalfRms: rightRms,
+      secondHalfRms: leftRms
+    };
+  }
+
+  // ---------- Web Audio Playback State ----------
+  let audioCtx = null;
+  let activeSource = null;
+  let activeTimer = null;
+  let phaseTimer = null;
+  let playing = false;
+  let playCount = 0;
+  let lastPlayed = null;
+  const listeners = new Set();
+
+  function notify() {
+    listeners.forEach(fn => { try { fn(getState()); } catch (e) {} });
+  }
+
+  function getContext() {
+    if (typeof window === "undefined") return null;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!audioCtx) {
+      try { audioCtx = new Ctx(); } catch (e) { return null; }
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      try { audioCtx.resume().catch(() => {}); } catch (e) {}
+    }
+    return audioCtx;
+  }
+
+  function stop() {
+    if (activeTimer) { clearTimeout(activeTimer); activeTimer = null; }
+    if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = null; }
+    if (activeSource) {
+      try { activeSource.onended = null; activeSource.stop(); } catch (e) {}
+      try { activeSource.disconnect(); } catch (e) {}
+      activeSource = null;
+    }
+    if (playing) {
+      playing = false;
+      if (lastPlayed) lastPlayed.activePhase = null;
+      notify();
+    }
+  }
+
+  function play(spec, opts) {
+    const o = opts || {};
+    stop();
+
+    const side = o.side || (spec && spec.requestedSide) || "both";
+    const synth = synthesize(spec, { side, durationSec: o.durationSec, sampleRate: 24000 });
+    const metrics = analyzeBuffer(synth);
+
+    playCount++;
+    playing = true;
+    const phase0 = (side === "both" && synth.unilateral) ? "right" : side;
+    lastPlayed = {
+      id: playCount,
+      spec,
+      side,
+      activePhase: phase0,
+      durationSec: synth.durationSec,
+      metrics,
+      startedAt: Date.now()
+    };
+    notify();
+
+    const phaseText = ph => {
+      if (!spec) return "Listening…";
+      if (spec.unilateral && ph === "right") return `Right chest: ${spec.rightLabel}…`;
+      if (spec.unilateral && ph === "left") return `Left chest: ${spec.leftLabel}…`;
+      if (ph === "right") return `Right chest: ${spec.rightLabel || spec.badge}…`;
+      if (ph === "left") return `Left chest: ${spec.leftLabel || spec.badge}…`;
+      return `Listening: ${spec.badge}…`;
+    };
+    if (typeof o.onPhase === "function") {
+      try { o.onPhase({ phase: phase0, text: phaseText(phase0), lastPlayed }, lastPlayed); } catch (e) {}
+    }
+
+    if (side === "both" && synth.unilateral && synth.leftStartSec) {
+      phaseTimer = setTimeout(() => {
+        if (!playing || !lastPlayed) return;
+        lastPlayed.activePhase = "left";
+        notify();
+        if (typeof o.onPhase === "function") {
+          try { o.onPhase({ phase: "left", text: phaseText("left"), lastPlayed }, lastPlayed); } catch (e) {}
+        }
+      }, Math.round(synth.leftStartSec * 1000));
+    }
+
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (activeTimer) { clearTimeout(activeTimer); activeTimer = null; }
+      if (phaseTimer) { clearTimeout(phaseTimer); phaseTimer = null; }
+      activeSource = null;
+      playing = false;
+      if (lastPlayed) lastPlayed.activePhase = null;
+      notify();
+      if (typeof o.onEnd === "function") {
+        try { o.onEnd(lastPlayed); } catch (e) {}
+      }
+    };
+
+    const ctx = getContext();
+    if (ctx) {
+      try {
+        const audioBuf = ctx.createBuffer(1, synth.samples.length, synth.sampleRate);
+        audioBuf.getChannelData(0).set(synth.samples);
+        const src = ctx.createBufferSource();
+        src.buffer = audioBuf;
+        const gain = ctx.createGain();
+        gain.gain.value = o.volume != null ? o.volume : 1.0;
+        src.connect(gain);
+        gain.connect(ctx.destination);
+        src.onended = finish;
+        activeSource = src;
+        src.start(0);
+      } catch (e) {}
+    }
+
+    const timeoutMs = o.maxWaitMs != null ? o.maxWaitMs : Math.round(synth.durationSec * 1000) + 120;
+    activeTimer = setTimeout(finish, timeoutMs);
+    return lastPlayed;
+  }
+
+  function playForState(sc, st, utterText, opts) {
+    const spec = classify(sc, st, utterText);
+    return play(spec, opts);
+  }
+
+  function getState() {
+    return {
+      playing,
+      playCount,
+      lastPlayed
+    };
+  }
+
+  function onChange(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
+  return {
+    PROFILES,
+    classify,
+    synthesize,
+    analyzeBuffer,
+    play,
+    playForState,
+    stop,
+    isPlaying: () => playing,
+    getState,
+    onChange
+  };
 })();
 
 /* ===== inspect.js ===== */
@@ -10053,7 +10959,7 @@ const NEXT = (() => {
       avpu: () => [C("Is he alert?", "Is he alert?")],
       abc: () => { const pool = ["nrb", "bvm", "opa", "suction", "recovery", "nc"]; if (sc.tag === "TRAUMA") pool.push("bandage", "tourniquet", "needle", "smr");
         const o2 = !st.flags.o2 && !st.flags.cpap ? ["nrb"] : [], rest = shuffle(pool.filter(k => k !== "nrb" && !ev["t:" + k]), sc.id).slice(0, 3 - o2.length);
-        return [C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"), ...shuffle([...o2, ...rest], sc.id + "abc").map(k => C(TXSAY[k][0], TXSAY[k][1], "partner"))]; },
+        return [C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"), ...(!ev["a:lungs"] ? [C("Lung sounds", "Listen to lung sounds")] : []), ...shuffle([...o2, ...rest], sc.id + "abc").map(k => C(TXSAY[k][0], TXSAY[k][1], "partner"))]; },
       ao: () => [
         ...(!sd("ao") ? [C("A&O ×4", "What's your name, where are we, what year is it, and what happened today?")] : []),
         ...(!ev["q:age"] && !(st.x && st.x.age) ? [C("How old are you?", "How old are you?")] : []),
@@ -10208,6 +11114,7 @@ const NEXT = (() => {
   // ---------------- sim start ----------------
   function startScenario(sc, opts) {
     opts = opts || {};
+    skipSpeech();
     chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; destOpen = false; destAutoShown = false; destTriageForce = false; destSig = ""; document.body.classList.remove("coding"); $("#instrCap").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; if ($("#btnDest")) $("#btnDest").hidden = true; if ($("#destBtnLabel")) $("#destBtnLabel").textContent = "Destination"; $("#txStrip").innerHTML = "";
     $("#scTitle").textContent = sc.dispatchTitle;
     $("#scRef").textContent = "LA County EMS · impression & protocol: your call";
@@ -10233,6 +11140,33 @@ const NEXT = (() => {
     d.innerHTML = (who ? `<span class="who">${esc(who)}<span class="ts">${fmtT(st ? st.t : 0)}</span>${m.approach ? '<button type="button" class="tiny skip" data-skip>Skip ▶▶</button>' : ""}</span>` : "") + (m.html || esc(m.text));
     if (m.approach) d.querySelector("[data-skip]").onclick = e => { e.stopPropagation(); skipSpeech(); e.target.remove(); };
     if (!m.approach && (m.speaker === "find" || m.speaker === "warn")) d.classList.add("instr");
+    const isLungMsg = !m.approach && (m.lungAudio || ((m.speaker === "find" || m.speaker === "partner") && /\bLung sounds(?:\s+are|\s*:)/i.test(m.text || "")));
+    if (isLungMsg && typeof LUNGS !== "undefined") {
+      const spec = m.lungAudio || (sc && st ? LUNGS.classify(sc, st, m.text || "") : null);
+      if (spec) {
+        m.lungAudio = spec;
+        const lp = document.createElement("div");
+        lp.className = "lung-player";
+        lp.dataset.lungSpecId = spec.id;
+        lp.dataset.unilateral = spec.unilateral ? "1" : "0";
+        lp.innerHTML = `<div class="lp-head"><span class="lp-badge" data-lp-status>🩺 ${esc(spec.badge)}</span><span class="lp-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>`
+          + `<div class="lp-btns">`
+          + `<button type="button" class="tiny lp-btn lp-replay" data-lung-play="both" title="Listen again to lung sounds">🔊 Replay · Listen again</button>`
+          + `<button type="button" class="tiny lp-btn lp-right" data-lung-play="right" title="Listen to right chest (${esc(spec.rightLabel)})">🔊 Right${spec.unilateral ? " (" + esc(spec.rightLabel) + ")" : ""}</button>`
+          + `<button type="button" class="tiny lp-btn lp-left" data-lung-play="left" title="Listen to left chest (${esc(spec.leftLabel)})">🔊 Left${spec.unilateral ? " (" + esc(spec.leftLabel) + ")" : ""}</button>`
+          + `</div>`;
+        lp.onclick = e => {
+          const btn = e.target.closest("button[data-lung-play]");
+          if (!btn) return;
+          e.stopPropagation();
+          const side = btn.dataset.lungPlay || "both";
+          if (window.speechSynthesis) speechSynthesis.cancel();
+          lungSkipSeq++;
+          playLungAudio(spec, { side }, lp);
+        };
+        d.appendChild(lp);
+      }
+    }
     $("#transcript").appendChild(d); $("#transcript").scrollTop = 1e9;
     noteInstr(m);
   }
@@ -10268,6 +11202,47 @@ const NEXT = (() => {
     if (fresh) { cap.classList.remove("fresh"); void cap.offsetWidth; cap.classList.add("fresh"); }
   }
   function toggleInstr() { instrOpen = !instrOpen; instrSig = ""; renderInstr(); }
+  let lungSkipSeq = 0;
+  function playLungAudio(spec, opts, playerEl) {
+    if (typeof LUNGS === "undefined") return null;
+    if (!spec && SIM.lungSpec) spec = SIM.lungSpec("");
+    if (!spec) return null;
+    opts = opts || {};
+    const side = opts.side || "both";
+    window.__lastLungPlayCall = { specId: spec.id, side, unilateral: !!spec.unilateral, rightProfile: spec.rightProfile, leftProfile: spec.leftProfile, badge: spec.badge, ts: Date.now() };
+    const players = $$("#transcript .lung-player");
+    const lp = playerEl || players[players.length - 1] || null;
+    players.forEach(p => { p.classList.remove("playing"); p.querySelectorAll(".lp-btn").forEach(b => b.classList.remove("active")); });
+    const lungBox = document.querySelector('.as[data-k="lungs"]'), stethBtn = $("#btnSteth");
+    if (lp) {
+      lp.classList.add("playing");
+      const activeBtn = lp.querySelector(`[data-lung-play="${side}"]`);
+      if (activeBtn) activeBtn.classList.add("active");
+    }
+    if (lungBox) lungBox.classList.add("playing");
+    if (stethBtn) stethBtn.classList.add("playing");
+    return LUNGS.play(spec, Object.assign({}, opts, {
+      side,
+      onPhase: info => {
+        if (lp) {
+          const stEl = lp.querySelector("[data-lp-status]");
+          if (stEl && info && info.text) stEl.textContent = "🩺 " + info.text;
+        }
+        if (typeof opts.onPhase === "function") opts.onPhase(info);
+      },
+      onEnd: res => {
+        if (lp) {
+          lp.classList.remove("playing");
+          lp.querySelectorAll(".lp-btn").forEach(b => b.classList.remove("active"));
+          const stEl = lp.querySelector("[data-lp-status]");
+          if (stEl) stEl.textContent = "🩺 " + spec.badge;
+        }
+        if (lungBox) lungBox.classList.remove("playing");
+        if (stethBtn) stethBtn.classList.remove("playing");
+        if (typeof opts.onEnd === "function") opts.onEnd(res);
+      }
+    }));
+  }
   function say(list) {
     list.forEach(m => {
       addMsg(m);
@@ -10275,6 +11250,45 @@ const NEXT = (() => {
       if (m.speaker === "bystander") chatHistory.push({ role: "assistant", content: "BYSTANDER: " + m.text });
     });
     const speakable = list.filter(m => m.speaker === "patient" || m.speaker === "bystander" || m.speaker === "partner" || m.speaker === "radio" || (settings.instr && (m.speaker === "find" || (m.speaker === "narrator" && /no response|unresponsive|seizing|pulseless|✗/i.test(m.text)))));
+    const lungMsg = list.find(m => !m.approach && m.lungAudio);
+    if (lungMsg && typeof LUNGS !== "undefined") {
+      const spec = lungMsg.lungAudio;
+      if (window.speechSynthesis) speechSynthesis.cancel();
+      const seq = ++lungSkipSeq;
+      ttsPending++;
+      const rec = {
+        specId: spec.id,
+        unilateral: !!spec.unilateral,
+        rightProfile: spec.rightProfile,
+        leftProfile: spec.leftProfile,
+        badge: spec.badge,
+        startedAt: Date.now(),
+        endedAt: null,
+        ttsDelayed: speakable.length > 0,
+        ttsSpokenAt: null,
+        speechSpeakingDuringLung: false
+      };
+      window.__lastLungPlayback = rec;
+      const players = $$("#transcript .lung-player");
+      const lp = players[players.length - 1] || null;
+      playLungAudio(spec, {
+        side: "both",
+        onPhase: () => {
+          if (window.speechSynthesis && speechSynthesis.speaking) rec.speechSpeakingDuringLung = true;
+        },
+        onEnd: () => {
+          rec.endedAt = Date.now();
+          ttsPending = Math.max(0, ttsPending - 1);
+          ttsTailUntil = Date.now() + 350;
+          if (seq !== lungSkipSeq || !SIM.state || SIM.state.ended) return;
+          if (speakable.length) {
+            rec.ttsSpokenAt = Date.now();
+            speakQueue(speakable);
+          }
+        }
+      }, lp);
+      return;
+    }
     speakQueue(speakable);
   }
   async function submit(text, tap) {
@@ -10295,7 +11309,7 @@ const NEXT = (() => {
     oa: [["OPA", "Partner, insert an OPA"], ["NPA", "Partner, insert an NPA"]],
     mon: [["Monitor", "Partner, put him on the monitor"], ["Pads", "Partner, apply the pads"], ["Move V4 to V4R", "Partner, move V4 to V4R"], ["Move V4, V5, V6 to V7, V8, V9", "Partner, move V4, V5, V6 to the back and label them V7, V8, V9"]],
   };
-  function skipSpeech() { if (window.speechSynthesis) speechSynthesis.cancel(); ttsPending = 0; ttsTailUntil = 0; }
+  function skipSpeech() { lungSkipSeq++; if (typeof LUNGS !== "undefined") LUNGS.stop(); if (window.speechSynthesis) speechSynthesis.cancel(); ttsPending = 0; ttsTailUntil = 0; }
   const HELP = [
     ["Arrival", ["Is the patient tracking me?", "What do I see? (describes your last inspection; at the start, the scene)"]],
     ["Chief complaint", ["What's bothering you today?", "What's going on? / What happened?", "Why did you call 911 today?", "What brings us out here?"]],
@@ -10338,7 +11352,7 @@ const NEXT = (() => {
   }
   let ttsPending = 0, ttsTailUntil = 0;
   window.__partnerVoice = (pv, bv, iv) => partnerVoice(pv, bv, iv);
-  function speaking() { return ttsPending > 0 || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil; }
+  function speaking() { return ttsPending > 0 || (typeof LUNGS !== "undefined" && LUNGS.isPlaying()) || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil; }
   const byName = n => { if (!n || n === "auto") return null; if (!allVoices.length) loadVoices(); return allVoices.find(v => v.name === n) || null; };
   function patientVoice() { const sc = SIM.scenario || { patient: { sex: "F", age: 60 } }; return (settings.ptVoice !== "auto" && byName(settings.ptVoice)) || pickVoice(sc.patient.sex, byName(settings.partnerVoice), sc.patient.age); }
   // Instructor: a DIFFERENT voice from the patient (and bystander) when one exists; otherwise the same voice with a strongly different pitch/rate.
@@ -10734,6 +11748,11 @@ const NEXT = (() => {
     if (rv.etco2) { setNum("etco2", String(Math.round(jit(v.etco2, 1))), false, v.etco2 > 50 || v.etco2 < 25); setNum("rr", String(Math.round(v.rr)), false, v.rr < 8 || v.rr > 30, "/min (capno)"); }
     else { setNum("etco2", "--", true); if (rv.rr) setNum("rr", String(rv.rr.val), false, rv.rr.val < 8 || rv.rr.val > 30, "counted"); else setNum("rr", "--", true, false, "/min"); }
     ["bgl", "temp", "gcs", "pupils", "skin", "lungs", "neuro"].forEach(k => setNum(k, rv[k] ? rv[k].val : "--", !rv[k]));
+    { const hasLungs = !!rv.lungs, spec = hasLungs && SIM.lungSpec ? SIM.lungSpec("") : null;
+      const bRep = $("#btnLungReplay"), bR = $("#btnLungRight"), bL = $("#btnLungLeft");
+      if (bRep) bRep.hidden = !hasLungs;
+      if (bR) { bR.hidden = !(hasLungs && spec && spec.unilateral); if (spec && spec.unilateral) bR.textContent = `🔊 R (${spec.rightLabel})`; }
+      if (bL) { bL.hidden = !(hasLungs && spec && spec.unilateral); if (spec && spec.unilateral) bL.textContent = `🔊 L (${spec.leftLabel})`; } }
     setNum("pain", st.events["q:severity"] && v.pain != null ? v.pain + "/10" : "--", !st.events["q:severity"]);
     setNum("ecg", rv.ecg ? rv.ecg.val : "--", !rv.ecg);
     $("#btn12").hidden = !rv.twelve;
@@ -10816,7 +11835,7 @@ const NEXT = (() => {
   function endScenario(force) {
     if (!SIM.state) return;
     if (!SIM.state.pi && !force && SIM.state.x.mode !== "primary") { $("#piEndNote").hidden = false; openPI(); return; }
-    if (window.speechSynthesis) speechSynthesis.cancel(); stopAllInput();
+    skipSpeech(); stopAllInput();
     const r = SIM.end(); currentDebrief = r; renderDebrief(r); show("debrief");
   }
   function piGrade(sc, st) {
@@ -10973,7 +11992,7 @@ const NEXT = (() => {
     const nm = c => PROVIDER_IMPRESSIONS[c] ? `${PROVIDER_IMPRESSIONS[c][0]} (${c}) → TP ${PROVIDER_IMPRESSIONS[c][1]}` : c;
     $("#drillFb").innerHTML = `<p class="${r === "correct" ? "ok" : r === "partial" ? "warn" : "bad"}"><b>${r === "correct" ? "✅ Correct" : r === "partial" ? "🟡 Acceptable, not the best primary" : "❌ Not quite"}</b>: ${esc(nm(curVg.correct))}</p>${r === "partial" ? `<p class="fine">${esc(curVg.acceptNote)}</p>` : ""}<p>${esc(curVg.explain)}</p>${Object.entries(curVg.clues).map(([c, t]) => `<p class="fine"><b>${esc(c)}</b>: ${esc(t)}</p>`).join("")}<p class="fine">Streak ${S.streak} · best ${S.best} · ${S.correct}/${S.n} correct</p>`;
   });
-  window.MedicSimUI = { _testVoice: w => testVoice(w), _partnerVoice: () => { const pv = patientVoice(); return partnerVoice(pv, null, instructorVoice(pv, null).voice); }, _hfQueue: t => hfQueue(t), _skip: () => skipSpeech(), openHelp: () => openHelp(), _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
+  window.MedicSimUI = { _playLungAudio: (spec, opts, el) => playLungAudio(spec, opts, el), _testVoice: w => testVoice(w), _partnerVoice: () => { const pv = patientVoice(); return partnerVoice(pv, null, instructorVoice(pv, null).voice); }, _hfQueue: t => hfQueue(t), _skip: () => skipSpeech(), openHelp: () => openHelp(), _speaking: () => speaking(), _spoken: t => spokenFinding(t), _settings: settings, refreshStatus: () => refreshStatus(), submit, startScenario, endScenario, setPI: c => { $("#piSelect").value = c; } };
 
   // ---------------- wire up ----------------
   document.addEventListener("DOMContentLoaded", () => {
@@ -10987,7 +12006,7 @@ const NEXT = (() => {
     Monitor.init(monState);
     $("#form").addEventListener("submit", e => { e.preventDefault(); const t = $("#txt").value; $("#txt").value = ""; submit(t); });
     $("#btnEnd").onclick = () => endScenario(false);
-    $("#btnMenu").onclick = () => { if (confirm("Leave this scenario? Progress will be lost.")) { SIM.stop(); stopAllInput(); if (window.speechSynthesis) speechSynthesis.cancel(); show("menu"); } };
+    $("#btnMenu").onclick = () => { if (confirm("Leave this scenario? Progress will be lost.")) { SIM.stop(); stopAllInput(); skipSpeech(); show("menu"); } };
     $("#btnAgain").onclick = () => show("menu");
     $("#btnProto").onclick = openProto;
     $("#btnPI").onclick = () => { $("#piEndNote").hidden = true; openPI(); };
@@ -10996,6 +12015,33 @@ const NEXT = (() => {
     $("#btnSettings").onclick = $("#btnSettings2").onclick = () => { loadSettingsUI(); $("#modalSettings").classList.add("open"); };
     $("#btnSaveSettings").onclick = saveSettings;
     $("#btnBeep").onclick = () => { $("#btnBeep").textContent = Monitor.toggleBeep() ? "🔊" : "🔇"; };
+    if ($("#btnSteth")) $("#btnSteth").onclick = () => submit("Listening to lung sounds", true);
+    { const lungBox = document.querySelector('.as[data-k="lungs"]');
+      if (lungBox) lungBox.onclick = e => {
+        if (!SIM.state || SIM.state.ended) return;
+        const btn = e.target.closest("#btnLungReplay, #btnLungRight, #btnLungLeft");
+        if (btn) {
+          e.stopPropagation();
+          const side = btn.id === "btnLungRight" ? "right" : btn.id === "btnLungLeft" ? "left" : "both";
+          if (SIM.lungText && SIM.state.rev.lungs) SIM.state.rev.lungs = { val: SIM.lungText(), t: SIM.state.t };
+          const spec = SIM.lungSpec ? SIM.lungSpec("") : null;
+          render();
+          if (window.speechSynthesis) speechSynthesis.cancel();
+          lungSkipSeq++;
+          playLungAudio(spec, { side });
+          return;
+        }
+        if (!SIM.state.rev.lungs) {
+          submit("Listening to lung sounds", true);
+        } else {
+          if (SIM.lungText) SIM.state.rev.lungs = { val: SIM.lungText(), t: SIM.state.t };
+          const spec = SIM.lungSpec ? SIM.lungSpec("") : null;
+          render();
+          if (window.speechSynthesis) speechSynthesis.cancel();
+          lungSkipSeq++;
+          playLungAudio(spec, { side: "both" });
+        }
+      }; }
     $("#btn12").onclick = open12;
     if ($("#btnV4R")) $("#btnV4R").onclick = () => submit("Partner, move V4 to V4R", true);
     if ($("#btn12V4R")) $("#btn12V4R").onclick = () => submit("Partner, move V4 to V4R", true);
