@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.11.1-medscreen df37c8af9b">
+<meta name="medicsim-version" content="2.11.2-medquiz 4bcd8b2a55">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -596,6 +596,56 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 .lung-player .lp-btn:hover{background:#193b57;border-color:#38bdf8}
 .lung-player .lp-btn.active{background:#065f46;border-color:#34d399;color:#ecfdf5;box-shadow:0 0 0 2px rgba(52,211,153,.28)}
 
+/* v2.11.2 Pre-Administration Medication Check Modal (MCG 1317 Multiple Choice) */
+#medQuizModal{z-index:65;padding:.6em}
+.mq-card{width:min(820px,100%);max-height:92vh;max-height:92dvh;padding:.9em 1em;gap:.55em;background:linear-gradient(180deg,#111a25,#0d141d);border:1px solid #2b4a68;box-shadow:0 16px 42px rgba(0,0,0,.65)}
+.mq-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.6em;border-bottom:1px solid #1f3347;padding-bottom:.45em}
+.mq-head-main{min-width:0;flex:1}
+.mq-head h2{margin:0;font-size:1.12em;color:#f0f9ff;line-height:1.25}
+.mq-head .fine{margin:.15em 0 0;color:#93c5fd;font-size:.78em}
+.mq-badge{flex:none;font:700 .76em ui-monospace,SFMono-Regular,Menlo,monospace;padding:.28em .65em;border-radius:999px;background:#16293d;border:1px solid #2d557a;color:#bae6fd;white-space:nowrap}
+.mq-badge.ready{background:#064e3b;border-color:#34d399;color:#a7f3d0}
+.mq-peds{padding:.45em .65em;border-radius:8px;background:#1e1b4b;border:1px solid #6366f1;color:#e0e7ff;font-size:.8em;line-height:1.35}
+.mq-peds[hidden]{display:none!important}
+.mq-questions{display:grid;grid-template-columns:1fr 1fr;gap:.55em;overflow-y:auto;padding-right:.15em;min-height:0}
+.mq-q{background:#0b1119;border:1px solid #1f3042;border-radius:10px;padding:.55em .65em;display:flex;flex-direction:column;gap:.35em;min-width:0}
+.mq-q.answered-ok{border-color:#10b981;background:#071914}
+.mq-q.answered-bad{border-color:#f59e0b;background:#181209}
+.mq-q-head{display:flex;align-items:center;justify-content:space-between;gap:.4em;font-size:.82em;font-weight:800;color:#7dd3fc;text-transform:uppercase;letter-spacing:.04em}
+.mq-q-head .mq-q-state{font-size:.88em;text-transform:none;letter-spacing:0;font-weight:700}
+.mq-q.answered-ok .mq-q-head .mq-q-state{color:#34d399}
+.mq-q.answered-bad .mq-q-head .mq-q-state{color:#fbbf24}
+.mq-opts{display:flex;flex-direction:column;gap:.3em}
+.mq-opt{display:flex;align-items:flex-start;gap:.45em;text-align:left;font-size:.81em;line-height:1.3;padding:.42em .58em;min-height:34px;border-radius:8px;background:#131e2b;border:1px solid #283c52;color:#e2e8f0;font-weight:500;width:100%;transition:border-color .12s,background .12s}
+.mq-opt:hover{border-color:#38bdf8;background:#172636}
+.mq-opt .mq-let{flex:none;display:inline-grid;place-items:center;width:1.45em;height:1.45em;border-radius:5px;background:#1e2f42;color:#93c5fd;font:800 .82em ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:.05em}
+.mq-opt .mq-txt{flex:1;min-width:0;word-break:break-word}
+.mq-opt.correct{background:#064e3b!important;border-color:#10b981!important;color:#ecfdf5!important;font-weight:700}
+.mq-opt.correct .mq-let{background:#047857;color:#a7f3d0}
+.mq-opt.wrong{background:#451a1c!important;border-color:#f43f5e!important;color:#ffe4e6!important}
+.mq-opt.wrong .mq-let{background:#881337;color:#fda4af}
+.mq-opt.correct-reveal{background:#0c3b2e!important;border:1px dashed #34d399!important;color:#d1fae5!important;font-weight:600}
+.mq-opt.correct-reveal .mq-let{background:#065f46;color:#6ee7b7}
+.mq-fb{font-size:.76em;line-height:1.3;padding:.3em .45em;border-radius:6px;margin-top:.1em}
+.mq-fb[hidden]{display:none!important}
+.mq-fb.ok{background:rgba(16,185,129,.14);color:#6ee7b7;border:1px solid rgba(16,185,129,.35)}
+.mq-fb.bad{background:rgba(245,158,11,.15);color:#fde68a;border:1px solid rgba(245,158,11,.4)}
+.mq-footer{display:flex;align-items:center;justify-content:space-between;gap:.6em;flex-wrap:wrap;border-top:1px solid #1f3347;padding-top:.45em}
+.mq-status{font-size:.82em;color:#cbd5e1;font-weight:600;flex:1;min-width:180px}
+.mq-status.ready{color:#6ee7b7}
+#btnMedQuizConfirm:disabled{opacity:.45;cursor:not-allowed;background:#1e3a5f;color:#94a3b8}
+#btnMedQuizConfirm:not(:disabled){background:linear-gradient(180deg,#10b981,#059669);color:#fff;font-weight:700;box-shadow:0 0 14px rgba(16,185,129,.4)}
+@media (max-width:740px){
+  #medQuizModal{padding:.35em}
+  .mq-card{padding:.65em .7em;max-height:95vh;max-height:95dvh}
+  .mq-questions{grid-template-columns:1fr;gap:.45em}
+  .mq-head h2{font-size:1em}
+  .mq-opt{font-size:.79em;padding:.38em .5em}
+  .mq-footer{flex-direction:column;align-items:stretch}
+  .mq-footer .actions{width:100%;justify-content:stretch}
+  .mq-footer .actions button{flex:1;padding:.5em .6em;font-size:.86em}
+}
+
 </style>
 </head>
 <body>
@@ -731,6 +781,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
   <label class="row"><input type="checkbox" id="setAutoSend" checked> Send speech automatically when I stop talking</label>
   <label class="row"><input type="checkbox" id="setHints"> Show instructor hints during the scenario</label>
   <label class="row"><input type="checkbox" id="setInstr" checked> Instructor speaks findings aloud (pulses, skin, pupils, lung sounds…)</label>
+  <label class="row"><input type="checkbox" id="setMedQuiz" checked> Pre-administration medication check (MCG 1317 multiple-choice: dose, repeat time, max dose, contraindications)</label>
   <label>Overall speech rate <input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="1"></label>
   <h3>Voices</h3>
   <p class="fine">Pick from the voices this device has (English first). Choices are saved on this device. If a saved voice disappears (new device or browser), Auto is used.</p>
@@ -790,6 +841,23 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 <div class="modal" id="modalProto"><div class="card wide"><div id="protoBody"></div><div class="actions"><button data-close>Close</button></div></div></div>
 <div class="modal" id="modalDrill"><div class="card wide"><div id="drillBody"></div><div class="actions"><button id="btnDrillNext" class="primary">Next vignette</button><button data-close>Close</button></div></div></div>
 <div class="modal" id="modal12"><div class="card wide"><h2>12-lead ECG</h2><canvas id="cv12" width="1100" height="520"></canvas><p id="txt12" class="interp"></p><div class="actions"><button id="btn12V4R" type="button">Move V4 to V4R</button><button id="btn12V789" type="button">Move V4, V5, V6 to V7, V8, V9</button><button data-close>Close</button></div></div></div>
+<div class="modal" id="medQuizModal" role="dialog" aria-modal="true" aria-labelledby="mqTitle"><div class="card wide mq-card">
+  <div class="mq-head">
+    <div>
+      <h2 id="mqTitle">💊 Medication Check</h2>
+      <p class="fine" id="mqSub"></p>
+    </div>
+    <button type="button" class="ghost tiny" id="btnMqClose" aria-label="Close">✕</button>
+  </div>
+  <div class="mq-body" id="mqBody"></div>
+  <div class="mq-foot">
+    <div class="mq-score" id="mqFootNote">Answer all 4 questions to administer.</div>
+    <div class="actions">
+      <button type="button" class="ghost" id="btnMqCancel">Hold / Cancel</button>
+      <button type="button" class="primary" id="btnMqConfirm" disabled>✓ Administer</button>
+    </div>
+  </div>
+</div></div>
 
 <script>
 /* ===== protocols.js ===== */
@@ -1052,7 +1120,7 @@ PROTOCOLS.TRAUMA_TRIAGE = [
 
 /* ===== dosing.js ===== */
 /* =====================================================================
- * LA COUNTY ADULT MEDICATION DOSE / ROUTE CHECKS
+ * LA COUNTY ADULT MEDICATION DOSE / ROUTE CHECKS + MCG 1317 QUIZ
  * Source: LA County EMS MCG 1317.x Drug Reference PDFs (file.lacounty.gov), retrieved 2026-10-21,
  * plus MCG 1309 (Ketorolac IM adult 1 mg/kg, max 30 mg) and MCG 1345 (pain management).
  * ADULT ONLY. Pediatric patients (age < 15) are never dose-checked here: peds dosing is by
@@ -1085,7 +1153,1101 @@ const DOSING = (() => {
   };
   const TO = { mcg: 1e-3, mg: 1, g: 1000 };
   function conv(v, from, to) { if (from === to) return v; if (TO[from] != null && TO[to] != null) return v * TO[from] / TO[to]; return null; }
-  const isPeds = sc => sc && sc.patient && sc.patient.age != null && sc.patient.age < 15;
+  const isPeds = sc => !!(sc && (sc.peds || (sc.patient && sc.patient.age != null && sc.patient.age < 15)));
+
+  // Official LA County EMS MCG 1317 Pre-Administration Multiple-Choice Medication Check
+  // Every entry defines: name, shortName, ref, defaultDose, defaultRoute, and 4 questions (dose, repeat, max, contra)
+  // each with 1 correct string and 3 realistic distractors.
+  const MED_QUIZ = {
+    aspirin: {
+      name: "Aspirin",
+      shortName: "aspirin",
+      ref: "MCG 1317.3 / MCG 1317.7 · TP 1211",
+      defaultDose: { v: 325, u: "mg" },
+      defaultRoute: "PO",
+      dose: {
+        correct: "325 mg PO chewed",
+        distractors: [
+          "81 mg SL dissolved under the tongue",
+          "650 mg PO swallowed whole with water",
+          "162 mg slow IV push over 2 minutes"
+        ]
+      },
+      repeat: {
+        correct: "None (single dose / do not repeat)",
+        distractors: [
+          "Every 3–5 minutes as needed for chest pain",
+          "Every 15 minutes up to 3 doses",
+          "Repeat once in 10 minutes if pain persists"
+        ]
+      },
+      max: {
+        correct: "325 mg (single dose)",
+        distractors: [
+          "650 mg (2 doses)",
+          "975 mg (3 doses)",
+          "162 mg total"
+        ]
+      },
+      contra: {
+        correct: "Allergy to aspirin, active GI bleeding / stomach ulcers, or unable to chew/swallow",
+        distractors: [
+          "SBP < 100 mmHg or PDE5 inhibitor use within 48 hours",
+          "Heart rate < 60 bpm or 2nd/3rd degree heart block",
+          "SpO2 < 94% on room air or respiratory rate > 24/min"
+        ]
+      }
+    },
+    nitro: {
+      name: "Nitroglycerin",
+      shortName: "nitroglycerin",
+      ref: "MCG 1317.31 · TP 1211 / TP 1214",
+      defaultDose: { v: 0.4, u: "mg" },
+      defaultRoute: "SL",
+      dose: {
+        correct: "0.4 mg SL (or 0.4 mg / 0.8 mg SL in severe pulmonary edema per TP 1214)",
+        distractors: [
+          "1 mg rapid IV push over 1 minute",
+          "2.5 mg PO chewed and swallowed",
+          "0.1 mg IM in the lateral thigh"
+        ]
+      },
+      repeat: {
+        correct: "Every 3–5 minutes as needed while SBP ≥ 100 mmHg",
+        distractors: [
+          "None (single dose only; do not repeat)",
+          "Every 15–20 minutes as needed for chest pain",
+          "Every 1 minute continuously until pain resolves"
+        ]
+      },
+      max: {
+        correct: "3 doses (1.2 mg total)",
+        distractors: [
+          "1 dose (0.4 mg total)",
+          "5 doses (2.0 mg total)",
+          "No maximum dose while chest pain persists"
+        ]
+      },
+      contra: {
+        correct: "SBP < 100 mmHg, PDE5 inhibitor / ED meds (sildenafil, tadalafil, vardenafil) within 48 hours, right ventricular infarction (V4R STE), or hypersensitivity",
+        distractors: [
+          "Active stomach ulcers, GI bleeding, or aspirin allergy",
+          "Sinus tachycardia > 100 bpm or hypertension (SBP > 160 mmHg)",
+          "History of asthma, COPD, or chronic beta-blocker use"
+        ]
+      }
+    },
+    albuterol: {
+      name: "Albuterol",
+      shortName: "albuterol",
+      ref: "MCG 1317.1 / 1317.3 · TP 1237",
+      defaultDose: { v: 5, u: "mg" },
+      defaultRoute: "NEB",
+      dose: {
+        correct: "5 mg (6 mL of 0.083%) nebulized (or 4 puffs MDI; peds per MCG 1309)",
+        distractors: [
+          "0.5 mg IM in the lateral thigh",
+          "10 mg slow IV push over 2 minutes",
+          "1.25 mg PO liquid swallowed"
+        ]
+      },
+      repeat: {
+        correct: "Every 20 minutes (repeat × 2) or continuous nebulization for severe bronchospasm",
+        distractors: [
+          "None (single nebulizer treatment only)",
+          "Every 2 minutes up to 10 doses",
+          "Repeat once after 60 minutes only"
+        ]
+      },
+      max: {
+        correct: "3 doses (15 mg) prior to Base contact / continuous in severe distress",
+        distractors: [
+          "1 dose (5 mg total) absolute maximum",
+          "30 mg IV push total",
+          "2 puffs (180 mcg) total"
+        ]
+      },
+      contra: {
+        correct: "Hypersensitivity to albuterol (use caution in tachyarrhythmias)",
+        distractors: [
+          "SBP < 120 mmHg or history of COPD",
+          "SpO2 < 90% or bilateral wheezing on auscultation",
+          "Concurrent administration of supplemental oxygen or CPAP"
+        ]
+      }
+    },
+    epi_im: {
+      name: "Epinephrine 1 mg/mL IM (Anaphylaxis / Severe Bronchospasm)",
+      shortName: "IM epinephrine",
+      ref: "MCG 1317.17 · TP 1219 / TP 1237",
+      defaultDose: { v: 0.5, u: "mg" },
+      defaultRoute: "IM",
+      dose: {
+        correct: "0.5 mg IM (0.5 mL of 1 mg/mL) lateral thigh (peds: 0.01 mg/kg IM per MCG 1309)",
+        distractors: [
+          "1 mg IV/IO push (10 mL of 0.1 mg/mL)",
+          "0.1 mg SL under the tongue",
+          "5 mg nebulized via face mask"
+        ]
+      },
+      repeat: {
+        correct: "Every 10 minutes as needed",
+        distractors: [
+          "Every 1–2 minutes rapid push",
+          "Every 30 minutes as needed",
+          "None (never repeat IM epinephrine)"
+        ]
+      },
+      max: {
+        correct: "3 doses (1.5 mg total) prior to Base contact",
+        distractors: [
+          "0.5 mg single dose absolute maximum",
+          "10 mg IM total",
+          "Unlimited doses every 2 minutes"
+        ]
+      },
+      contra: {
+        correct: "None in life-threatening anaphylaxis / severe allergic reaction",
+        distractors: [
+          "Heart rate > 100 bpm or patient anxiety",
+          "SBP < 100 mmHg or audible wheezing/stridor",
+          "History of seasonal allergies or asthma"
+        ]
+      }
+    },
+    epi_arrest: {
+      name: "Epinephrine 0.1 mg/mL IV/IO (Cardiac Arrest)",
+      shortName: "epinephrine",
+      ref: "MCG 1317.17 · TP 1210",
+      defaultDose: { v: 1, u: "mg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "1 mg IV/IO (10 mL of 0.1 mg/mL) (peds: 0.01 mg/kg of 0.1 mg/mL per MCG 1309)",
+        distractors: [
+          "0.5 mg IM (0.5 mL of 1 mg/mL) in lateral thigh",
+          "10 mcg (1 mL of 0.01 mg/mL) IV push",
+          "5 mg IV rapid push"
+        ]
+      },
+      repeat: {
+        correct: "Every 3–5 minutes (every other 2-minute CPR cycle)",
+        distractors: [
+          "Every 10–15 minutes",
+          "Every 30 seconds during compressions",
+          "None (single dose only)"
+        ]
+      },
+      max: {
+        correct: "No maximum during resuscitation / 3 mg (3 doses) per TP 1210 prior to Base contact",
+        distractors: [
+          "1 mg single dose maximum",
+          "0.5 mg total maximum",
+          "150 mcg total maximum"
+        ]
+      },
+      contra: {
+        correct: "None in cardiac arrest",
+        distractors: [
+          "Asystole or pulseless electrical activity (PEA)",
+          "Age > 65 years or history of hypertension",
+          "Concurrent amiodarone or CPR in progress"
+        ]
+      }
+    },
+    pushepi: {
+      name: "Push-Dose Epinephrine 0.01 mg/mL IV/IO",
+      shortName: "push-dose epinephrine",
+      ref: "MCG 1317.17 · TP 1207 / TP 1210 / TP 1219",
+      defaultDose: { v: 10, u: "mcg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "1 mL (10 mcg) of 0.01 mg/mL IV/IO (mix 9 mL NS + 1 mL of 0.1 mg/mL epi)",
+        distractors: [
+          "1 mg (10 mL of 0.1 mg/mL) IV push",
+          "0.5 mg (0.5 mL of 1 mg/mL) IM lateral thigh",
+          "100 mcg (1 mL of 0.1 mg/mL) undiluted IV push"
+        ]
+      },
+      repeat: {
+        correct: "Every 1–5 minutes titrated to SBP > 90 mmHg",
+        distractors: [
+          "Every 15–20 minutes",
+          "None (single bolus only)",
+          "Every 10 minutes IM"
+        ]
+      },
+      max: {
+        correct: "Titrate to SBP > 90 mmHg (contact Base concurrently)",
+        distractors: [
+          "10 mcg (1 mL) single dose maximum",
+          "300 mg total",
+          "1.2 mg (3 doses) fixed cap"
+        ]
+      },
+      contra: {
+        correct: "SBP ≥ 90 mmHg (not hypotensive), traumatic shock, or untreated hypovolemia before initial fluid bolus",
+        distractors: [
+          "Post-ROSC hypotension with SBP < 70 mmHg",
+          "Refractory anaphylactic shock after IM epinephrine and NS bolus",
+          "Symptomatic bradycardia with poor perfusion refractory to TCP"
+        ]
+      }
+    },
+    amio: {
+      name: "Amiodarone",
+      shortName: "amiodarone",
+      ref: "MCG 1317.5 · TP 1210",
+      defaultDose: { v: 300, u: "mg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "300 mg IV/IO push (first dose in VF/pulseless VT arrest; 150 mg repeat dose)",
+        distractors: [
+          "6 mg rapid IV push followed by 12 mg",
+          "1 mg IV/IO push every 3–5 minutes",
+          "50 mg deep IM in lateral thigh"
+        ]
+      },
+      repeat: {
+        correct: "Repeat 150 mg IV/IO once in 3–5 minutes (after 2nd subsequent shock / cycle)",
+        distractors: [
+          "Repeat 300 mg every 1 minute continuously",
+          "None (single 300 mg dose only; never give a second dose)",
+          "Repeat 150 mg every 15 minutes up to 4 doses"
+        ]
+      },
+      max: {
+        correct: "450 mg total (300 mg + 150 mg)",
+        distractors: [
+          "300 mg total",
+          "900 mg total",
+          "18 mg total"
+        ]
+      },
+      contra: {
+        correct: "None in VF/pulseless VT arrest (in perfusing rhythms: bradycardia, 2nd/3rd degree heart block, cardiogenic shock, hypersensitivity)",
+        distractors: [
+          "Refractory ventricular fibrillation after 3 defibrillations",
+          "Pulseless ventricular tachycardia",
+          "Concurrent epinephrine administration during CPR"
+        ]
+      }
+    },
+    adenosine: {
+      name: "Adenosine",
+      shortName: "adenosine",
+      ref: "MCG 1317.1 · TP 1213",
+      defaultDose: { v: 6, u: "mg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "6 mg rapid IV push (1st dose), then 12 mg rapid IV push (2nd dose) with immediate NS flush",
+        distractors: [
+          "150 mg slow IV infusion over 10 minutes",
+          "1 mg slow IV push over 2 minutes",
+          "0.4 mg SL every 5 minutes"
+        ]
+      },
+      repeat: {
+        correct: "Every 1–2 minutes if SVT persists (12 mg rapid IV push)",
+        distractors: [
+          "Every 10–15 minutes as needed",
+          "None (do not repeat if 6 mg fails)",
+          "Every 5–10 minutes IM"
+        ]
+      },
+      max: {
+        correct: "18 mg total (6 mg + 12 mg) — or 30 mg if 2nd 12 mg given per Base",
+        distractors: [
+          "6 mg total maximum",
+          "3 mg total maximum",
+          "300 mg total maximum"
+        ]
+      },
+      contra: {
+        correct: "2nd or 3rd degree AV block, sick sinus syndrome, known atrial fibrillation/flutter or WPW, poison/drug-induced tachycardia, or severe bronchospasm",
+        distractors: [
+          "Regular narrow-complex SVT with HR > 160 bpm",
+          "SBP > 100 mmHg in an alert patient",
+          "History of hypertension or diabetes"
+        ]
+      }
+    },
+    atropine: {
+      name: "Atropine",
+      shortName: "atropine",
+      ref: "MCG 1317.7 / 1317.9 · TP 1212 / TP 1241",
+      defaultDose: { v: 1, u: "mg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "1 mg IV/IO push (2 mg IV/IM in organophosphate poisoning per TP 1241)",
+        distractors: [
+          "6 mg rapid IV push with immediate flush",
+          "0.1 mg subcutaneously",
+          "300 mg IV push"
+        ]
+      },
+      repeat: {
+        correct: "Every 3–5 minutes as needed",
+        distractors: [
+          "Every 15–20 minutes",
+          "None (single 1 mg dose only)",
+          "Every 30 seconds"
+        ]
+      },
+      max: {
+        correct: "3 mg total (or unlimited titrated to secretions in organophosphate poisoning per TP 1241)",
+        distractors: [
+          "1 mg total maximum",
+          "12 mg total for bradycardia",
+          "0.5 mg total maximum"
+        ]
+      },
+      contra: {
+        correct: "Hypersensitivity (ineffective in infranodal 2nd-degree Type II / 3rd-degree AV block; use TCP)",
+        distractors: [
+          "Symptomatic sinus bradycardia with HR < 40 bpm and poor perfusion",
+          "Organophosphate poisoning with bronchorrhea and salivation",
+          "SBP < 90 mmHg with altered mental status"
+        ]
+      }
+    },
+    midaz: {
+      name: "Midazolam (Versed)",
+      shortName: "midazolam",
+      ref: "MCG 1317.25 · TP 1231 / TP 1209 / TP 1213",
+      defaultDose: { v: 10, u: "mg" },
+      defaultRoute: "IN",
+      dose: {
+        correct: "10 mg IM/IN (or 5 mg IV/IO) for active seizure (5 mg IM/IN/IV for agitation; 2 mg for sedation)",
+        distractors: [
+          "50 mg deep IM single dose",
+          "0.4 mg SL every 5 minutes",
+          "100 mg IV rapid push"
+        ]
+      },
+      repeat: {
+        correct: "Repeat once in 5–10 minutes IM/IN (or q 2–5 min IV) if seizure continues",
+        distractors: [
+          "None (single dose only; never repeat)",
+          "Every 30 minutes as needed",
+          "Every 15 seconds until intubated"
+        ]
+      },
+      max: {
+        correct: "20 mg total (two doses for seizure) prior to Base contact",
+        distractors: [
+          "2 mg total maximum for status epilepticus",
+          "100 mg total prior to Base contact",
+          "50 mg single dose"
+        ]
+      },
+      contra: {
+        correct: "Hypotension / shock (SBP < 90 mmHg), severe respiratory depression without airway support, or hypersensitivity to benzodiazepines",
+        distractors: [
+          "Generalized tonic-clonic status epilepticus",
+          "Active eclamptic seizure in pregnancy",
+          "Heart rate > 110 bpm or hypertension"
+        ]
+      }
+    },
+    naloxone: {
+      name: "Naloxone (Narcan)",
+      shortName: "naloxone",
+      ref: "MCG 1317.27 · TP 1241",
+      defaultDose: { v: 2, u: "mg" },
+      defaultRoute: "IN",
+      dose: {
+        correct: "2–4 mg IN, 2 mg IM, or 0.8–2 mg IV/IO titrated to RR ≥ 12",
+        distractors: [
+          "10 mg IV rapid push all at once",
+          "50 mcg IV every 5 minutes",
+          "0.1 mg PO swallowed"
+        ]
+      },
+      repeat: {
+        correct: "Every 2–3 minutes as needed to restore adequate respirations",
+        distractors: [
+          "Every 20 minutes as needed",
+          "None (single dose only)",
+          "Every 15 seconds"
+        ]
+      },
+      max: {
+        correct: "8 mg total",
+        distractors: [
+          "2 mg total maximum",
+          "20 mg total maximum",
+          "0.4 mg total maximum"
+        ]
+      },
+      contra: {
+        correct: "Hypersensitivity to naloxone (assist ventilations with BVM first if apneic or SpO2 < 90%)",
+        distractors: [
+          "Respiratory rate < 8/min with pinpoint pupils",
+          "Suspected fentanyl or heroin overdose",
+          "Unresponsive patient with snoring respirations"
+        ]
+      }
+    },
+    diphen: {
+      name: "Diphenhydramine (Benadryl)",
+      shortName: "diphenhydramine",
+      ref: "MCG 1317.15 · TP 1219 / TP 1239",
+      defaultDose: { v: 50, u: "mg" },
+      defaultRoute: "IM",
+      dose: {
+        correct: "50 mg deep IM (or slow IV push)",
+        distractors: [
+          "5 mg nebulized via face mask",
+          "300 mg IV rapid push",
+          "0.5 mg IM in lateral thigh"
+        ]
+      },
+      repeat: {
+        correct: "None (single dose)",
+        distractors: [
+          "Every 5 minutes up to 3 doses",
+          "Every 10 minutes as needed",
+          "Every 2 minutes until symptoms resolve"
+        ]
+      },
+      max: {
+        correct: "50 mg",
+        distractors: [
+          "150 mg (3 doses)",
+          "25 mg maximum",
+          "100 mg IV push"
+        ]
+      },
+      contra: {
+        correct: "Hypersensitivity to diphenhydramine, neonates/premature infants, nursing mothers",
+        distractors: [
+          "Acute dystonic reaction (oculogyric crisis / torticollis) from haloperidol",
+          "Urticaria, pruritus, or angioedema",
+          "Heart rate > 80 bpm or SBP > 110 mmHg"
+        ]
+      }
+    },
+    d10: {
+      name: "Dextrose 10% (D10)",
+      shortName: "dextrose 10%",
+      ref: "MCG 1317.13 · TP 1203",
+      defaultDose: { v: 125, u: "mL" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "125 mL (12.5 g) D10 IV/IO infuse over 5–10 minutes, recheck BG",
+        distractors: [
+          "1000 mL D10 rapid IV wide open",
+          "10 mL D10 IM injection",
+          "50 g D50 PO swallowed"
+        ]
+      },
+      repeat: {
+        correct: "May repeat 125 mL (12.5 g) once if BG remains < 60 mg/dL and symptomatic",
+        distractors: [
+          "Every 1 minute without rechecking glucose",
+          "None (never repeat D10)",
+          "Every 30 minutes × 4"
+        ]
+      },
+      max: {
+        correct: "250 mL (25 g) total",
+        distractors: [
+          "125 mL (12.5 g) single dose maximum",
+          "1000 mL (100 g) total",
+          "50 mL (5 g) total"
+        ]
+      },
+      contra: {
+        correct: "Normoglycemia / hyperglycemia (BG ≥ 60 mg/dL without hypoglycemia) or intracranial hemorrhage without hypoglycemia",
+        distractors: [
+          "Symptomatic hypoglycemia with BG < 60 mg/dL and altered mental status",
+          "Diabetic patient on insulin with diaphoresis and confusion",
+          "Inability to swallow oral glucose"
+        ]
+      }
+    },
+    oralglucose: {
+      name: "Oral Glucose",
+      shortName: "oral glucose",
+      ref: "MCG 1317.21 · TP 1203",
+      defaultDose: { v: 15, u: "g" },
+      defaultRoute: "PO",
+      dose: {
+        correct: "1 tube (15 g) PO buccal/swallowed",
+        distractors: [
+          "125 mL IV infusion",
+          "1 mg IM injection",
+          "325 mg PO chewed"
+        ]
+      },
+      repeat: {
+        correct: "May repeat once in 10–15 minutes if still hypoglycemic and alert",
+        distractors: [
+          "Every 2 minutes regardless of mental status",
+          "None (never repeat oral glucose)",
+          "Every 60 minutes"
+        ]
+      },
+      max: {
+        correct: "30 g (2 tubes)",
+        distractors: [
+          "5 tubes (75 g)",
+          "100 g PO",
+          "5 g total"
+        ]
+      },
+      contra: {
+        correct: "Decreased level of consciousness, unable to swallow or protect airway, absent gag reflex",
+        distractors: [
+          "Alert hypoglycemic patient with BG 48 mg/dL who can swallow",
+          "History of Type 1 or Type 2 diabetes",
+          "No IV access established yet"
+        ]
+      }
+    },
+    glucagon: {
+      name: "Glucagon",
+      shortName: "glucagon",
+      ref: "MCG 1317.19 · TP 1203",
+      defaultDose: { v: 1, u: "mg" },
+      defaultRoute: "IM",
+      dose: {
+        correct: "1 mg IM",
+        distractors: [
+          "12.5 g IV push",
+          "10 mg IN spray",
+          "50 mg deep IM"
+        ]
+      },
+      repeat: {
+        correct: "May repeat once in 15–20 minutes if no IV access and hypoglycemia persists",
+        distractors: [
+          "Every 2 minutes IV push",
+          "Every 5 minutes × 4",
+          "Continuous IM infusion"
+        ]
+      },
+      max: {
+        correct: "2 mg total (or 1 mg single dose prior to Base contact per MCG 1317.19)",
+        distractors: [
+          "10 mg total",
+          "50 mg total",
+          "0.1 mg total"
+        ]
+      },
+      contra: {
+        correct: "Hypersensitivity to glucagon, pheochromocytoma / insulinoma",
+        distractors: [
+          "Hypoglycemia with BG < 60 mg/dL when IV access is unsuccessful",
+          "Altered mental status unable to take oral glucose",
+          "History of insulin-dependent diabetes"
+        ]
+      }
+    },
+    ondansetron: {
+      name: "Ondansetron (Zofran)",
+      shortName: "ondansetron",
+      ref: "MCG 1317.33 · TP 1205",
+      defaultDose: { v: 4, u: "mg" },
+      defaultRoute: "ODT",
+      dose: {
+        correct: "4 mg ODT PO or slow IV push",
+        distractors: [
+          "50 mg deep IM",
+          "15 mg IV rapid push",
+          "0.4 mg SL"
+        ]
+      },
+      repeat: {
+        correct: "None (single dose; do not repeat)",
+        distractors: [
+          "Every 5 minutes up to 3 doses",
+          "Every 2 minutes until nausea resolves",
+          "Repeat 4 mg every 10 minutes × 4"
+        ]
+      },
+      max: {
+        correct: "4 mg (single dose)",
+        distractors: [
+          "16 mg total",
+          "12 mg total",
+          "50 mg total"
+        ]
+      },
+      contra: {
+        correct: "Congenital long QT syndrome, hypersensitivity, children < 4 years old (and PKU for ODT)",
+        distractors: [
+          "Nausea and vomiting following opioid administration",
+          "Motion sickness or gastroenteritis in an adult",
+          "SBP > 100 mmHg or heart rate 70–90 bpm"
+        ]
+      }
+    },
+    fentanyl: {
+      name: "Fentanyl",
+      shortName: "fentanyl",
+      ref: "MCG 1317.18 / 1317.19 · TP 1205 / MCG 1345",
+      defaultDose: { v: 50, u: "mcg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "50 mcg slow IV/IM/IN",
+        distractors: [
+          "4 mg slow IV push",
+          "50 mg IM injection",
+          "500 mcg rapid IV push"
+        ]
+      },
+      repeat: {
+        correct: "Every 5 minutes IV (or 10–15 minutes IM/IN) as needed for pain",
+        distractors: [
+          "Every 1 minute rapid push",
+          "None (single 50 mcg dose only)",
+          "Every 60 minutes"
+        ]
+      },
+      max: {
+        correct: "150 mcg total prior to Base contact",
+        distractors: [
+          "50 mcg total maximum",
+          "500 mcg total prior to Base contact",
+          "12 mg total"
+        ]
+      },
+      contra: {
+        correct: "SBP < 90 mmHg (hypotension), respiratory depression (RR < 10 / hypoxia), altered mental status / head injury, or hypersensitivity",
+        distractors: [
+          "Severe isolated extremity fracture pain with BP 138/84",
+          "Acute burn pain or chest pain refractory to nitroglycerin",
+          "Heart rate > 90 bpm in an alert patient"
+        ]
+      }
+    },
+    morphine: {
+      name: "Morphine Sulfate",
+      shortName: "morphine",
+      ref: "MCG 1317.26 / 1317.27 · TP 1205 / MCG 1345",
+      defaultDose: { v: 4, u: "mg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "4 mg slow IV/IM",
+        distractors: [
+          "50 mcg IN spray",
+          "15 mg IV push",
+          "50 mg deep IM"
+        ]
+      },
+      repeat: {
+        correct: "Every 5 minutes IV as needed for pain",
+        distractors: [
+          "Every 1 minute until pain is 0/10",
+          "None (single 4 mg dose only)",
+          "Every 30 minutes"
+        ]
+      },
+      max: {
+        correct: "12 mg total prior to Base contact",
+        distractors: [
+          "4 mg single dose maximum",
+          "150 mcg total",
+          "50 mg total"
+        ]
+      },
+      contra: {
+        correct: "SBP < 90 mmHg (hypotension), respiratory depression, altered mental status, or hypersensitivity",
+        distractors: [
+          "Acute extremity fracture with normal vital signs",
+          "Alert patient with flank pain and BP 142/88",
+          "Respiratory rate 18/min and SpO2 99%"
+        ]
+      }
+    },
+    ketorolac: {
+      name: "Ketorolac (Toradol)",
+      shortName: "ketorolac",
+      ref: "MCG 1317.22 / 1317.23 · TP 1205 / MCG 1345",
+      defaultDose: { v: 15, u: "mg" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "15 mg IV or 30 mg IM",
+        distractors: [
+          "325 mg PO chewed",
+          "50 mcg IN spray",
+          "100 mg IV rapid push"
+        ]
+      },
+      repeat: {
+        correct: "None (single prehospital dose)",
+        distractors: [
+          "Every 5 minutes up to 3 doses",
+          "Every 10 minutes as needed",
+          "Repeat once in 15 minutes"
+        ]
+      },
+      max: {
+        correct: "15 mg IV or 30 mg IM (single dose)",
+        distractors: [
+          "60 mg IV total",
+          "150 mg IM total",
+          "4 mg IV total"
+        ]
+      },
+      contra: {
+        correct: "NSAID/aspirin allergy, active GI bleed/ulcer, renal disease, pregnancy, multisystem trauma/active bleeding, anticoagulants, or age < 4 or > 65",
+        distractors: [
+          "Isolated musculoskeletal pain or renal colic in a healthy 35-year-old",
+          "SBP > 110 mmHg with normal mental status",
+          "Concurrent administration of ondansetron"
+        ]
+      }
+    },
+    txa: {
+      name: "Tranexamic Acid (TXA)",
+      shortName: "TXA",
+      ref: "MCG 1317.39 · TP 1244 / TP 1217",
+      defaultDose: { v: 1, u: "g" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "1 g in 100 mL NS infused IV/IO over 10 minutes",
+        distractors: [
+          "1 g rapid IV push over 10 seconds",
+          "50 mg IM single injection",
+          "4 g IV push over 2 minutes"
+        ]
+      },
+      repeat: {
+        correct: "None (single prehospital dose)",
+        distractors: [
+          "Every 5 minutes until SBP > 100 mmHg",
+          "Repeat 1 g every 15 minutes × 3",
+          "Every 10 minutes as needed"
+        ]
+      },
+      max: {
+        correct: "1 g",
+        distractors: [
+          "3 g prehospital total",
+          "10 g total",
+          "100 mg total"
+        ]
+      },
+      contra: {
+        correct: "Injury occurred > 3 hours ago, age < 15 years (pediatric), isolated head injury, or active thromboembolic event",
+        distractors: [
+          "Hemorrhagic shock within 1 hour of penetrating torso trauma",
+          "Severe postpartum hemorrhage within 3 hours of delivery",
+          "Tachycardia > 120 bpm with SBP < 90 mmHg from trauma"
+        ]
+      }
+    },
+    calcium: {
+      name: "Calcium Chloride",
+      shortName: "calcium chloride",
+      ref: "MCG 1317.9 · TP 1210 / TP 1241",
+      defaultDose: { v: 1, u: "g" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "1 g (10 mL of 10%) slow IV/IO push",
+        distractors: [
+          "50 mEq (50 mL) rapid IV push",
+          "100 mg IM injection",
+          "4 g IV infusion over 20 minutes"
+        ]
+      },
+      repeat: {
+        correct: "Single dose (or repeat per Base order)",
+        distractors: [
+          "Every 1 minute continuously",
+          "Every 20 minutes × 4",
+          "Mix in same line with sodium bicarbonate without flushing"
+        ]
+      },
+      max: {
+        correct: "1 g prior to Base contact",
+        distractors: [
+          "10 g initial push",
+          "50 mg maximum",
+          "100 mg maximum"
+        ]
+      },
+      contra: {
+        correct: "Hypercalcemia, ventricular fibrillation (unless hyperkalemia suspected), digoxin toxicity",
+        distractors: [
+          "Suspected hyperkalemic cardiac arrest (ESRD / missed dialysis / peaked T waves)",
+          "Calcium channel blocker overdose with hypotension and bradycardia",
+          "Crush injury syndrome with wide QRS"
+        ]
+      }
+    },
+    bicarb: {
+      name: "Sodium Bicarbonate",
+      shortName: "sodium bicarbonate",
+      ref: "MCG 1317.37 · TP 1210 / TP 1241",
+      defaultDose: { v: 50, u: "mEq" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "50 mEq (50 mL of 8.4%) slow IV/IO push",
+        distractors: [
+          "1 g (10 mL) IM injection",
+          "500 mEq rapid IV infusion",
+          "5 mEq SL"
+        ]
+      },
+      repeat: {
+        correct: "Every 5–10 minutes as needed for QRS > 0.12 sec in TCA overdose / per Base",
+        distractors: [
+          "Every 30 seconds during CPR",
+          "Every 20 minutes IM",
+          "Continuous nebulization"
+        ]
+      },
+      max: {
+        correct: "50 mEq (or titrated to QRS narrowing per Base)",
+        distractors: [
+          "5 mEq maximum",
+          "500 mEq single bolus",
+          "1 g maximum"
+        ]
+      },
+      contra: {
+        correct: "Metabolic or respiratory alkalosis, hypocalcemia, severe pulmonary edema",
+        distractors: [
+          "Tricyclic antidepressant (TCA) overdose with QRS > 0.12 sec and hypotension",
+          "Suspected hyperkalemic cardiac arrest or crush syndrome",
+          "Severe metabolic acidosis per Base order"
+        ]
+      }
+    },
+    magnesium: {
+      name: "Magnesium Sulfate",
+      shortName: "magnesium sulfate",
+      ref: "MCG 1317.24 / 1317.25 · TP 1217 / TP 1210 / TP 1213 / TP 1237",
+      defaultDose: { v: 4, u: "g" },
+      defaultRoute: "IV",
+      dose: {
+        correct: "4 g IV/IO slow push/infusion for eclampsia (or 2 g IV/IO for Torsades / severe asthma)",
+        distractors: [
+          "10 mg IM single injection",
+          "300 mg rapid IV push",
+          "50 mEq IV push"
+        ]
+      },
+      repeat: {
+        correct: "None (single dose prior to Base contact)",
+        distractors: [
+          "Every 2 minutes up to 5 doses",
+          "Every 5 minutes until reflexes return",
+          "Repeat 4 g every 5 minutes"
+        ]
+      },
+      max: {
+        correct: "4 g (eclampsia) / 2 g (Torsades/asthma)",
+        distractors: [
+          "20 g IV push",
+          "100 mg total",
+          "12 mg total"
+        ]
+      },
+      contra: {
+        correct: "Heart block, severe renal failure, hypotension (for asthma/Torsades)",
+        distractors: [
+          "Eclamptic seizure in third-trimester pregnancy or postpartum",
+          "Polymorphic VT (Torsades de Pointes) with prolonged QT",
+          "Severe status asthmaticus refractory to albuterol and epinephrine"
+        ]
+      }
+    }
+  };
+
+  const PERMS = [
+    [1, 2, 3, 0],
+    [2, 3, 0, 1],
+    [3, 0, 1, 2],
+    [1, 3, 2, 0],
+    [2, 0, 3, 1],
+    [3, 2, 1, 0],
+    [1, 0, 3, 2],
+    [2, 3, 1, 0],
+    [3, 1, 0, 2],
+    [0, 2, 3, 1],
+    [0, 3, 1, 2],
+    [0, 1, 3, 2]
+  ];
+
+  function hashStr(s) {
+    let h = 2166136261 >>> 0;
+    const str = String(s || "");
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  function quizKeyFor(id, sc, st, tx) {
+    if (!id) return null;
+    if (id === "epi_im") return "epi_im";
+    if (id === "epi_arrest") return "epi_arrest";
+    if (id === "alb_nrb" || id === "alb_cpap") return "albuterol";
+    if (id === "adenosine12") return "adenosine";
+    if (id === "dextrose") return "d10";
+    if (id === "glucose") return "oralglucose";
+    if (id === "midazolam") return "midaz";
+    if (id === "mag") return "magnesium";
+    if (id === "epi") {
+      const isArrest = !!(st && st.x && st.x.arrest) || (tx && (tx.route === "IV" || tx.route === "IO"));
+      return isArrest ? "epi_arrest" : "epi_im";
+    }
+    return MED_QUIZ[id] ? id : null;
+  }
+
+  function defaultTxFor(id, sc, st) {
+    const key = quizKeyFor(id, sc, st);
+    const q = key && MED_QUIZ[key];
+    if (!q) return null;
+    let dose = q.defaultDose ? { ...q.defaultDose } : null;
+    let route = q.defaultRoute || null;
+    if (id === "amio" && st && st.count && st.count.amio >= 1) dose = { v: 150, u: "mg" };
+    if (id === "adenosine" && st && st.count && st.count.adenosine >= 1) dose = { v: 12, u: "mg" };
+    if (id === "atropine" && sc && sc.id === "organophos") dose = { v: 2, u: "mg" };
+    if (id === "midaz") {
+      if (sc && sc.id === "agitation") { dose = { v: 5, u: "mg" }; route = "IM"; }
+      else if (st && st.x && st.x.dv && (st.x.dv.pacerOn || st.x.dv.sync)) { dose = { v: 2, u: "mg" }; route = "IV"; }
+      else if (st && st.flags && st.flags.iv) { dose = { v: 5, u: "mg" }; route = "IV"; }
+    }
+    if (id === "magnesium" && !(sc && (sc.id === "eclampsia" || sc.protocol === "1217" || sc.tag === "OB"))) {
+      dose = { v: 2, u: "g" };
+    }
+    return { dose, route };
+  }
+
+  const Q_META = [
+    { k: "dose", label: "Dose & Route", shortLabel: "Dose", prompt: "Select the correct dose and route" },
+    { k: "repeat", label: "Repeat Time / Interval", shortLabel: "Repeat time", prompt: "Select the repeat interval" },
+    { k: "max", label: "Max Dose", shortLabel: "Max dose", prompt: "Select the maximum dose" },
+    { k: "contra", label: "Contraindications", shortLabel: "Contraindications", prompt: "Select the contraindications" }
+  ];
+
+  function getQuiz(id, sc, st, tx) {
+    const key = quizKeyFor(id, sc, st, tx);
+    if (!key || !MED_QUIZ[key]) return null;
+    const entry = MED_QUIZ[key];
+    const seed = hashStr(key + ":" + ((sc && sc.id) || "std"));
+    const perm = PERMS[seed % PERMS.length];
+    const peds = isPeds(sc);
+    const brosColor = (st && st.x && st.x.bros && st.x.bros.color) || null;
+    const questions = Q_META.map((m, idx) => {
+      const src = entry[m.k];
+      const correctIdx = perm[idx];
+      const dist = src.distractors.slice();
+      // Deterministic rotation of distractors
+      const rot = (seed + idx * 7) % dist.length;
+      const rotatedDist = dist.slice(rot).concat(dist.slice(0, rot));
+      const options = [];
+      let di = 0;
+      for (let slot = 0; slot < 4; slot++) {
+        if (slot === correctIdx) options.push(src.correct);
+        else options.push(rotatedDist[di++]);
+      }
+      return {
+        id: m.k,
+        k: m.k,
+        label: m.label,
+        shortLabel: m.shortLabel,
+        prompt: m.prompt,
+        options,
+        correctIndex: correctIdx,
+        correctText: src.correct,
+        autoPeds: peds && m.k === "dose",
+        pedsNote: brosColor ? `${brosColor} zone` : "MCG 1309 color code"
+      };
+    });
+    return {
+      key,
+      quizKey: key,
+      id: id === "epi_im" || id === "epi_arrest" ? "epi" : id,
+      name: entry.name,
+      shortName: entry.shortName,
+      ref: entry.ref,
+      peds,
+      brosColor,
+      questions
+    };
+  }
+
+  function gradeQuiz(idOrKey, answers, sc, st, quizObj) {
+    const quiz = quizObj || getQuiz(idOrKey, sc, st);
+    if (!quiz) return null;
+    const ans = answers || {};
+    const peds = isPeds(sc);
+    const res = {
+      key: quiz.key,
+      quizKey: quiz.key,
+      id: quiz.id,
+      name: quiz.name,
+      ref: quiz.ref,
+      t: st ? st.t : 0,
+      peds,
+      picked: {},
+      expected: {},
+      missed: []
+    };
+    quiz.questions.forEach(q => {
+      const rawPick = ans[q.k];
+      let pickedText = null;
+      let ok = false;
+      if (typeof rawPick === "number" && q.options[rawPick] != null) {
+        pickedText = q.options[rawPick];
+        ok = rawPick === q.correctIndex;
+      } else if (typeof rawPick === "string") {
+        pickedText = rawPick;
+        ok = rawPick.trim() === q.correctText.trim();
+      }
+      if (peds && q.k === "dose") {
+        // [t80u]: Pediatric patients always receive the correct dose
+        ok = true;
+        if (!pickedText) pickedText = "MCG 1309 color-code dose (" + (quiz.brosColor || "Broselow") + ")";
+      }
+      const okField = q.k + "Ok";
+      res[okField] = ok;
+      res.picked[q.k] = pickedText || "none";
+      res.expected[q.k] = q.correctText;
+      if (!ok) {
+        res.missed.push({
+          k: q.k,
+          label: q.shortLabel,
+          picked: pickedText || "none",
+          expected: q.correctText
+        });
+      }
+    });
+    res.score = [res.doseOk, res.repeatOk, res.maxOk, res.contraOk].filter(Boolean).length;
+    res.total = 4;
+    res.allOk = res.score === 4;
+    if (st) {
+      st.medQuiz = st.medQuiz || {};
+      st.x = st.x || {};
+      st.x.medQuiz = st.x.medQuiz || {};
+      st.x.medQuizDone = st.x.medQuizDone || {};
+      if (!st.x.medQuiz[quiz.key]) {
+        st.x.medQuiz[quiz.key] = res;
+        st.medQuiz[quiz.key] = res;
+      }
+      st.x.medQuizDone[quiz.key] = true;
+      if (res.missed.length && Array.isArray(st.devs)) {
+        res.missed.forEach(m => {
+          st.devs.push({
+            t: st.t,
+            level: "caution",
+            text: `${quiz.name} pre-administration check (${m.label}): you selected "${m.picked}"; LA County ${quiz.ref} is "${m.expected}".`,
+            ref: quiz.ref
+          });
+        });
+      }
+    }
+    return res;
+  }
+
+
   // returns [{text, ref, level}] for the sim's dev() and records a med-log row
   function check(id, tx, sc, st, ctx) {
     const d = T[id]; if (!d) return [];
@@ -1131,7 +2293,7 @@ const DOSING = (() => {
     if (id === "morphine" && st.v.sbp != null && st.v.sbp < 90) { /* sim already flags opioid + hypotension */ }
     return out;
   }
-  return { TABLE: T, check, isPeds, conv };
+  return { TABLE: T, MED_QUIZ, quizKeyFor, defaultTxFor, getQuiz, gradeQuiz, check, isPeds, conv };
 })();
 if (typeof module !== "undefined") module.exports = DOSING;
 
@@ -1498,14 +2660,14 @@ const RADIO = (() => {
     RDOT: /short(ness)? of breath|respiratory distress|difficulty breathing|\bpe\b|pulmonary embol|sob\b/, HYPO: /hypoglyc|low (blood )?(sugar|glucose)|diabetic/, HYPR: /hyperglyc|dka|high (blood )?(sugar|glucose)|diabetic/,
     ODPO: /overdose|\bod\b|opioid|ingestion|poison|fentanyl|heroin/, STRK: /stroke|cva|tia|weakness|facial droop|slurred|aphasi|neuro deficit/, SEAC: /seiz/, SEPI: /seiz|postictal/, DYRX: /dystoni|torticollis|oculogyric|neck spasm|tongue protru|reglan|haldol|compazine|metoclopramide|haloperidol|prochlorperazine/,
     CANT: /arrest|code|pulseless|v ?fib|cpr|rosc/, DYSR: /brady|tachy|dysrhythm|arrhythm|svt|heart block|a ?fib|palpitat|v ?tach|pacemaker|pacer|dizz|weak|polymorph|torsade|wide ?complex|wpw|pre ?excit/, SYNC: /syncop|passed out|faint|lost consciousness|syncopal/,
-    SEPS: /seps|septic|fever|infection|uti|pneumonia/, FEVR: /fever|flu|febrile/, ETOH: /intox|etoh|alcohol|drunk/,
+    SEPS: /seps|septic|fever|tactile|infection|uti|pneumonia|pyelo|cellulitis|flank/, FEVR: /fever|flu|febrile/, ETOH: /intox|etoh|alcohol|drunk/,
     PREG: /pregnan|eclamp|preeclamp|seiz|bleed|hemorrhag|pph|post ?partum|weeks/, BRTH: /labor|deliver|crown|birth|pregnan|contraction/, LABR: /labor|contraction|pregnan/, BABY: /newborn|baby|neonat/,
   };
   const FIND = {
     CPMI: /12 ?lead|stemi|st elevation|posterior|v ?[789]|v ?4 ?r/, CPSC: /12 ?lead|no stemi|st |v ?[789]/, STRK: /lams|last (known|seen) well|lkw|facial|grip|drift|speech/, HYPO: /(sugar|glucose|bgl|dex|d stick)\b/, HYPR: /(sugar|glucose|bgl)\b/,
     CANT: /rhythm|v ?fib|asystole|pea|shock|rosc|cpr/, ANPH: /hives|wheez|swell|stridor|angioedema/, ALRX: /hives|rash|itch|wheez/, DYRX: /torticollis|oculogyric|spasm|tongue|jaw|airway|new med|reglan|haldol|compazine|neuro|a ?& ?o|alert/, SOBB: /wheez|lung sounds|breath sounds|tripod|accessory/, CHFF: /rales|crackles|lung sounds|edema|jvd/,
     RDOT: /lung sounds|clear|tachy|leg|swelling|birth control|travel/, DYSR: /rhythm|brady|tachy|block|a ?fib|svt|v ?tach|paced|12 ?lead|polymorph|torsade|\bqt\b|delta wave|wpw/, ODPO: /pupil|pinpoint|resp|breathing|capno|etco2/, SEAC: /seiz|postictal|tongue|incontin/, SEPI: /seiz|postictal|etoh|alcohol/,
-    SYNC: /orthostat|glucose|sugar|12 ?lead|rhythm|lacer|head/, SEPS: /temp|fever|sugar|glucose|lung|uri|etco2|capno/, FEVR: /temp|fever/, ETOH: /glucose|sugar|alcohol|etoh/, PREG: /blood pressure|bp|fundus|blood loss|ebl|headache|vision|weeks|reflex/, BRTH: /crown|contraction|weeks|ruptur|water|apgar|gravida|g ?\d|newborn/, LABR: /contraction|weeks|ruptur|water/,
+    SYNC: /orthostat|glucose|sugar|12 ?lead|rhythm|lacer|head/, SEPS: /temp|fever|tactile|tachy|hot|flushed|sugar|glucose|lung|uri|flank|etco2|capno/, FEVR: /temp|fever/, ETOH: /glucose|sugar|alcohol|etoh/, PREG: /blood pressure|bp|fundus|blood loss|ebl|headache|vision|weeks|reflex/, BRTH: /crown|contraction|weeks|ruptur|water|apgar|gravida|g ?\d|newborn/, LABR: /contraction|weeks|ruptur|water/,
   };
   const TX = { aspirin: /aspirin|asa\b/, nitro: /nitro|ntg/, fentanyl: /fentanyl/, morphine: /morphine/, ketorolac: /ketorolac|toradol/, ondansetron: /zofran|ondansetron/, epi: /\bepi|epinephrine|adrenaline/, pushepi: /push ?dose|epi/,
     albuterol: /albuterol|neb|breathing treatment/, cpap: /cpap/, naloxone: /narcan|naloxone/, d10: /d ?10|dextrose/, oralglucose: /oral glucose|glucose (gel|paste)/, glucagon: /glucagon/, midaz: /versed|midazolam|midaz/,
@@ -1577,7 +2739,7 @@ const DEBRIEF = (() => {
     const cues = (st.log || []).filter(l => l.kind === "find" && /^Reassess: /.test(l.text)).map(l => ({ t: l.t, text: l.text.replace(/^Reassess: /, ""), worse: /worse/.test(l.text) }));
     return { tl, onTime: tl.filter(r => r.status === "ontime").length, nT: tl.length, late: tl.filter(r => r.status === "late").length, missed: tl.filter(r => r.status === "missed").length,
       interp: { first: firstTry(ip), log: ip },
-      radio: rep, meds, medErr: meds.filter(m => !m.ok).length, cues, curveball: typeof COURSE !== "undefined" ? COURSE.summary(st) : null, dest: typeof SIM !== "undefined" && SIM.destGrade ? SIM.destGrade(sc, st) : null, score, piOk };
+      radio: rep, meds, medErr: meds.filter(m => !m.ok).length, cues, curveball: typeof COURSE !== "undefined" ? COURSE.summary(st) : null, dest: typeof SIM !== "undefined" && SIM.destGrade ? SIM.destGrade(sc, st) : null, medQuiz: Object.values((st && st.medQuiz) || (st && st.x && st.x.medQuiz) || {}), score, piOk };
   }
   function firstTry(ip) { // per read prompt: right on first try?
     let ok = 0, n = 0, prevOk = true; ip.forEach((x, i) => { if (prevOk) { n++; if (x.ok) ok++; } prevOk = x.ok; }); return { ok, n };
@@ -2051,11 +3213,11 @@ const NLU = (() => {
     ["rr", /resp(iratory)? rate|respirations|breathing rate|count (his|her|their|your|the) (breaths|respirations)|\brr\b|breaths per minute|count (his |her |their |the )?(resps?|breaths|breathing)|\bresps\b|how fast (is|are) (he|she|they|the patient|him|her) breathing|how (fast|quickly|many times) (is|does) (he|she|the patient) breath|rate of (breathing|respirations)/],
     ["recheck", /\brecheck (the |his |her |a set of |another set of )?(vitals|vital signs)|(vitals|vital signs|bp) every \d+|repeat (vitals|vital signs) every|vitals q ?\d+|(trend|keep (getting|checking|taking)) (the |his |her )?vitals/],
     ["etco2", /etco2|end tidal|capnography|\bco2\b/],
-    ["temp", /\btemp\b|temperature|thermometer/],
+    ["temp", /\btemp\b|temperature|thermometer|\bfebrile\b|(check|take|get) (a |his |her |the )?fever\b/],
     ["bgl", /blood (sugar|glucose)|\bsugar\b|\bbgl\b|\bcbg\b|\bbg\b|glucometer|accu ?chek|finger ?stick|dextro ?stick|(a|the|her|his) glucose\b(?! (gel|paste|tab))|glucose (level|check)|check (a |her |his |the )?glucose/],
     ["gcs", /\bgcs\b|glasgow|mental status|level of consciousness|\bloc\b|(eye|verbal|motor) (score|response)|eye opening/],
     ["pupils", /pupil|penlight|\bperrl|reactive to light/],
-    ["skin", /\bskin\b(?! (rash|hives))|(feel|feeling|touch|touching|check|checking|palpate|palpating|hand on) (his|her|their|the|your) (forehead|skin)|\bforehead\b|hand on (his|her|their) forehead|\bis (he|she|the patient) (clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)\b|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
+    ["skin", /\bskin\b(?! (rash|hives))|(feel|feeling|touch|touching|check|checking|palpate|palpating|hand on) (his|her|their|the|your) (forehead|skin)|\bforehead\b|hand on (his|her|their) forehead|tactile (fever|temp\w*)|(feel|feeling|check|checking|palpate|palpating|touch|touching) (for )?(a )?(tactile )?fever|\b(is|does) (he|she|the patient|his skin|her skin|his forehead|her forehead) (feel )?(warm|hot|cool|cold|febrile|clammy|sweaty|pale|diaphoretic|cyanotic|flushed|mottled)( to the touch)?\b|(warm|hot|cool|cold) to the touch|skin signs|\bpale\b|cyanos|cyanot|diaphoretic|\bcolou?r\b/],
     ["caprefill", /\bcap(illary)? ?refill|capillary/],
     ["corneal", /\bcorneals?\b|\bcornea|blink reflex|(touch|touching|brush) (the|his|her|their) (eye|eyelashes|lashes)/],
     ["gag", /\bgag(ging)? ?(reflex)?\b(?!s)|\bgag\b/],
@@ -2515,7 +3677,8 @@ const NLU = (() => {
       if (has("incont")) out.questions = out.questions.filter(x => x !== "urinary");
       if (has("medbottles")) { out.questions = out.questions.filter(x => x !== "meds"); drop("scene"); }
       if (has("pulse")) out.questions = out.questions.filter(x => x !== "quality");
-      if (has("skin")) { out.questions = out.questions.filter(x => x !== "sweaty" && x !== "weakness"); if (/color|moisture/.test(t)) drop("temp"); }
+      if (has("skin")) { out.questions = out.questions.filter(x => x !== "sweaty" && x !== "weakness"); if (/color|moisture/.test(t)) drop("temp"); if (!/\b(you|your|have you|had a)\b/.test(t) || /tactile|forehead|to the touch/.test(t)) out.questions = out.questions.filter(x => x !== "fever"); }
+      if (has("temp") && (!/\b(you|your|have you|had a)\b/.test(t) || /\bfebrile\b|check (a |his |her |the )?fever/.test(t))) out.questions = out.questions.filter(x => x !== "fever");
       if (has("cms")) drop("extrem", "pulsecheck");
       if (has("preg")) out.questions = out.questions.filter(x => x !== "pregnant");
       if (has("painresp")) out.questions = out.questions.filter(x => x !== "chestpain" && x !== "severity");
@@ -2978,9 +4141,10 @@ const SIM = (() => {
     st.x.m0 = mental(); st.x.v0 = Object.assign({}, st.v); st.x.aw0 = String(st.tg.airway || "");
     lastInteraction = 0; lastAmbient = 0;
     log("sys", `Scenario started: ${sc.dispatchTitle || sc.title}`);
-    timer = setInterval(() => tick(1), 1000);
+    quizPaused = false;
+    timer = setInterval(() => { if (!quizPaused) tick(1); }, 1000);
   }
-  function stop() { if (timer) clearInterval(timer); timer = null; }
+  function stop() { quizPaused = false; if (timer) clearInterval(timer); timer = null; }
   function addEffect(k, onsetOverride) { const d = EFFECTS[k]; if (!d) return; const w = k === "albuterol" && st.x.albW != null ? st.x.albW : k === "midaz" && st.x.midazW != null ? st.x.midazW : 1; st.eff.push({ k, t0: st.t, onset: onsetOverride || d[0], dur: d[1], w }); }
   /* v2.10.5 SEIZURE AIRWAY (TP 1231 #1-2, MCG 1302, MCG 1317.25 adverse effects). Actively seizing = hypoxic (high 70s-80s).
    * Postictal / after midazolam the SpO2 stays low (snoring, secretions, hypoventilation) until the airway is managed:
@@ -3097,7 +4261,7 @@ const SIM = (() => {
     v.spo2 = v.spo2 == null ? null : clamp(v.spo2, 40, 100);
   }
   function tick(dt) {
-    if (!st || st.ended) return;
+    if (!st || st.ended || quizPaused) return;
     st.t += dt;
     if (sc.drift) st.sev = clamp(st.sev + (sc.drift(st) || 0) * dt / 60, 0, 1);
     if (sc.tickExtra) sc.tickExtra(st, dt, H);
@@ -3275,7 +4439,7 @@ const SIM = (() => {
     { id: "O", label: "Opiates / Overdose / O₂ (hypoxia)", keys: ["a:pupils", "a:spo2", "a:medbottles", "a:patches", "a:tracks", "t:naloxone"], rx: /opiat|opioid|overdos|pinpoint|narcan|naloxone|hypox|oxygen sat|\bpulse ox\b|\bsp ?o2\b|took too many|pills/ },
     { id: "U", label: "Uremia / Underdose (missed meds)", keys: [], rx: /dialysis|kidney|renal|uremi|miss(ed)? (any |a |his |her |your )?(dose|doses|meds|medications|pills)|stopped taking|underdose|taking (his|her|your) (meds|medications) (as prescribed|like)|compliant/ },
     { id: "T", label: "Trauma / Temperature", keys: ["a:trauma", "a:head", "a:temp", "a:back"], rx: /trauma|head injury|hit (his|her|your) head|\bfell\b|\bfall\b|temperature|hypotherm|hypertherm|heat stroke|too hot|too cold/ },
-    { id: "I2", label: "Infection", keys: ["a:temp", "q:fever"], rx: /infect|fever|sepsis|septic|\buti\b|pneumonia|been sick|chills/ },
+    { id: "I2", label: "Infection", keys: ["a:temp", "a:tactile_fever", "q:fever"], rx: /infect|fever|tactile fever|sepsis|septic|\buti\b|pneumonia|pyelo|cellulitis|been sick|chills/ },
     { id: "P", label: "Psych / Poisoning", keys: ["a:medbottles", "q:drugs"], rx: /psych|depress|suicid|poison|ingest|swallow(ed)? (anything|something)|carbon monoxide|\bco detector|chemical|exposure|bipolar|schizo/ },
     { id: "S", label: "Stroke / Shock / Seizure", keys: ["a:neuro", "a:speech", "q:lkw", "a:bp"], rx: /stroke|\blams\b|lapss|facial droop|last (known|seen) (well|normal)|\bshock\b|seizure|seizing|postictal/ },
   ];
@@ -3508,11 +4672,16 @@ const SIM = (() => {
         out.push(tg.pulse === false || arrest ? (ipKnown() ? `Pulse check: NO PULSE. Monitor shows ${tg.rhythmName}.` : "Pulse check: NO PULSE. What's the rhythm on the monitor?") : `Pulse check: carotid pulse present, rate ~${Math.round(st.v.hr)}.`); rec("a:monitor"); st.rev.monitor = st.rev.monitor || { t: st.t }; break;
       case "rr": R("rr", Math.round(st.v.rr)); out.push(`Respiratory rate ${Math.round(st.v.rr)}/min${st.v.rr < 10 ? ", shallow" : st.v.rr > 24 ? ", labored" : ""}.`); break;
       case "etco2": st.rev.etco2 = { t: st.t }; out.push(`Capnography applied: EtCO2 ${Math.round(st.v.etco2)} mmHg${tg.capno === "shark" ? ", shark-fin waveform" : ""}.`); break;
-      case "temp": R("temp", st.v.temp.toFixed(1) + "°F"); out.push(`Temp ${st.v.temp.toFixed(1)}°F.`); break;
+      case "temp": R("temp", st.v.temp.toFixed(1) + "°F"); if (st.v && st.v.temp >= 100.4) rec("a:tactile_fever"); out.push(`Temp ${st.v.temp.toFixed(1)}°F.`); break;
       case "bgl": { const bt = tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); R("bgl", bt); out.push(`Blood glucose ${bt}.`); } break;
       case "gcs": R("gcs", gcsStr()); out.push(`GCS ${gcsStr()}: ${gcsDetail()}. Mental status: ${mental()}.`); break;
       case "pupils": R("pupils", tg.pupils); out.push(X("pupils")); break;
-      case "skin": R("skin", tg.skin); out.push(X("skin")); break;
+      case "skin": {
+        const sk = (st.v && st.v.temp >= 100.4 && !/tactile fever/i.test(tg.skin || "")) ? `${tg.skin} (tactile fever)` : tg.skin;
+        R("skin", sk);
+        if ((st.v && st.v.temp >= 100.4) || /tactile fever|\bhot\b/i.test(tg.skin || "")) rec("a:tactile_fever");
+        out.push(X("skin")); break;
+      }
       case "lungs": R("lungs", tg.lungs); if (typeof LUNGS !== "undefined") st.x.lastLungs = LUNGS.classify(sc, st, lastText); out.push(X("lungs")); break;
       case "neuro": {
         const t = lastText, full = /lams|mlapss|lapss|stroke (scale|screen|assessment|exam)|\bstroke\b(?! (alert|center))|cincinnati|be ?fast|neuro|fast exam/.test(t);
@@ -3590,6 +4759,17 @@ const SIM = (() => {
   }
   function treat(tx) {
     tx = epiRoute(tx);
+    if (typeof DOSING !== "undefined" && DOSING.quizKeyFor && st && st.x && st.x.medQuizDone) {
+      const qk = DOSING.quizKeyFor(tx.id, sc, st, tx);
+      if (qk && st.x.medQuizDone[qk]) {
+        const def = DOSING.defaultTxFor(qk, sc, st);
+        if (def) {
+          if ((!tx.doses || !tx.doses.length) && def.dose) tx = Object.assign({}, tx, { doses: [def.dose] });
+          if (!tx.route && def.route) tx = Object.assign({}, tx, { route: def.route });
+          if (tx.id === "diphen" && sc && sc.id === "dystonia" && !tx.deep) tx = Object.assign({}, tx, { deep: true, route: tx.route || "IM" });
+        }
+      }
+    }
     const id = tx.id, out = [], notes = [], m = mental(), alert = ["alert", "anxious", "aphasic"].includes(m);
     const sbp = st.v.sbp, bpKnown = st.rev.bp && st.t - st.rev.bp.t < 300;
     let narr = TX_LABEL[id] || id;
@@ -3697,7 +4877,7 @@ const SIM = (() => {
           st.v.dbp = Math.max(Math.round((st.v.dbp || 48) + 10), 60);
           R("bp", `${st.v.sbp}/${st.v.dbp}`);
           narr = `Normal saline rapid infusion in altered trauma patient with internal bleeding: resuscitating to keep systolic BP > 90 mmHg (BP now ${st.v.sbp}/${st.v.dbp})`;
-        } else if (sbp >= 100 && !st.x.arrest && !["hypo"].includes(sc.base)) notes.push(dev("NS 1 L rapid infusion is indicated for poor perfusion. Is this patient poorly perfused?", "MCG 1355", "note"));
+        } else if (sbp >= 100 && !st.x.arrest && !["hypo", "seps", "dka"].includes(sc.base) && sc.id !== "orthostatic") notes.push(dev("NS 1 L rapid infusion is indicated for poor perfusion. Is this patient poorly perfused?", "MCG 1355", "note"));
         else narr = "Normal saline 1 L IV rapid infusion (reassess every 250 mL)" + (st.x.ivPrep && !st.x.ivPrep.bag ? ", running from the bag your partner already spiked and primed" : "");
         if (st.x.ivPrep) st.x.ivPrep.bag = st.t;
         break; }
@@ -4449,6 +5629,37 @@ const SIM = (() => {
       triageOk,
     };
   }
+  function setQuizPaused(v) { quizPaused = !!v; return quizPaused; }
+  function isQuizPaused() { return !!quizPaused; }
+  function getMedQuiz(code, scArg, stArg, tx) {
+    if (typeof DOSING === "undefined" || !DOSING.getQuiz) return null;
+    return DOSING.getQuiz(code, scArg || sc, stArg || st, tx);
+  }
+  function gradeMedQuiz(code, answers, scArg, stArg, quizObj) {
+    if (typeof DOSING === "undefined" || !DOSING.gradeQuiz) return null;
+    return DOSING.gradeQuiz(code, answers, scArg || sc, stArg || st, quizObj);
+  }
+  function pendingMedQuiz(text) {
+    if (!st || st.ended || !text || typeof DOSING === "undefined" || !DOSING.getQuiz) return null;
+    const t = String(text).trim();
+    if (!t) return null;
+    if (st.x && st.x.radio && st.x.radio.open && !/^(hang up|clear|off radio|close radio|end report|done with report|never ?mind)\b/i.test(t)) return null;
+    if (/\b(base\b[^.]{0,30}\bthis is|this is medic|medic\s*\d+\b[^.]{0,20}\bbase|ready to give (you )?report|giving (you )?report|handoff report)\b/i.test(t)) return null;
+    const parsed = NLU.parseUtterance(t);
+    if (!parsed || !parsed.tx || !parsed.tx.length) return null;
+    if (parsed.held && parsed.held.length && !parsed.tx.length) return null;
+    const pExplicit = !!(parsed.partner && parsed.partner.explicit);
+    for (let rawTx of parsed.tx) {
+      if (!rawTx || rawTx.neg) continue;
+      const tx = epiRoute(Object.assign({}, rawTx, { raw: parsed.norm || t }));
+      if (pExplicit && !(NLU.PARTNER_T && NLU.PARTNER_T.has(tx.id))) continue;
+      const key = DOSING.quizKeyFor(tx.id, sc, st, tx);
+      if (!key) continue;
+      if (st.x && st.x.medQuizDone && st.x.medQuizDone[key]) continue;
+      return DOSING.getQuiz(tx.id, sc, st, tx);
+    }
+    return null;
+  }
   function setPI(code) { st.pi = code; st.piT = st.t; log("pi", `Provider Impression selected: ${code} – ${(PROVIDER_IMPRESSIONS[code] || [code])[0]}`); }
   function end() {
     if (sc && sc.internalBleed && isAO4() && st.flags.iv && !st.count.ns && (st.v.sbp || 0) >= 70 && !st.events["t:permhypo"]) {
@@ -4460,7 +5671,7 @@ const SIM = (() => {
     st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() };
   }
 
-  return { start, stop, handle, end, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
+  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -4665,6 +5876,7 @@ const EXAM = (() => {
     bb_od: { medbottles: "An empty propranolol 40 mg bottle (about 25 tablets missing)." },
     urosepsis: { smell: "Strong odor of urine.", incont: "Indwelling urinary catheter with cloudy, dark urine.", mucous: "Dry, tacky mucous membranes." },
     pna_sepsis: { mucous: "Dry mucous membranes." },
+    sepsis_alert: { mucous: "Dry mucous membranes.", back: "Right costovertebral angle (CVA) tenderness on palpation of the right flank; no spinal step-off or rash.", medbottles: "A bottle of nitrofurantoin (Macrobid) prescribed 3 days ago is on the coffee table." },
     fever_flu: { hives: "No rash, no petechiae.", mucous: "Slightly dry mucous membranes." },
     orthostatic: { smell: "Odor of diarrhea in the bathroom." },
     mobitz2: { head: st => st.tg.trauma },
@@ -4712,7 +5924,13 @@ const EXAM = (() => {
       return ["alert", "anxious"].includes(m) ? "Gag reflex is intact. The patient is talking and swallowing secretions." : "Gag reflex is intact; the patient is swallowing secretions.";
     },
     pupils(x) { const p = x.tg.pupils || "PERRL, 4 mm"; return "Pupils: " + p.replace(/\bPERRL\b/, "equal, round and reactive to light (PERRL)") + "."; },
-    skin(x) { return "Skin: " + cap(x.tg.skin || (x.shock ? "pale, cool and diaphoretic" : "pink, warm and dry")) + "."; },
+    skin(x) {
+      const raw = x.tg.skin || (x.shock ? "pale, cool and diaphoretic" : "pink, warm and dry");
+      const tf = (x.v && x.v.temp >= 100.4) || /\bhot\b|tactile fever/i.test(raw)
+        ? (!/tactile fever/i.test(raw) ? " (tactile fever — forehead hot to the touch)" : (!/forehead/i.test(raw) ? " — forehead hot to the touch" : ""))
+        : "";
+      return "Skin: " + cap(raw) + tf + ".";
+    },
     mucous(x) {
       const { v, c, tg } = x;
       if (/dry mucous/i.test(tg.skin || "")) return "Mucous membranes are dry and tacky.";
@@ -5834,6 +7052,7 @@ const INSPECT = (() => {
     syncope_lac: { mouth: "No tongue bite; teeth intact; no blood in the mouth." },
     urosepsis: { mouth: "Dry, cracked lips and dry, tacky mucous membranes; dentures are out (on the nightstand).", abdomen: "An indwelling urinary catheter draining cloudy, dark urine. No surgical scars.", back: "A dressing over the sacrum; underneath, a shallow stage 2 pressure ulcer with surrounding redness." },
     pna_sepsis: { mouth: "Dry mucous membranes; rust-colored sputum in the mouth." },
+    sepsis_alert: { mouth: "Dry mucous membranes; tongue intact, no swelling.", abdomen: "Soft, mild right-sided/suprapubic tenderness without rebound or guarding; no rash.", back: "Right flank (costovertebral angle) tenderness to palpation; skin hot and flushed, no rash or step-off." },
     fever_flu: { mouth: "Red pharynx; slightly dry mucous membranes; no tonsillar swelling.", chest: "No rash or petechiae." },
   };
 
@@ -8279,7 +9498,7 @@ addS(G({
     lkw: "At her baseline yesterday at dinner, around 5.", onset: "Yesterday evening.", lastoral: "Barely touched dinner.", events: "Nothing new. No falls.",
   },
   checklist: [
-    { label: "Temperature", keys: ["a:temp"], ref: "1204 #3", critical: true },
+    { label: "Temperature / tactile fever", keys: ["a:temp", "a:tactile_fever", "a:skin"], ref: "1204 #3, #6", critical: true },
     { label: "Capnography (EtCO2 ≤ 25 supports sepsis)", keys: ["a:etco2"], ref: "1204 #4", critical: true },
     { label: "Blood glucose (ALOC)", keys: ["a:bgl"], ref: "1229 / 1204" },
     { label: "Neuro exam (rule out stroke)", keys: ["a:neuro"], ref: "1229" },
@@ -8314,7 +9533,7 @@ addS(G({
   },
   bystanderAnswers: { cc: "He's had a cough and fever since Saturday and today he can barely breathe. He's been sweating through his shirts.", history: "Diabetes, blood pressure, smokes a pack a day." },
   checklist: [
-    { label: "Temperature", keys: ["a:temp"], ref: "1204 #3", critical: true },
+    { label: "Temperature / tactile fever", keys: ["a:temp", "a:tactile_fever", "a:skin"], ref: "1204 #3, #6", critical: true },
     { label: "SpO2 + O2 titrated to 94-98%", keys: ["a:spo2", "t:o2any"], ref: "MCG 1302", critical: true },
     { label: "Capnography", keys: ["a:etco2"], ref: "1204 #4" },
     { label: "Lung assessment (focal findings)", keys: ["a:lungs"], ref: "1237" },
@@ -8327,6 +9546,52 @@ addS(G({
     clues: { SEPS: "Fever 102.6, HR 116, RR 28, EtCO2 24, focal RLL crackles with rusty sputum: pneumonia-source sepsis.", RDOT: "Respiratory distress from pneumonia, but the systemic picture (fever, tachycardia, low EtCO2, soft BP) meets sepsis criteria.", CHFF: "Unilateral findings, fever, no JVD/edema: not pulmonary edema; nitro/CPAP for CHF would be wrong." },
     explain: "Pneumonia with sepsis: O2 to target, NS 1 L, sepsis notification. Differentiate from CHF: unilateral focal crackles + fever.", keyFindingKeys: ["a:temp", "a:lungs", "a:etco2", "q:cough"] },
   expected: "Pneumonia with sepsis. O2 (NRB if needed) to 94-98%, temp, EtCO2, IV, NS 1 L with lung reassessment, sepsis notification. Not CHF.",
+}));
+
+addS(G({
+  id: "sepsis_alert", protocol: "1204", refs: ["1204"], base: "seps", difficulty: "Intermediate",
+  dispatchTitle: "46 y/o female, flank pain, chills & racing heart", dispatchShort: "Koreatown apartment, caller is the patient.",
+  dispatch: "RA 29, respond to an apartment on Wilshire Blvd, Koreatown. 46-year-old female, flank pain, chills, heart racing. Time of call 1512.",
+  scene: "Scene safe. The patient is sitting upright on the couch wrapped in a blanket, shivering and holding her right flank. She is wide awake, alert and tracking you as you walk in, and her face is flushed and hot.",
+  patient: { name: "Carmen Reyes", age: 46, sex: "F" }, bystander: { name: "Marco", role: "husband", sex: "M" },
+  personality: "Alert and oriented × 4, cooperative, shivering with chills and right flank pain.",
+  allergies: [], startSev: 0.45, drift0: 0.02, pain: [7, 8], bgl: 118, temp: 102.4,
+  vit: { good: { hr: 116, sbp: 114, dbp: 72, rr: 22, spo2: 97, etco2: 24 }, bad: { hr: 132, sbp: 96, dbp: 58, rr: 28, spo2: 95, etco2: 20 } },
+  txResp: { ns: { drift: -0.04, sbp: 10, hr: -14, etco2: 5 } }, mentalBands: [[9, "alert"]],
+  skin: "Hot, flushed, diaphoretic (tactile fever)", lungs: "Clear and equal bilaterally",
+  neuro: "Alert and oriented × 4, mLAPSS negative: no facial droop, equal grips, no arm drift",
+  twelve: { st: {}, text: "Sinus tachycardia 118. No ST elevation." },
+  answers: {
+    greet: "Hi, thank you for coming. I can't stop shaking and my heart is pounding.",
+    name: "Carmen Reyes.", age: "Forty-six.", cc: "Bad pain in my right back and side, burning when I pee, and chills with my heart racing.",
+    orient: "I'm Carmen Reyes, we're in my apartment in Koreatown, it's 2026, and I called 911 because I have a kidney infection and fever.",
+    onset: "The burning started three days ago, and the flank pain and shaking chills started this morning.",
+    provocation: "Nothing helps. Moving or touching my right side makes it worse.",
+    quality: "Deep, throbbing ache in my right flank.", radiation: "Around my right side toward my groin.", severity: st => `${st.v.pain}.`,
+    urinary: "Yes, burning for three days, and my urine has been cloudy and dark since this morning.",
+    fever: "Yes, burning up and shaking with chills all morning.", nausea: "Yes, nauseous, threw up once.",
+    sob: "Just breathing fast because of the fever.", chestpain: "No chest pain, just my heart racing.", palpitations: "Yes, my heart has been racing all morning.",
+    meds: "Started nitrofurantoin three days ago for a UTI, plus lisinopril.", history: "High blood pressure, and this UTI that started three days ago.", allergies: "No allergies.",
+    lastoral: "Some water this morning.", events: "I was resting on the couch when the shaking chills and flank pain got really bad.", pregnant: "No.", drugs: "No.",
+    feelnow: st => st.flags.ns ? "A little less shaky, my heart doesn't feel like it's pounding quite as hard." : "Still burning up and my side really hurts.",
+  },
+  bystanderAnswers: {
+    cc: "She's had a UTI for three days, and this morning she started shaking with chills, burning up to the touch, and complaining of bad right flank pain.",
+    history: "High blood pressure, and she was prescribed an antibiotic three days ago for a UTI.",
+  },
+  checklist: [
+    { label: "Temperature / tactile fever", keys: ["a:temp", "a:tactile_fever", "a:skin"], ref: "1204 #3, #6", critical: true },
+    { label: "Heart rate / cardiac monitor (tachycardia)", keys: ["a:pulse", "a:monitor", "a:12lead"], ref: "1204 #6" },
+    { label: "Capnography (EtCO2 ≤ 25 supports sepsis)", keys: ["a:etco2"], ref: "1204 #4" },
+    { label: "Vascular access", keys: ["t:iv"], ref: "1204 #5", critical: true },
+    { label: "Normal Saline 1 L for suspected sepsis (tactile fever / tachycardia)", keys: ["t:ns"], ref: "1204 #6", critical: true },
+    { label: "Reassess lung sounds / BP during fluid infusion", keys: ["a:lungs", "a:bp"], ref: "1204 #6" },
+    { label: "Sepsis notification / transport to MAR", keys: ["t:notify", "t:transport"], ref: "1204 #6, ❷, ❸" },
+  ],
+  pi: { correct: "SEPS", accept: [], differential: ["SEPS", "FEVR", "DYSR"],
+    clues: { SEPS: "Alert & oriented × 4 (GCS 15) and normotensive, yet meets TP 1204 sepsis criteria: suspected infection (pyelonephritis/UTI) + tactile fever (102.4°F) + tachycardia (HR ~122) + tachypnea + EtCO2 ≤ 25 mmHg. A patient with sepsis does NOT have to be altered or hypotensive!", FEVR: "Not simple fever: pyelonephritis/UTI source with persistent tachycardia, tachypnea, and low EtCO2 = sepsis per TP 1204 #6 & ❷.", DYSR: "Sinus tachycardia is secondary to sepsis/fever, not a primary dysrhythmia." },
+    explain: "Per LA County TP 1204 #6 & ❷, a patient with sepsis does NOT need to be altered or hypotensive: suspected infection + tactile fever or tachycardia (or poor perfusion) requires Normal Saline 1 L IV/IO rapid infusion (reassess every 250 mL for pulmonary edema) and Provider Impression of Sepsis.", keyFindingKeys: ["a:skin", "a:temp", "a:etco2", "a:pulse", "q:urinary"] },
+  expected: "Alert sepsis (A&O×4, normotensive) from acute pyelonephritis/UTI with tactile fever (102.4°F), sinus tachycardia, tachypnea, and low EtCO2. Recognize sepsis without ALOC, establish IV, give NS 1 L rapid infusion (reassess every 250 mL), and transport to MAR with sepsis notification.",
 }));
 
 addS(G({
@@ -8355,7 +9620,7 @@ addS(G({
     { label: "No IV fluid bolus required (no sepsis criteria)", keys: ["!t:ns"], ref: "1204", optional: true },
   ],
   pi: { correct: "FEVR", accept: [], differential: ["FEVR", "SEPS", "RDOT"],
-    clues: { FEVR: "Fever with normal BP, EtCO2 34 (> 25), modest HR, alert, clear lungs, flu exposure.", SEPS: "Sepsis needs signs of poor perfusion/low EtCO2; she's well-perfused.", RDOT: "No respiratory distress; SpO2 97%, clear lungs." },
+    clues: { FEVR: "Fever with normal BP, EtCO2 34 (> 25), modest HR, alert, clear lungs, flu exposure.", SEPS: "Uncomplicated viral flu without focal bacterial source, tachypnea, low EtCO2, or poor perfusion.", RDOT: "No respiratory distress; SpO2 97%, clear lungs." },
     explain: "Fever without signs of sepsis: passive cooling and supportive care per 1204. EtCO2 > 25 and normal perfusion argue against sepsis.", keyFindingKeys: ["a:temp", "a:etco2", "a:bp", "a:neuro"] },
   expected: "Influenza-like illness with fever, no sepsis. Temp, EtCO2, BP, meningismus check, passive cooling. Transport or treat-and-release per capacity.",
 }));
@@ -8781,7 +10046,7 @@ addS(G({
     dka: "Soft, diffusely tender without guarding or rebound", anaph_gi: "Soft, diffusely tender with crampy pain, hyperactive bowel sounds",
     urosepsis: "Soft, suprapubic tenderness; Foley in place draining cloudy dark urine", orthostatic: "Soft, mild diffuse tenderness, hyperactive bowel sounds",
     dissection: "Soft, non-tender; no pulsatile mass; femoral pulses weaker on the left", stemi: "Soft, non-tender", stemi_brady: "Soft, mild epigastric discomfort on palpation",
-    chf: "Soft, non-tender; mild distension", pna_sepsis: "Soft, non-tender", bb_od: "Soft, non-tender", etoh: "Soft, non-tender; no bruising",
+    chf: "Soft, non-tender; mild distension", pna_sepsis: "Soft, non-tender", sepsis_alert: "Soft, mild right lower quadrant / suprapubic tenderness; right flank CVA tenderness", bb_od: "Soft, non-tender", etoh: "Soft, non-tender; no bruising",
     pe: "Soft, non-tender; RIGHT calf swollen and tender", pea_hyperk: "Soft, distended; dialysis catheter not present (AV fistula left arm)",
     fever_flu: "Soft, non-tender", hypo: "Soft, non-tender", hypo_elder: "Soft, non-tender",
   };
@@ -9038,6 +10303,7 @@ const APPROACH = {
   syncope_lac: ["Scene is safe: a backyard party; music is loud and people are crowding. A man in his mid-30s is sitting in a lawn chair, holding a bloody towel to his forehead. The bleeding looks controlled. His color looks normal and he's breathing comfortably.", "Eyes open, and he tracks you as you walk over."],
   urosepsis: ["Scene is safe: a skilled nursing facility room. An elderly woman is in bed, mumbling and picking at the sheets. Her face looks flushed. She's breathing fast. A urinary catheter bag with dark, cloudy urine hangs on the bed rail. A nurse is waiting with paperwork.", "Eyes open, but she does NOT track you; she looks past you at the ceiling."],
   pna_sepsis: ["Scene is safe: a bedroom. A man in his early 60s is sitting on the edge of the bed, leaning forward, coughing and breathing fast. He looks flushed and sweaty. Used tissues with rust-colored sputum are on the nightstand. His daughter is with him.", "Eyes open and tracking you; he waves you in between coughs."],
+  sepsis_alert: ["Scene is safe: a living room. A woman in her mid-40s is sitting upright on the couch wrapped in a blanket, shivering and holding her right flank. Her face is flushed and sweaty, and she is breathing a bit fast. A prescription bottle is on the coffee table. Her husband is beside her.", "Eyes open and tracking you right away; she looks straight at you and says hello."],
   fever_flu: ["Scene is safe: an apartment. A woman in her mid-30s is wrapped in blankets on the couch, flushed and shivering. She's breathing comfortably. Tissues and a thermometer are on the coffee table. Her partner let you in.", "Eyes open, and she tracks you as you come in."],
   fent_patch: ["Scene is safe: a dim, very warm bedroom. An elderly woman is lying on her back in bed under a blanket. You hear snoring respirations, and her lips look dusky. An electric cord runs under her to the wall outlet, with the switch light on. A pill organizer is on the nightstand. Her daughter is with her.", "Eyes closed; she does NOT track you or react to your arrival."],
   chf_nitropatch: ["Scene is safe: a living room early in the morning. An elderly man is sitting upright in a recliner, pale and sweaty, breathing fast. A pill organizer and a small brown bottle are on the side table. His wife is in her robe.", "Eyes open, and he tracks you as you come in, though he looks unwell."],
@@ -11165,7 +12431,7 @@ const NEXT = (() => {
 (() => {
   const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const settings = Object.assign({ voice: true, autoSend: true, hints: false, rate: 1, engine: "auto", grammar: false, semantic: false, micMode: "handsfree", instr: true, instrVoice: "auto", ptVoice: "auto", partnerVoice: "auto", partnerPitch: 0.95, partnerRate: 1.12, ptPitch: 1, ptRate: 1, instrPitch: 1, instrRate: 1, key: "", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", remember: false }, JSON.parse(localStorage.getItem("medicsim.settings") || "{}"));
+  const settings = Object.assign({ voice: true, autoSend: true, hints: false, medQuiz: true, rate: 1, engine: "auto", grammar: false, semantic: false, micMode: "handsfree", instr: true, instrVoice: "auto", ptVoice: "auto", partnerVoice: "auto", partnerPitch: 0.95, partnerRate: 1.12, ptPitch: 1, ptRate: 1, instrPitch: 1, instrRate: 1, key: "", endpoint: "https://api.openai.com/v1/chat/completions", model: "gpt-4o-mini", remember: false }, JSON.parse(localStorage.getItem("medicsim.settings") || "{}"));
   let chatHistory = [], currentDebrief = null;
 
   // ---------------- screens ----------------
@@ -11216,7 +12482,7 @@ const NEXT = (() => {
   function startScenario(sc, opts) {
     opts = opts || {};
     skipSpeech();
-    chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; destOpen = false; destAutoShown = false; destTriageForce = false; destSig = ""; document.body.classList.remove("coding"); $("#instrCap").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; if ($("#btnDest")) $("#btnDest").hidden = true; if ($("#destBtnLabel")) $("#destBtnLabel").textContent = "Destination"; $("#txStrip").innerHTML = "";
+    closeMedQuiz(); chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; destOpen = false; destAutoShown = false; destTriageForce = false; destSig = ""; document.body.classList.remove("coding"); $("#instrCap").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; if ($("#btnDest")) $("#btnDest").hidden = true; if ($("#destBtnLabel")) $("#destBtnLabel").textContent = "Destination"; $("#txStrip").innerHTML = "";
     $("#scTitle").textContent = sc.dispatchTitle;
     $("#scRef").textContent = "LA County EMS · impression & protocol: your call";
     $("#dispatch").innerHTML = `<b>DISPATCH:</b> ${esc(sc.dispatch)}<details><summary>Scene size-up</summary>${esc(sc.scene)}</details>`;
@@ -11392,9 +12658,119 @@ const NEXT = (() => {
     }
     speakQueue(speakable);
   }
-  async function submit(text, tap) {
+  let activeQuizState = null;
+  function closeMedQuiz() {
+    const m = $("#medQuizModal");
+    if (m) m.classList.remove("open");
+    if (SIM.setQuizPaused) SIM.setQuizPaused(false);
+    activeQuizState = null;
+  }
+  function openMedQuiz(quiz, text, tap, loggedMe) {
+    const m = $("#medQuizModal");
+    if (!m || !quiz) return false;
+    if (SIM.setQuizPaused) SIM.setQuizPaused(true);
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    const firstChoice = {};
+    let graded = null;
+    activeQuizState = { quiz, text, tap, loggedMe, firstChoice, getGraded: () => graded };
+    $("#mqTitle").textContent = `💊 ${quiz.name} — Medication Check`;
+    $("#mqSub").textContent = `LA County EMS Ref. ${quiz.ref} · Select the correct Dose, Repeat Interval, Max Dose, and Contraindications before administering:`;
+    const LETTERS = ["A", "B", "C", "D"];
+    $("#mqBody").innerHTML = quiz.questions.map((q, qi) => {
+      if (q.autoPeds) firstChoice[q.id] = q.correctIndex;
+      return `<div class="mq-q" data-qblock="${esc(q.id)}">
+        <div class="mq-q-head"><span>${qi + 1}. ${esc(q.label)}: ${esc(q.prompt)}</span><small>${esc(quiz.ref)}</small></div>
+        ${q.autoPeds ? `<div class="mq-peds-note">👶 <b>Pediatric call (MCG 1309):</b> Pediatric doses use the length-based color zone (${esc(q.pedsNote || "color code")}) — dose question automatically credited.</div>` : ""}
+        <div class="mq-opts">
+          ${q.options.map((opt, oi) => `<button type="button" class="mq-opt${q.autoPeds && oi === q.correctIndex ? " correct" : ""}" data-qid="${esc(q.id)}" data-idx="${oi}" ${q.autoPeds ? "disabled" : ""}>
+            <span class="mq-letter">${q.autoPeds && oi === q.correctIndex ? "✓" : LETTERS[oi]}</span>
+            <span class="mq-txt">${esc(opt)}</span>
+          </button>`).join("")}
+        </div>
+        <div class="mq-fb${q.autoPeds ? " ok" : ""}" data-qfb="${esc(q.id)}" ${q.autoPeds ? "" : "hidden"}>${q.autoPeds ? `✓ Pediatric color-code dosing (${esc(q.correctText)})` : ""}</div>
+      </div>`;
+    }).join("");
+    const btnConfirm = $("#btnMqConfirm"), footNote = $("#mqFootNote");
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = `✓ Administer ${quiz.shortName}`;
+    footNote.textContent = `Answer all ${quiz.questions.length} questions to administer ${quiz.shortName}.`;
+    const checkAllDone = () => {
+      if (quiz.questions.every(q => firstChoice[q.id] != null)) {
+        if (!graded) graded = SIM.gradeMedQuiz(quiz.key, firstChoice, SIM.scenario, SIM.state, quiz);
+        btnConfirm.disabled = false;
+        footNote.innerHTML = `<b>${graded.score}/${graded.total} correct</b> on first attempt · Ready to administer <b>${esc(quiz.shortName)}</b>.`;
+      }
+    };
+    $("#mqBody").onclick = e => {
+      const b = e.target.closest("button.mq-opt");
+      if (!b || b.disabled) return;
+      const qid = b.dataset.qid, idx = +b.dataset.idx;
+      const q = quiz.questions.find(x => x.id === qid);
+      if (!q || firstChoice[qid] != null) return;
+      firstChoice[qid] = idx;
+      const block = $(`#mqBody [data-qblock="${qid}"]`);
+      if (block) {
+        block.querySelectorAll("button.mq-opt").forEach((btn, bi) => {
+          btn.disabled = true;
+          const letEl = btn.querySelector(".mq-letter");
+          if (bi === q.correctIndex) {
+            btn.classList.add("correct");
+            if (letEl) letEl.textContent = "✓";
+          } else if (bi === idx && idx !== q.correctIndex) {
+            btn.classList.add("wrong");
+            if (letEl) letEl.textContent = "✗";
+          }
+        });
+        const fb = block.querySelector(`[data-qfb="${qid}"]`);
+        if (fb) {
+          fb.hidden = false;
+          if (idx === q.correctIndex) {
+            fb.className = "mq-fb ok";
+            fb.innerHTML = `✓ <b>Correct:</b> ${esc(q.correctText)} <small>(${esc(quiz.ref)})</small>`;
+          } else {
+            fb.className = "mq-fb bad";
+            fb.innerHTML = `✗ <b>Protocol check (${esc(quiz.ref)}):</b> Correct answer is <b>${esc(q.correctText)}</b>.`;
+          }
+        }
+      }
+      checkAllDone();
+    };
+    btnConfirm.onclick = () => {
+      if (!graded) graded = SIM.gradeMedQuiz(quiz.key, firstChoice, SIM.scenario, SIM.state, quiz);
+      const g = graded;
+      closeMedQuiz();
+      addMsg({
+        speaker: g.score === g.total ? "find" : "warn",
+        text: `💊 Medication check — ${quiz.shortName} (${quiz.ref}): ${g.score}/${g.total} (${g.doseOk ? "✓" : "✗"} Dose · ${g.repeatOk ? "✓" : "✗"} Repeat · ${g.maxOk ? "✓" : "✗"} Max · ${g.contraOk ? "✓" : "✗"} Contraindications).`
+      });
+      submit(text, tap, true);
+    };
+    const cancelQuiz = () => {
+      if (!loggedMe) {
+        addMsg({ speaker: "me", text, tap });
+        chatHistory.push({ role: "user", content: text });
+      }
+      closeMedQuiz();
+      addMsg({ speaker: "partner", text: `Copy, holding the ${quiz.shortName}.` });
+      render();
+    };
+    $("#btnMqCancel").onclick = cancelQuiz;
+    $("#btnMqClose").onclick = cancelQuiz;
+    m.classList.add("open");
+    checkAllDone();
+    return true;
+  }
+  async function submit(text, tap, _fromQuiz) {
     text = text.trim(); if (!text || !SIM.state || SIM.state.ended) return;
-    addMsg({ speaker: "me", text, tap }); chatHistory.push({ role: "user", content: text });
+    if (!_fromQuiz) {
+      addMsg({ speaker: "me", text, tap });
+      chatHistory.push({ role: "user", content: text });
+    }
+    if (settings.medQuiz !== false && SIM.pendingMedQuiz) {
+      const pending = SIM.pendingMedQuiz(text);
+      const q = Array.isArray(pending) ? (pending[0] && (pending[0].quiz || pending[0])) : pending;
+      if (q && openMedQuiz(q, text, tap, true)) return;
+    }
     const out = await SIM.handle(text);
     say(out);
     // the patient didn't understand: show exactly what the app heard, so a speech-recognition mishear is visible
@@ -11453,7 +12829,7 @@ const NEXT = (() => {
   }
   let ttsPending = 0, ttsTailUntil = 0;
   window.__partnerVoice = (pv, bv, iv) => partnerVoice(pv, bv, iv);
-  function speaking() { return ttsPending > 0 || (typeof LUNGS !== "undefined" && LUNGS.isPlaying()) || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil; }
+  function speaking() { return ttsPending > 0 || (typeof LUNGS !== "undefined" && LUNGS.isPlaying()) || (window.speechSynthesis && (speechSynthesis.speaking || speechSynthesis.pending)) || Date.now() < ttsTailUntil || !!($("#medQuizModal") && $("#medQuizModal").classList.contains("open")); }
   const byName = n => { if (!n || n === "auto") return null; if (!allVoices.length) loadVoices(); return allVoices.find(v => v.name === n) || null; };
   function patientVoice() { const sc = SIM.scenario || { patient: { sex: "F", age: 60 } }; return (settings.ptVoice !== "auto" && byName(settings.ptVoice)) || pickVoice(sc.patient.sex, byName(settings.partnerVoice), sc.patient.age); }
   // Instructor: a DIFFERENT voice from the patient (and bystander) when one exists; otherwise the same voice with a strongly different pitch/rate.
@@ -12015,6 +13391,7 @@ const NEXT = (() => {
       <h4>Patient course</h4>${cues}
       <h4>Rhythm / 12-lead interpretation${sum.interp.first.n ? ` · ${sum.interp.first.ok}/${sum.interp.first.n} right first try` : ""}</h4>${ip}
       <h4>Medications${sum.medErr ? ` · <b style="color:#ff8a95">${sum.medErr} dose/route issue(s)</b>` : ""}</h4>${meds}
+      ${sum.medQuiz && sum.medQuiz.length ? `<h4>Medication knowledge check (MCG 1317) · ${sum.medQuiz.reduce((a, q) => a + q.score, 0)}/${sum.medQuiz.reduce((a, q) => a + q.total, 0)}</h4><table class="log"><tr><th>Medication</th><th>Dose</th><th>Repeat</th><th>Max</th><th>Contra</th><th>Score</th></tr>${sum.medQuiz.map(q => `<tr><td>${esc(q.name)} <small>(${esc(q.ref)})</small></td><td>${q.doseOk ? "✔" : "✘"}</td><td>${q.repeatOk ? "✔" : "✘"}</td><td>${q.maxOk ? "✔" : "✘"}</td><td>${q.contraOk ? "✔" : "✘"}</td><td><b>${q.score}/${q.total}</b></td></tr>`).join("")}</table>` : ""}
       <h4>Radio report / handoff</h4>${radio}</div>${hist}`;
   }
   function flowHtml() {
@@ -12034,6 +13411,7 @@ const NEXT = (() => {
       if (sm.cues.length) { L.push("", "PATIENT COURSE:"); sm.cues.forEach(c => L.push(`${fmtT(c.t)} ${c.worse ? "worse" : "improving"}: ${c.text}`)); }
       if (sm.interp.log.length) { L.push("", "INTERPRETATION:"); sm.interp.log.forEach(x => L.push(`${fmtT(x.t)} ${x.kind}: you said ${x.said}; ${x.ok ? "correct" : "actual " + x.act}`)); }
       if (sm.meds.length) { L.push("", "MEDS:"); sm.meds.forEach(m => L.push(`${fmtT(m.t)} ${m.name} ${[m.dose, m.route].filter(Boolean).join(" ")}${m.ok ? "" : " !! " + m.notes.join(" ")}`)); }
+      if (sm.medQuiz && sm.medQuiz.length) { L.push("", "MEDICATION QUIZ (MCG 1317):"); sm.medQuiz.forEach(q => L.push(`${q.name} (${q.ref}): ${q.score}/${q.total} [Dose:${q.doseOk ? "OK" : "X"} Repeat:${q.repeatOk ? "OK" : "X"} Max:${q.maxOk ? "OK" : "X"} Contra:${q.contraOk ? "OK" : "X"}]`)); }
       sm.radio.forEach(r => { L.push("", `${r.mode === "base" ? "BASE REPORT" : "HANDOFF"} ${r.g.score}%:`); r.g.items.forEach(i => L.push(`${i.ok ? "[x]" : "[ ]"} ${i.label}${i.note ? " (" + i.note + ")" : ""}`)); }); }
     if (typeof DEVICE !== "undefined" && st.x.dv && st.x.dv.log.length) { L.push("", "MONITOR / DEFIBRILLATOR:"); DEVICE.summary(st).log.forEach(l => L.push(`${fmtT(l.t)} ${l.text}`)); }
     L.push("", "CHECKLIST:"); checklist.forEach(c => L.push(`${c.done ? "[x]" : c.optional ? "[-]" : "[ ]"} ${c.label} (Ref. ${c.ref})`));
@@ -12057,7 +13435,7 @@ const NEXT = (() => {
 
   // ---------------- settings ----------------
   function loadSettingsUI() {
-    $("#setVoice").checked = settings.voice; $("#setAutoSend").checked = settings.autoSend; $("#setHints").checked = settings.hints; $("#setRate").value = settings.rate;
+    $("#setVoice").checked = settings.voice; $("#setAutoSend").checked = settings.autoSend; $("#setHints").checked = settings.hints; if ($("#setMedQuiz")) $("#setMedQuiz").checked = settings.medQuiz !== false; $("#setRate").value = settings.rate;
     $("#setMicMode").value = settings.micMode; $("#setInstr").checked = settings.instr;
     $("#setSemantic").checked = settings.semantic;
     $("#setKey").value = settings.key || ""; $("#setEndpoint").value = settings.endpoint; $("#setModel").value = settings.model; $("#setRemember").checked = settings.remember;
@@ -12065,7 +13443,7 @@ const NEXT = (() => {
   }
   function persistSettings() { const persist = { ...settings }; if (!settings.remember) persist.key = ""; localStorage.setItem("medicsim.settings", JSON.stringify(persist)); }
   function saveSettings() {
-    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, partnerVoice: $("#setPartnerVoice").value || "auto", instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: "auto", grammar: false, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
+    Object.assign(settings, { voice: $("#setVoice").checked, autoSend: $("#setAutoSend").checked, hints: $("#setHints").checked, medQuiz: $("#setMedQuiz") ? $("#setMedQuiz").checked : true, rate: +$("#setRate").value, micMode: $("#setMicMode").value, instr: $("#setInstr").checked, partnerVoice: $("#setPartnerVoice").value || "auto", instrVoice: $("#setInstrVoice").value || "auto", ptVoice: $("#setPtVoice").value || "auto", engine: "auto", grammar: false, semantic: $("#setSemantic").checked, key: $("#setKey").value.trim(), endpoint: $("#setEndpoint").value.trim(), model: $("#setModel").value.trim(), remember: $("#setRemember").checked });
     persistSettings();
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Speech.setOptions({ engine: settings.engine, grammar: settings.grammar });
@@ -12156,8 +13534,8 @@ const NEXT = (() => {
       addMsg({ speaker: "me", text: "[monitor] " + (op === "charge" ? `Charge ${$("#dvJ").value} J` : op === "shock" ? "Shock" : b.title || b.textContent.trim()), tap: true });
       say(SIM.device(op, val)); };
     $("#dvJ").onchange = () => { if (SIM.state && !SIM.state.ended) say(SIM.device("energy", +$("#dvJ").value)); };
-    document.addEventListener("keydown", e => { if (e.key === "Escape") $$(".modal.open").forEach(m => m.classList.remove("open")); });
-    $$(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("open"); }));
+    document.addEventListener("keydown", e => { if (e.key === "Escape") { if ($("#medQuizModal") && $("#medQuizModal").classList.contains("open")) closeMedQuiz(); $$(".modal.open").forEach(m => m.classList.remove("open")); } });
+    $$(".modal").forEach(m => m.addEventListener("click", e => { if (m.id === "medQuizModal" && e.target === m) return; if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("open"); }));
     $("#btnCopy").onclick = () => { navigator.clipboard && navigator.clipboard.writeText(currentDebrief.text); $("#btnCopy").textContent = "Copied ✓"; setTimeout(() => $("#btnCopy").textContent = "Copy report", 1500); };
     $("#btnDownload").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([currentDebrief.text], { type: "text/plain" })); a.download = "medicsim-debrief.txt"; a.click(); };
     const quick = ["Hi, I'm a paramedic. What's going on today?", "How old are you?", "Any allergies?", "What medications do you take?", "Any medical history?", "Full set of vitals", "Put the patient on the monitor", "12-lead", "Move V4 to V4R", "Move V4, V5, V6 to V7, V8, V9", "Check a blood sugar", "Listen to lung sounds", "Check GCS and pupils", "Skin signs", "Stroke exam mLAPSS", "Start an IV", "Contact base"];

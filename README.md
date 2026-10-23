@@ -38,6 +38,19 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.11.2-medquiz
+- **Pre-Administration Multiple-Choice Medication Check (MCG 1317.1–1317.41):**
+  - Before administering a medication (by voice, typed text, or chip tap), an interactive 4-question multiple-choice knowledge check modal (`#medQuizModal`) prompts for **Dose & Route**, **Repeat Interval**, **Maximum Dose**, and **Contraindications** across all 23 LA County formulary medications (`aspirin`, `nitro`, `albuterol`, `epi_im`, `epi_arrest`, `pushepi`, `amio`, `adenosine`, `atropine`, `midaz`, `naloxone`, `diphen`, `d10`, `oralglucose`, `glucagon`, `ondansetron`, `fentanyl`, `morphine`, `ketorolac`, `txa`, `calcium`, `bicarb`, `magnesium`).
+  - Simulation clock and hands-free mic automatically pause while the modal is open. Options are shuffled on each check, with immediate visual feedback and official LA County `MCG 1317.*` / `TP 12xx` reference explanations.
+  - On pediatric calls (`MCG 1309`), Question 1 (Dose) is automatically credited with the length-based color-zone note so pediatric dosing is never penalized.
+  - Once a medication's quiz is completed on a call, subsequent repeat doses of that medication administer immediately without re-prompting, and generic medication orders (`"give aspirin"`, `"give nitro"`) automatically apply the verified protocol dose and route.
+  - Debrief includes a **Medication knowledge check (MCG 1317)** summary table and logs coaching notes for any missed items. Can be toggled in Settings (`#setMedQuiz`).
+- **Alert Sepsis with Tachycardia & Tactile Fever (TP 1204 Fever / Sepsis, Rev. 07-01-26):**
+  - **Sepsis without Altered Mental Status (`sepsis_alert`):** Added a dedicated Alert Sepsis scenario (*46F — Chills, Flank Pain & Fast Heart Rate*, acute pyelonephritis / early normotensive sepsis) where the patient is completely **Alert & Oriented × 4 (`A&O×4`, `mental: "alert"`)** with **tachycardia (`HR 118–122`)**, **tactile fever (`102.4°F`, forehead hot to the touch)**, tachypnea (`RR 22–24`), hypocapnia (`EtCO2 24 mmHg`), and normotension (`BP 114/72`).
+  - **Forehead / Skin Tactile Fever & NLU:** Checking the forehead or skin (`"feel the forehead"`, `"skin signs"`, `"does she feel warm/hot"`, `"check for a fever"`, `"is she febrile"`, `"tactile fever"`) on any febrile patient (`temp ≥ 100.4°F`) explicitly reports `"tactile fever — forehead hot to the touch"`, records `a:tactile_fever`, and satisfies the TP 1204 temperature/fever assessment.
+  - **TP 1204 #6 Normal Saline & Assessment Flow:** Normal Saline 1 L IV/IO rapid infusion is recognized as indicated for suspected sepsis with tactile fever or tachycardia even when normotensive (`SBP ≥ 100`), and assessment flow / debrief do not require `AEIOU-TIPS` when a sepsis patient is `A&O×4`.
+  - Tests: `tests/sim_v2112.js` and `tests/browser/v2112_ui.mjs`.
+
 ### 2.11.1-medscreen
 - **Aspirin & Nitroglycerin Pre-Administration Screening Questions (TP 1211 / TP 1214 / MCG 1317.3 / MCG 1317.29):**
   - **Aspirin screening (`q:asa_q`):** Recognizes any spoken or tapped aspirin screening question (*"Before I give you aspirin, are you allergic to aspirin, do you have any stomach ulcers or GI bleeding, or have you taken any aspirin today?"*, *"Can you take aspirin?"*, *"Have you taken any aspirin today?"*, *"Any stomach ulcers or GI bleeding?"*) as a question intent without triggering premature aspirin administration. Patient or bystander answers accurately per scenario (including ASA allergy on `stemi_asa_allergy`, active GI bleeding on `gi_bleed`, and prior self-administered ASA). Giving aspirin before screening logs a protocol deviation (`MCG 1317.3 / TP 1211`).
@@ -51,7 +64,7 @@ Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The servi
 - **Clean Stethoscope-First Audio Sequencing (No TTS Talking Over Breath Sounds):** When `a:lungs` triggers, stethoscope breath cycles play first while instructor/partner TTS is queued until the breath sample finishes (or is skipped), so voice readouts never drown out the lung sounds.
 - **Unilateral Right vs Left Comparison & Inline Replay Controls:** Every lung auscultation renders an inline `.lung-player` card in the transcript (and buttons in the `LUNG SOUNDS` status box) with `🔊 Replay · Listen again` and, on unilateral scenarios (tension pneumothorax, flail chest / hemothorax, lobar pneumonia, RVR with unilateral dullness), sequential Right → Left playback plus individual `🔊 Right` and `🔊 Left` buttons.
 - **Dynamic Post-Treatment Reassessment:** Re-listening after needle thoracostomy, bronchodilators/CPAP/epinephrine, CPAP + nitroglycerin, or infant shoulder roll plays the updated acoustic profile matching the patient's current physiology.
-- Tests: `tests/sim_v2110.js` (388 checks across all 75 scenarios and 24 acoustic profiles) and `tests/browser/v2110_ui.mjs` (21 UI/audio/layout checks).
+- Tests: `tests/sim_v2110.js` (388 checks across all 76 scenarios and 24 acoustic profiles) and `tests/browser/v2110_ui.mjs` (21 UI/audio/layout checks).
 
 ### 2.10.9-dest
 - **Post-Transport Destination & Trauma Triage (Ref. 506) Selector:** Interactive destination card (`MAR`, `TC`, `SRC`, `CSC`, `PSC`, `PTC`, `PMC`, `BURN`, `PERI`) and all 20 LA County Ref. 506 trauma triage criteria, plus full voice/NLU support and debrief grading.
