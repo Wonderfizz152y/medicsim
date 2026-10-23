@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.11.0-lungs 8fbdabf456">
+<meta name="medicsim-version" content="2.11.1-medscreen df37c8af9b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1604,6 +1604,8 @@ const DEBRIEF = (() => {
     if (x.lams && (x.lams.total != null || rv.drift)) { const L = x.lams; out.push({ k: "lams", label: "Stroke screen (TP 1232 / LAMS)", text: [L.total != null ? `LAMS ${L.total} (face ${L.face}, arm ${L.arm}, grip ${L.grip})` : "", rv.drift ? rv.drift.val : ""].filter(Boolean).join(". "), say: L.total != null ? `LAMS of ${L.total}` : "" }); }
     if (x.v4r && rv.twelve && rv.twelve.info) out.push({ k: "v4r", label: "Right-sided lead (V4R)", text: rv.twelve.info.rv ? "ST elevation in V4R (RV infarct)" : "No ST elevation in V4R", say: rv.twelve.info.rv ? "ST elevation in V4R" : "V4R negative for ST elevation" });
     if (x.v789 && rv.twelve && rv.twelve.info) out.push({ k: "v789", label: "Posterior leads (V7, V8, V9)", text: rv.twelve.info.post ? "ST elevation in V7, V8, V9 (Posterior MI)" : "No ST elevation in V7, V8, V9", say: rv.twelve.info.post ? "ST elevation in V7, V8, and V9 — posterior MI" : "posterior leads V7 through V9 negative for ST elevation" });
+    if (x.asaQ || ev["q:asa_q"]) out.push({ k: "asa_q", label: "Aspirin screening (MCG 1317.3 / 1211 #5)", text: "Screened for aspirin allergy, active GI bleed / stomach ulcers, and aspirin already taken today before ASA.", say: "aspirin screening negative for allergy or GI bleed" });
+    if (x.ntgQ || ev["q:ntg_q"] || ev["q:pde5"] || ev["q:ed"]) out.push({ k: "ntg_q", label: "Nitroglycerin screening (MCG 1317.31 / 1211 #6 / 1214 #8)", text: sc.pde5Hours != null && sc.pde5Hours <= 48 ? `POSITIVE: PDE5 inhibitor (Viagra/sildenafil) taken ~${sc.pde5Hours} h ago — nitroglycerin contraindicated within 48 hours.` : "Screened for ED / PDE5 meds in the last 48 hours, nitro allergy, and nitro taken today before NTG.", say: sc.pde5Hours != null && sc.pde5Hours <= 48 ? "nitroglycerin withheld due to Viagra within 48 hours" : "screened negative for ED meds within 48 hours" });
     if (ev["x:traumacpr"] && rv.trauma) out.push({ k: "trauma", label: "Trauma assessment during CPR", text: String(rv.trauma.val), say: "" });
     if (x.abdBleedSeen || ev["a:abd_bleed_signs"]) out.push({ k: "abd_bleed", label: "Abdominal exam (suspected internal bleeding)", text: String((rv.abdomen && rv.abdomen.val) || (rv.trauma && rv.trauma.val) || "Abdominal distension, rigidity, and bruising"), say: "abdominal distension, rigidity, and bruising concerning for internal bleeding" });
     if (x.dest || (x.triage && x.triage.length)) {
@@ -1993,7 +1995,9 @@ const NLU = (() => {
     ["orient", /where (are|were) (you|we)\b(?! (going|gonna|headed|taking|from))|where (you|we) are\b|what day|what'?s the date|(today'?s|the) date\b(?! of birth)|what year(?! (were|was|did) (you|he|she))|year (it is|is it)|what month|who'?s the president|what time is it|do you know where|what city|what (place|building|town) (is this|are we|we'?re)|what happened to you|(know|remember|recall|recollect) (what|why) (happened|you|we|this)|why (are|were) you here|oriented\b(?! times)/],
     ["consent", /can (we|i) help you|may (we|i) help|is it ok(ay)? if (we|i) (help|take a look|check|examine)|is (it|that) (ok|okay|alright|all right) (if|for)|can i (check|examine|take|listen|look|put|start|give|touch)|\bmay i\b|mind if|permission|consent|ok if i|okay if i|alright if i/],
     ["reassure", /you'?re going to be (ok|okay|alright|fine)|(we'?ll|we are going to|we'?re going to|gonna) take (good )?care|don'?t worry|we'?ve got you|we got you|try to (relax|stay calm|calm down)|stay calm|you'?re in good hands|it'?s going to be (ok|okay|alright)|^ ?(ok |okay |now |just )?take a (deep|slow) breath|hang in there|you'?re safe|we'?re here (for you|to help)/],
-    ["pde5", /viagra|cialis|levitra|sildenafil|tadalafil|vardenafil|erectile|sexual(ly)? enhanc|\bed med|performance (med|pill)/],
+    ["pde5", /viagra|cialis|levitra|sildenafil|tadalafil|vardenafil|erectile|sexual(ly)? enhanc|\bed meds?\b|performance (med|pill)|\bpde ?5\b|phosphodiesterase|pulmonary hypertension|revatio|adcirca/],
+    ["asa_q", /\bbefore (?:i|we|you) (?:give|administer) (?:you |him |her |the patient )?(?:any |some |the |an? )?(?:aspirin|asa)\b|\b(aspirin|asa) (questions?|contraindications?|screen\w*)\b|\b(ask|screen\w*|check\w*) (the |for )?(aspirin|asa)\b|\b(allerg\w* to|any allerg\w* to|reaction to|can'?t take|cannot take|(?:can|could) (?:you|he|she) take) (any |some )?(aspirin|asa|nsaids?)\b(?! (for me|now|please|\d))|\b(aspirin|asa|nsaids?) allerg\w*\b|\b(stomach|peptic|gastric|duodenal) ulcers?\b|\bulcers? or\b|\bor ulcers?\b|\bhistory of (gi bleed\w*|ulcers?|bleeding|internal bleed\w*)\b|\bgi bleed\w*\b|\bgastrointestinal bleed\w*\b|\bbleeding disorders?\b|\b(history of |any )?internal bleed\w*\b|\bvomiting blood\b|\bthrowing up blood\b|\bcoffee[- ]?ground\b|\bhemophilia\b|\b(did|have|has|do|does|already)\b[^.!]*\b(take|taken|took|had) (any |an? |some )?(aspirin|asa)\b|\b(take|taken|took|had) (any |an? )?(aspirin|asa) (already |today|this morning|earlier|recently|before)\b|\b(aspirin|asa) (taken |already )?(today|this morning|earlier|already|recently)\b|\balready (take|taken|took) (any )?(aspirin|asa)\b/],
+    ["ntg_q", /\bbefore (?:i|we|you) (?:give|administer) (?:you |him |her |the patient )?(?:any |some |the |an? )?(?:nitro\w*|ntg)\b|\b(nitro\w*|ntg) (questions?|contraindications?|screen\w*)\b|\b(ask|screen\w*|check\w*) (the |for )?(nitro\w*|ntg)\b|\b(allerg\w* to|any allerg\w* to|reaction to|can'?t take|cannot take|(?:can|could) (?:you|he|she) take) (any |some )?(nitro\w*|ntg|nitrates?)\b(?! (for me|now|please|\d))|\b(nitro\w*|ntg|nitrates?) allerg\w*\b|\b(did|have|has|do|does|already)\b[^.!]*\b(take|taken|took|had|use|used) (any |an? |some |your |his |her )?(nitro\w*|ntg)\b|\b(take|taken|took|had|use|used) (any |an? )?(nitro\w*|ntg) (already |today|this morning|earlier|recently|before)\b|\b(nitro\w*|ntg) (taken |already )?(today|this morning|earlier|already|recently)\b|\bhow many (nitro\w*|ntg|doses of nitro\w*)\b/],
     ["sob", /short(ness)? of breath|trouble (breathing|catching)|hard to breath|breathing (ok|okay|alright|hard)|can you breath|difficulty breathing|\bsob\b|how'?s (your|the) breathing|catch(ing)? your breath|struggling to breath/],
     ["chestpain", /chest pain|any pain\b(?! (in your head|meds))|where (does it|is the pain|do you) hurt|where'?s the pain|pain anywhere|hurt anywhere|does anything hurt|are you in (any )?pain/],
     ["nausea", /nause|vomit|throw(n|ing)? up|sick to your stomach|queasy|feel like throwing/],
@@ -2206,7 +2210,8 @@ const NLU = (() => {
   const QUESTION_START = /^\s*(do|does|did|are|is|was|were|have|has|had|any|what|what'?s|when|how|who|which|where|why|so what)\b/;
   function parseClause(t, carryGive) {
     const out = { questions: [], assess: [], tx: [] };
-    const hasGive = carryGive || GIVE.test(t);
+    const isBeforeGive = /\bbefore (?:i|we|you)? ?(?:give|giving|administer\w*)\b/.test(t);
+    const hasGive = !isBeforeGive && (carryGive || GIVE.test(t));
     for (const [id, re] of T) if (re.test(t)) out.tx.push({ id });
     let ids = out.tx.map(x => x.id);
     const drop = id => { out.tx = out.tx.filter(x => x.id !== id); ids = out.tx.map(x => x.id); };
@@ -2240,11 +2245,11 @@ const NLU = (() => {
     if (ids.includes("io") && ids.some(x => DRUG_IDS.includes(x)) && !/start|establish|access|drill|place|get (an? )?io|ez ?io|needle (in|into)|humer|tibia/.test(t)) drop("io");
     if (ids.includes("ns") && ids.includes("iv") && /\b(of|bolus|liter)\b/.test(t) && !/start|establish|access|gauge|\bac\b|get (an? )?iv|\biv and\b/.test(t)) drop("iv");
     const isQuestion = QUESTION_START.test(t) || /\?/.test(t);
-    const isQuestionAboutUse = /\b(do you|does (he|she)|did (you|he|she)|have you|has (he|she)|are you|is (he|she)) (take|taking|use|using|have|had|on|allergic|ever|get)\b|allergic to|any (allergies|medications)|\bhome\b.*\b(oxygen|o2)\b|\b(your|his|her) (inhaler|epipen|insulin|nitro|aspirin|oxygen)\b/.test(t);
+    const isQuestionAboutUse = isBeforeGive || /\b(can|could) (you|he|she) take (any |some )?(aspirin|asa|nsaids?|nitro\w*|ntg|nitrates?)\b(?! (for me|now|please|\d))|\b(do you|does (he|she)|did (you|he|she)|have you|has (he|she)|are you|is (he|she)) (take|taking|taken|took|use|using|used|have|had|on|allergic|ever|get|already)\b|allergic to|any (allergies|medications)|\b(aspirin|asa|nsaids?|nitro\w*|ntg|nitrates?) (allerg\w*|questions?|contraindications?|screen\w*|taken|today|already)\b|\b(ask|screen\w*|check\w*) (the |for )?(aspirin|asa|nitro\w*|ntg)\b|\b(take|taken|took) (any |an? )?(aspirin|asa|nitro\w*|ntg)\b.*\b(today|already|this morning|earlier|recently)\b|\bhome\b.*\b(oxygen|o2)\b|\b(your|his|her) (inhaler|epipen|insulin|nitro|aspirin|oxygen)\b/.test(t);
     const needsVerb = ["iv", "ns", "o2", "nc", "nrb", "fowler", "supine", "transport", "defib", "epi", "d10", "oralglucose", "albuterol", "cpr", "suction", "protect", "aspirin", "nitro", "naloxone", "glucagon", "fentanyl", "morphine", "midaz", "ondansetron", "diphen", "amio", "atropine", "pushepi", "io", "bvm", "cpap", "sga", "opa", "calcium", "bicarb", "ketorolac", "pace", "base", "notify", "cooling", "magnesium", "txa"];
     const doses = parseDose(t);
     out.tx = out.tx.filter(x => {
-      if (isQuestionAboutUse && !/\bpatch(es)?\b|heating pad|\b(i'?m going to|i'?ll|we'?ll|let'?s|we'?re going to|give|administer)\b/.test(t)) return false;
+      if (isQuestionAboutUse && !/\bpatch(es)?\b|heating pad|\b(i'?m going to|i'?ll|we'?ll|let'?s|we'?re going to|give|administer)\b/.test(t.replace(/\bbefore (?:i|we|you)? ?(?:give|giving|administer\w*) (?:you |him |her |the patient )?(?:any |some |the |an? )?(?:aspirin|asa|nitro\w*|ntg)\b/g, ""))) return false;
       if (!needsVerb.includes(x.id)) return true;
       if (hasGive || doses.length) return true;
       if (/^\s*(can|could|would) you\b/.test(t)) return true; // requests
@@ -2265,7 +2270,9 @@ const NLU = (() => {
     let q = out.questions; const has = id => q.includes(id); const rm = (...ids) => { q = q.filter(x => !ids.includes(x)); };
     if (/blood pressure|pressure cuff|\b(a|manual|need a|get a) pressure\b/.test(t) && !/feel like|describe|pressure or/.test(t)) rm("quality");
     if (has("severity")) rm("chestpain");
-    if (has("pde5")) rm("meds", "drugs");
+    if (has("asa_q")) rm("allergies", "meds", "history", "blood", "nausea", "lastoral", "events", "time", "drugs");
+    if (has("ntg_q")) rm("pde5", "allergies", "meds", "history", "drugs", "time", "events", "onset");
+    if (has("pde5")) rm("meds", "drugs", "history", "time", "events");
     if (has("allergies") && !/\b(what|which) (medic\w*|meds)\b.*\b(take|on)\b|\b(take|taking) any\b|\bmeds do\b|\bmedications or\b|, meds\b|\bmeds,|\bmeds or\b/.test(t)) rm("meds");
     if (has("medstart")) rm("onset", "time", "meds", "events");
     if (has("lkw")) rm("onset", "time");
@@ -2335,7 +2342,9 @@ const NLU = (() => {
     "q:swelling": ["any swelling", "are your ankles swollen", "is your throat closing"],
     "q:sweaty": ["have you been sweating", "clammy"],
     "q:seizurehx": ["history of seizures", "do you have epilepsy", "ever had a seizure"],
-    "q:blood": ["any bleeding", "blood in your stool", "vomiting blood", "black tarry stools"],
+    "q:blood": ["any bleeding", "blood in your stool", "black tarry stools"],
+    "q:asa_q": ["are you allergic to aspirin", "do you have any stomach ulcers or gi bleeding", "have you taken any aspirin today", "ask the aspirin questions", "screen for aspirin contraindications"],
+    "q:ntg_q": ["have you taken any nitroglycerin today", "are you allergic to nitroglycerin", "ask the nitro questions", "screen for nitroglycerin contraindications"],
     "q:urinary": ["any burning when you pee", "problems urinating"],
     "a:monitor": ["hook him up to the monitor", "put the leads on", "cardiac monitor", "what's the rhythm"],
     "a:12lead": ["get a twelve lead", "run a twelve lead ecg", "twelve lead please"],
@@ -2455,7 +2464,7 @@ const NLU = (() => {
     let carry = false; const seenTx = new Set();
     for (const p of (parts.length ? parts : [t])) {
       const r = parseClause(p, carry);
-      if (GIVE.test(p) && r.tx.length) carry = true;
+      if (GIVE.test(p) && !/\bbefore (?:i|we|you)? ?(?:give|giving|administer\w*)\b/.test(p) && r.tx.length) carry = true;
       r.questions.forEach(x => out.questions.includes(x) || out.questions.push(x));
       r.assess.forEach(x => out.assess.includes(x) || out.assess.push(x));
       r.tx.forEach(x => { if (!seenTx.has(x.id)) { seenTx.add(x.id); out.tx.push(x); } });
@@ -2470,6 +2479,9 @@ const NLU = (() => {
     // cross-clause cleanup
     const q = out.questions;
     if (q.includes("feelnow")) out.questions = q.filter(x => x !== "cc" && x !== "provocation");
+    if (out.questions.includes("asa_q")) out.questions = out.questions.filter(x => !["allergies", "meds", "history", "blood", "nausea", "lastoral", "events", "time", "drugs"].includes(x));
+    if (out.questions.includes("ntg_q")) out.questions = out.questions.filter(x => !["pde5", "allergies", "meds", "history", "drugs", "time", "events", "onset"].includes(x));
+    if (out.questions.includes("pde5")) out.questions = out.questions.filter(x => !["meds", "drugs", "history", "time", "events"].includes(x));
     if (out.questions.includes("lmp")) out.questions = out.questions.filter(x => x !== "pregnant");
     if (out.questions.includes("severity")) out.questions = out.questions.filter(x => x !== "orient" && x !== "chestpain");
     if (out.questions.includes("onset")) out.questions = out.questions.filter(x => x !== "time");
@@ -2607,7 +2619,7 @@ const NLU = (() => {
       // v2.10.3: out.held = the drugs the medic held, named for the partner's acknowledgment ("Copy, holding the push-dose epi.")
       const LABEL = w => /^push[- ]?dose|^pressor/.test(w) ? "push-dose epi" : /^epi/.test(w) ? "epi" : { nitro: "nitro", ntg: "nitro", aspirin: "aspirin", asa: "aspirin", fentanyl: "fentanyl", morphine: "morphine", fluid: "fluids", fluids: "fluids", bolus: "fluids", naloxone: "naloxone", narcan: "Narcan", midazolam: "midazolam", midaz: "midazolam", versed: "Versed", diphenhydramine: "diphenhydramine", benadryl: "Benadryl" }[w];
       let m; const neg = new Set(), held = []; while ((m = NEG.exec(t))) { const w0 = m[1], w = w0.startsWith("nitro") ? "nitro" : w0;
-        if (/^ ?allerg/.test(t.slice(NEG.lastIndex))) continue; // "no aspirin allergy" is history, not a hold
+        if (/^ ?(allerg|question|screen)/.test(t.slice(NEG.lastIndex))) continue; // "no aspirin allergy" is history, not a hold
         if (/^push[- ]?dose|^pressor/.test(w)) neg.add("pushepi"); else if (/^epi/.test(w)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w]) neg.add(map[w]);
         const lb = LABEL(w); if (lb && !held.includes(lb)) held.push(lb);
         // coordinated list: "hold the nitro and the aspirin", "no fentanyl or morphine"
@@ -2615,7 +2627,7 @@ const NLU = (() => {
         let k; while ((k = t.slice(NEG.lastIndex).match(DR))) { NEG.lastIndex += k[0].length; const w2 = k[1].startsWith("nitro") ? "nitro" : k[1];
           if (/^push[- ]?dose|^pressor/.test(w2)) neg.add("pushepi"); else if (/^epi/.test(w2)) { neg.add("epi"); neg.add("pushepi"); } else if (map[w2]) neg.add(map[w2]);
           const l2 = LABEL(w2); if (l2 && !held.includes(l2)) held.push(l2); } }
-      if (neg.size && !/\b(did|have|has|do|does|taken?|took|any)\b[^.?]*\?/.test(t)) { out.tx = out.tx.filter(x => !neg.has(x.id)); if (held.length) out.held = held; }
+      if (neg.size && !/\b(did|have|has|do|does|taken?|took|any|ask|screen\w*)\b[^.?]*\?/.test(t) && !/\b(screen\w*|questions?|contraindicat\w* (to|for))\b/.test(t)) { out.tx = out.tx.filter(x => !neg.has(x.id)); if (held.length) out.held = held; }
       if (neg.has("ns") && /\b(internal bleed\w*|permissive|around 70|above 70|tko|kvo)\b/.test(t) && !out.tx.some(x => x.id === "permhypo")) out.tx.push({ id: "permhypo", doses: [], route: null });
       if (out.tx.some(x => x.id === "permhypo")) {
         out.tx = out.tx.filter(x => x.id !== "ns");
@@ -2761,7 +2773,7 @@ const ROS = (() => {
     ["weakness", /\bweak(er|ness)?\b/, "Weaker than normal?"],
     ["nausea", /nause\w*|sick to your stomach|queasy/, "Nausea?"],
     ["diarrhea", /diarrhea|loose stools?|runs\b/, "Diarrhea?"],
-    ["vomiting", /vomit\w*|throw(n|ing)? up|puk\w*/, "Vomiting?"],
+    ["vomiting", /vomit\w*(?! blood)|throw(n|ing)? up(?! blood)|puk\w*(?! blood)/, "Vomiting?"],
     ["chestpain", /(pain|pressure|tightness|discomfort) in (your|the) chest|chest (pain|hurt\w*|pressure|tight\w*|discomfort)/, "Chest pain?"],
     ["sob", /short(ness)? (of|a) breath|trouble breathing|hard to breathe?|difficulty breathing|\bsob\b|breathing (ok|okay|alright)/, "Short of breath?"],
     ["abdpain", /(belly|stomach|abdominal|abdomen) (pain|hurt\w*|ache)|pain in your (belly|stomach|abdomen)/, "Belly pain?"],
@@ -2946,7 +2958,14 @@ const SIM = (() => {
   const TX_LABEL = { ivsetup: "IV setup (start kit out, 1 L NS spiked, line primed)", shoulderroll: "Shoulder roll (padding under the shoulders, airway neutral)", dcfs: "Suspected child abuse: DCFS / law enforcement report (mandated reporter)", blanket: "Blanket applied to keep the patient warm", obkit: "OB kit opened and set up for delivery", deliver: "Controlled delivery: supporting the head and perineum", drynewborn: "Newborn dried, warmed and stimulated with a towel", clampcord: "Cord clamped in two places and cut", placenta: "Placenta managed", fundal: "Fundal massage", skintoskin: "Newborn placed skin-to-skin on mother's chest, both covered", magnesium: "Magnesium sulfate", txa: "Tranexamic acid (TXA) 1 g in 100 mL NS IV over 10 min", cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", permhypo: "Permissive hypotension (keep SBP ~70+)", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing", removepatch: "Medication patch removed", removeheat: "Heating pad removed", pads: "Defib/pacing pads applied", tourniquet: "Tourniquet applied", smr: "Spinal motion restriction", gurney: "Gurney to bedside" };
 
   function newState(scn) {
-    return { t: 0, sev: scn.startSev || 0.5, flags: { o2: null, position: null }, count: {}, last: {}, eff: [], x: {}, v: {}, rev: {}, events: {}, log: [], devs: [], lastNitroDose: 0, pi: null, piT: null, ended: false };
+    const x = {}, events = {};
+    const ALIAS = { "t:asa": "t:aspirin", "t:ntg": "t:nitro", "q:ed": "q:pde5" };
+    const stObj = { t: 0, sev: scn.startSev || 0.5, flags: { o2: null, position: null }, count: {}, last: {}, eff: [], x, h: x, v: {}, rev: {}, events, log: [], devs: [], lastNitroDose: 0, pi: null, piT: null, ended: false };
+    stObj.Done = {
+      has(k) { return !!(events[k] || (ALIAS[k] && events[ALIAS[k]]) || (k === "q:ed" && (events["q:ntg_q"] || events["q:pde5"])) || (k === "q:ntg_q" && (events["q:pde5"] || events["q:ed"]))); },
+      add(k) { const t = stObj.t || 0; (events[k] = events[k] || []).push(t); if (ALIAS[k]) (events[ALIAS[k]] = events[ALIAS[k]] || []).push(t); return this; }
+    };
+    return stObj;
   }
   function start(scn, uiApi, opts) {
     stop(); if (scn && !scn.base) scn.base = scn.id; // L9: same base setup the app (ui.js) applies, so headless tests match the app
@@ -3167,7 +3186,23 @@ const SIM = (() => {
     if (st && st.x.code && st.x.code.provStarted && st.x.rosc && !st.x.code.roscRecT && /\bROSC\b/.test(text)) text = "Rhythm check: ORGANIZED rhythm on the monitor, and EtCO2 abruptly jumped well above the CPR baseline."; /* ROSC is for the medic to recognize (1210 ❻) */
     log(kind === "warn" ? "warn" : "find", text); ui.say([{ speaker: kind === "warn" ? "warn" : "find", text }]); }
   function log(kind, text) { st.log.push({ t: st.t, kind, text }); }
-  function rec(key) { if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb"); (st.events[key] = st.events[key] || []).push(st.t); st.evOrder = st.evOrder || {}; if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1); }
+  function rec(key) {
+    if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb");
+    (st.events[key] = st.events[key] || []).push(st.t);
+    st.evOrder = st.evOrder || {};
+    if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1);
+    if (key === "q:asa_q" || key === "q:blood") {
+      st.x.asaQ = true;
+      if (!st.events["q:asa_q"]) st.events["q:asa_q"] = [st.t];
+    } else if (key === "q:ntg_q" || key === "q:pde5" || key === "q:ed") {
+      st.x.ntgQ = true; st.x.ed = true;
+      for (const ak of ["q:ntg_q", "q:pde5", "q:ed"]) if (!st.events[ak]) st.events[ak] = [st.t];
+    } else if (key === "t:aspirin") {
+      if (!st.events["t:asa"]) st.events["t:asa"] = [st.t];
+    } else if (key === "t:nitro") {
+      if (!st.events["t:ntg"]) st.events["t:ntg"] = [st.t];
+    }
+  }
   // Does this scenario's patient respond to naloxone (opioid toxidrome modeled)? Otherwise naloxone has no effect.
   // M1: a TRAUMA call is the trauma tag or TP 1244, not any exam text that mentions an injury
   function traumaCall() { return sc.tag === "TRAUMA" || /^1244/.test(sc.protocol || ""); }
@@ -3588,6 +3623,7 @@ const SIM = (() => {
       case "sga": st.flags.sga = true; st.flags.o2 = "bvm"; rec("t:o2any"); st.rev.etco2 = { t: st.t }; narr = "i-gel placed, ventilating; waveform capnography confirmed"; if (alert || m === "confused") notes.push(dev("Advanced airway in a patient with a gag reflex/responsive.", "MCG 1302")); break;
       case "aspirin": {
         const mg = doseOf(tx, "mg");
+        if (!st.x.asaQ && !st.events["q:asa_q"]) notes.push(dev("Ask the aspirin screening questions (aspirin allergy, active GI bleed or stomach ulcers, aspirin already taken today) before giving aspirin.", "MCG 1317.3 / MCG 1317.7 / 1211 #5 / local policy*", "caution"));
         if (mg && mg !== 325) notes.push(dev(`LA County dose is aspirin 325 mg chewable PO (you said ${mg} mg).`, "1211 #5", "note"));
         if (!alert) notes.push(dev("Aspirin PO only if alert.", "1211 #5"));
         if (n(st, "aspirin") >= 1) notes.push(dev("Aspirin already given.", "1211", "note"));
@@ -3596,6 +3632,7 @@ const SIM = (() => {
         let mg = doseOf(tx, "mg") || 0.4; st.lastNitroDose = mg;
         const isChf = sc.base === "chf";
         if (!bpKnown) notes.push(dev("Nitroglycerin given without a current blood pressure. Assess BP before each dose.", isChf ? "1214 #8" : "1211 #6"));
+        if (!st.x.ntgQ && !st.events["q:ntg_q"] && !st.events["q:pde5"] && !st.events["q:ed"] && !(sc.pde5Hours != null && sc.pde5Hours <= 48)) notes.push(dev("Ask the nitroglycerin screening questions (ED meds / PDE5 inhibitors like Viagra/sildenafil, Cialis/tadalafil, Levitra/vardenafil or pulmonary hypertension meds in the last 48 hours, nitro allergy, or nitro already taken today) before giving nitroglycerin.", "MCG 1317.31 / " + (isChf ? "1214 #8" : "1211 #6"), "caution"));
         if (!isChf && st.tg && st.tg.twelve && st.tg.twelve.rv) { st.x.rvNitroT = st.t; rec("x:nitrorv");
           notes.push(dev(`CRITICAL: nitroglycerin with a RIGHT VENTRICULAR infarct (ST elevation in V4R)${st.events["a:v4r"] ? "" : "; you didn't obtain V4R first"}. The RV is preload-dependent: expect a large BP drop. Lay flat, NS fluid bolus, reassess.`, "standard practice* (RV infarct, instructor standard)", "deviation"));
           notes.push(dev("1211 ❹ says inferior MI alone is not a contraindication to nitroglycerin. A positive V4R / RV infarct is graded per instructor standard.", "1211 ❹", "note")); }
@@ -4197,7 +4234,20 @@ const SIM = (() => {
     return ["V1", "V2", "V3", "V4"].some(l => (stv[l] || 0) <= -0.1) || /ST depression[^.]*\bV[1-4]/i.test(tw.text || "");
   }
   function checklist() {
-    const base = [...(sc.checklist || []), ...(typeof COURSE !== "undefined" ? COURSE.checklist(st) : [])];
+    const base = [...(sc.checklist || []), ...(typeof COURSE !== "undefined" ? COURSE.checklist(st) : [])].map(c => ({ ...c, keys: [...(c.keys || [])] }));
+    for (const c of base) {
+      if (c.keys.includes("q:pde5") && !c.keys.includes("q:ntg_q")) c.keys.push("q:ntg_q", "q:ed");
+    }
+    const iAsa = base.findIndex(c => (c.keys || []).includes("t:aspirin"));
+    if ((iAsa >= 0 || n(st, "aspirin") > 0) && !base.some(c => (c.keys || []).includes("q:asa_q"))) {
+      const item = { label: "Ask aspirin questions before ASA (allergy, GI bleed/ulcers, ASA today)", keys: ["q:asa_q"], ref: "MCG 1317.3 / MCG 1317.7 / 1211 #5 / local policy*" };
+      if (iAsa >= 0) base.splice(iAsa, 0, item); else base.push(item);
+    }
+    const iNtg = base.findIndex(c => (c.keys || []).includes("t:nitro"));
+    if ((iNtg >= 0 || n(st, "nitro") > 0) && !base.some(c => (c.keys || []).some(k => k === "q:pde5" || k === "q:ntg_q" || k === "q:ed"))) {
+      const item = { label: "Ask nitro questions before NTG (ED / PDE5 meds in last 48 hours, nitro allergy/today)", keys: ["q:ntg_q", "q:pde5", "q:ed"], ref: "MCG 1317.31 / " + (sc.base === "chf" || sc.protocol === "1214" ? "1214 #8" : "1211 #6") };
+      if (iNtg >= 0) base.splice(iNtg, 0, item); else base.push(item);
+    }
     if ((v14Dep(st.tg) || (st.x && st.x.hadV14Dep)) && !base.some(c => (c.keys || []).includes("a:v789"))) {
       base.push({ label: "Posterior leads (V7, V8, V9: move V4–V6 to back) obtained for V1–V4 ST depression", keys: ["a:v789"], ref: "standard practice* (instructor standard: ST depression in V1–V4)", critical: true });
     }
@@ -9916,7 +9966,7 @@ const RuleBasedPatient = (() => {
   const CAN_TALK = ["alert", "anxious", "confused", "aphasic"];
   const GENERIC = {
     greet: "Hi...", consent: "Okay.", reassure: "Okay... thank you.", thanks: "Mm-hm.", seizurehx: "No, never.",
-    pde5: "No.", drugs: "No, nothing like that.", cough: "No.", swelling: "No.", headache: "No headache.", weakness: "No.",
+    pde5: "No.", ed: "No.", asa_q: "No — I'm not allergic to aspirin, no stomach ulcers or GI bleeding, and I haven't taken any aspirin today.", ntg_q: "No — I haven't taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension meds in the last 48 hours, I'm not allergic to nitroglycerin, and I haven't taken any nitro today.", drugs: "No, nothing like that.", cough: "No.", swelling: "No.", headache: "No headache.", weakness: "No.",
     nausea: "No.", dizzy: "No.", sweaty: "A little.", lkw: "I'm... not sure exactly.", hospital: "Wherever you think is best.",
     refusal: "No, I'll go.", understand: "Yes.", feelnow: "About the same.", time: "It's been pretty constant.",
     orient: "I know where I am. I'm just scared.", chestpain: "No chest pain.", sob: "I'm okay breathing-wise.",
@@ -9979,19 +10029,59 @@ const RuleBasedPatient = (() => {
   }
 
 
+  function medScreenAnswer(q, sc, st, forBy) {
+    const ans = sc.answers || {}, byAns = sc.bystanderAnswers || {};
+    const pro = sc.patient && sc.patient.sex === "F" ? "she" : "he";
+    if (q === "asa_q") {
+      if (forBy) {
+        if (byAns.asa_q != null) return resolve(byAns.asa_q, st);
+        return `No allergy to aspirin, no stomach ulcers or GI bleeding, and ${pro} hasn't taken any aspirin today.`;
+      }
+      if (ans.asa_q != null) return resolve(ans.asa_q, st);
+      const algStr = [...(sc.allergies || []), resolve(ans.allergies, st) || ""].join(" ");
+      const hxStr = [resolve(ans.history, st) || "", resolve(ans.blood, st) || ""].join(" ");
+      const medsStr = [resolve(ans.meds, st) || "", resolve(ans.events, st) || ""].join(" ");
+      if (/\b(aspirin|asa|nsaid)\b/i.test(algStr)) return "Yes — I'm allergic to aspirin.";
+      if (sc.asaContra || /\b(ulcer|gi bleed|gastrointestinal bleed|bleeding disorder|hemophilia|vomiting blood|black tarry)\b/i.test(hxStr)) return "I'm not allergic to aspirin, but I do have a history of stomach ulcers / GI bleeding.";
+      if (/baby aspirin|\baspirin\b/i.test(medsStr)) return "No — I'm not allergic to aspirin, and no stomach ulcers or GI bleeding. I'm prescribed a daily baby aspirin, but I haven't taken any aspirin for this today.";
+      return GENERIC.asa_q;
+    }
+    if (q === "ntg_q") {
+      if (forBy) {
+        if (byAns.ntg_q != null) return resolve(byAns.ntg_q, st);
+        if (byAns.pde5 != null) return resolve(byAns.pde5, st);
+        return `No erectile dysfunction or pulmonary hypertension meds in the last 48 hours, no nitro allergy, and ${pro} hasn't taken any nitro today.`;
+      }
+      if (ans.ntg_q != null) return resolve(ans.ntg_q, st);
+      if (sc.pde5Hours != null && sc.pde5Hours <= 48) {
+        const p5 = ans.pde5 != null ? resolve(ans.pde5, st) : "Yeah, I took Viagra within the last 48 hours.";
+        return `${p5} I'm not allergic to nitroglycerin, and I haven't taken any nitro today.`;
+      }
+      if ((sc.patches || []).some(p => /nitro/i.test(p.drug || p.key || p.text || ""))) {
+        return "No... no Viagra or ED meds in the last 48 hours, and not allergic... but I have a nitroglycerin patch on my chest, and I took two of my nitro pills about an hour ago.";
+      }
+      const p5 = ans.pde5 != null ? resolve(ans.pde5, st) : "";
+      if (p5 && !/^no\.?$/i.test(p5.trim())) return `${p5} No ED meds in the last 48 hours, I'm not allergic to nitroglycerin, and I haven't taken any nitro today.`;
+      return GENERIC.ntg_q;
+    }
+    return null;
+  }
   function answerFor(q, ctx) {
     const { scenario: sc, state: st, mental, parsed } = ctx;
     const by = sc.bystander, byAns = sc.bystanderAnswers || {};
+    if (q === "ed") q = "pde5";
     if (q === "medstart" && (sc.answers || {}).medstart == null && byAns.medstart == null) q = "meds"; // v2.10.6: only dystonic calls author a drug start date
     const talk = CAN_TALK.includes(mental);
     if ((q === "pregnant" || q === "lmp") && sc.patient.sex === "M") return talk ? [{ speaker: "patient", text: "(gives you a strange look) ...I'm a guy." }] : [];
     if ((q === "pregnant" || q === "lmp") && sc.patient.age > 58 && !(sc.answers || {})[q] && talk && mental !== "confused") return [{ speaker: "patient", text: "(laughs) Not for many, many years." }];
     if (parsed.toBystander && byAns[q]) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
+    if (parsed.toBystander && (q === "asa_q" || q === "ntg_q") && by) return [{ speaker: "bystander", text: medScreenAnswer(q, sc, st, true) }];
     if (sc.patient.age < 6 && byAns[q]) { const o = []; if (talk && sc.answers && sc.answers[q]) o.push({ speaker: "patient", text: resolve(sc.answers[q], st) }); o.push({ speaker: "bystander", text: resolve(byAns[q], st) }); return o; }
     if (sc.patient.age < 6 && q === "age" && by) return [{ speaker: "bystander", text: `${sc.patient.sex === "F" ? "She's" : "He's"} ${sc.patient.age < 1 ? "a newborn" : sc.patient.age === 1 ? "one year old" : sc.patient.age + " years old"}.` }];
     if (!talk) {
       const out = [];
       if (byAns[q]) out.push({ speaker: "bystander", text: resolve(byAns[q], st) });
+      else if ((q === "asa_q" || q === "ntg_q") && by) out.push({ speaker: "bystander", text: medScreenAnswer(q, sc, st, true) });
       else if (q === "age" && by) out.push({ speaker: "bystander", text: `${sc.patient.sex === "F" ? "She's" : "He's"} ${sc.patient.age}.` });
       return out;
     }
@@ -10003,6 +10093,7 @@ const RuleBasedPatient = (() => {
     if (q === "age" && mental === "aphasic") { const o = [{ speaker: "patient", text: a != null ? resolve(a, st) : "...uh... (holds up fingers haltingly, frustrated)" }]; if (byAns.age) o.push({ speaker: "bystander", text: resolve(byAns.age, st) }); else if (by) o.push({ speaker: "bystander", text: `${sc.patient.sex === "F" ? "She's" : "He's"} ${sc.patient.age}.` }); return o; }
     if (mental === "confused" && (a == null || typeof a === "string")) return [{ speaker: "patient", text: pick(sc.confusedAnswers || CONFUSED) }];
     if (a != null) return [{ speaker: "patient", text: resolve(a, st) }];
+    if (q === "asa_q" || q === "ntg_q") return [{ speaker: "patient", text: medScreenAnswer(q, sc, st, false), noTrunc: true }];
     if (byAns[q] && sc.patient.age < 15 && a == null) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
     if (byAns[q] && ["lkw", "onset", "events"].includes(q)) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
     if (q === "age") return [{ speaker: "patient", text: `I'm ${sc.patient.age}.` }];
@@ -10037,7 +10128,7 @@ const RuleBasedPatient = (() => {
     }
     // breathless speech: short broken phrases when tachypneic / hypoxic
     const v = st.v || {}, dyspneic = talk && ((v.rr || 0) >= 26 || (v.spo2 != null && v.spo2 < 90));
-    if (dyspneic) out.forEach(o => { if (o.speaker === "patient") o.text = breathless(o.text, (v.rr || 0) >= 32 || (v.spo2 || 100) < 86); });
+    if (dyspneic) out.forEach(o => { if (o.speaker === "patient" && !o.noTrunc) o.text = breathless(o.text, (v.rr || 0) >= 32 || (v.spo2 || 100) < 86); });
     return out;
   }
   function breathless(text, severe) {
@@ -10838,6 +10929,8 @@ const NEXT = (() => {
       ["Medications", "What medications do you take?"], ["Onset", "When did this start?"], ["Provokes", "Does anything make it better or worse?"], ["Quality", "What does it feel like?"],
       ["Radiates", "Does it go anywhere?"], ["Severity", "Rate it 0 to 10"], ["Chest pain?", "Any chest pain?"], ["Short of breath?", "Any shortness of breath?"], ["Drugs / alcohol", "Did you take any drugs or alcohol today?"],
       ["Last oral intake", "When did you last eat?"], ["Can you hear me?", "Can you hear me? Open your eyes"], ["Transport consent", "Is it okay if we take you to the hospital?"],
+      ["Ask aspirin questions", "Before I give you aspirin, are you allergic to aspirin, do you have any stomach ulcers or GI bleeding, or have you taken any aspirin today?"],
+      ["Ask nitro questions (ED meds)", "Before I give you nitro, have you taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension medications in the last 48 hours, or taken any nitro today?"],
       ["Pertinent negatives (quick yes/no)", PN_SCRIPT], ["Headache?", "Do you have a headache?"], ["Blurred vision?", "Any blurred vision?"], ["Ringing in ears?", "Any ringing in your ears?"],
       ["Dizziness?", "Any dizziness?"], ["Weaker than normal?", "Do you feel weaker than normal?"], ["Nausea?", "Any nausea?"], ["Diarrhea?", "Any diarrhea?"], ["Vomiting?", "Any vomiting?"]]],
     ["Assess", [["Radial + carotid", "Checking radial and carotid pulses"], ["Skin / forehead", "Feeling the forehead, checking skin signs"], ["Is he alert?", "Is he alert?"],
@@ -10965,11 +11058,17 @@ const NEXT = (() => {
         ...(!ev["q:age"] && !(st.x && st.x.age) ? [C("How old are you?", "How old are you?")] : []),
       ],
       why: () => { const ae = sim.aeiou(), o = []; ae.items.filter(i => !i.done && AE_SAY[i.id]).forEach(i => { o.push(C(AE_SAY[i.id][0], AE_SAY[i.id][1], "aeiou")); if (i.id === "S") o.push(...strokeChips()); }); return o; },
-      hx: () => [...HX.filter(x => !ev[x[2]]).map(x => C(x[0], x[1])), ...ivPrepChip()],
+      hx: () => [...HX.filter(x => !ev[x[2]]).map(x => C(x[0], x[1])), ...medScreenChips(), ...ivPrepChip()],
     };
     const strokeChips = () => STROKE_CH.filter(x => !ev[x[2]]).map(x => ({ ...C(x[0], x[1], "stroke") }));
     const pedsEarly = () => sc.peds && !ev["a:broselow"] ? [C("Broselow tape", "Broselow tape, what color are they?", "peds")] : [];
     const ivPrepChip = () => st.flags.iv || st.x.ivPrep || (st.pq || []).some(q => q.id === "ivsetup") || sc.tag === "ARREST" ? [] : [C("IV setup (partner)", "Can you set up my IV and spike a bag?", "partner")];
+    const medScreenChips = () => {
+      const p = sc.protocol || (sc.refs || [])[0] || "", out = [];
+      if ((p === "1211" || sc.base === "stemi") && !ev["q:asa_q"] && !(st.x && st.x.asaQ) && !ev["t:aspirin"]) out.push(C("Ask aspirin questions", "Before I give you aspirin, are you allergic to aspirin, do you have any stomach ulcers or GI bleeding, or have you taken any aspirin today?"));
+      if ((p === "1211" || p === "1214" || sc.base === "stemi" || sc.base === "chf") && !ev["q:ntg_q"] && !ev["q:pde5"] && !ev["q:ed"] && !(st.x && st.x.ntgQ) && !ev["t:nitro"]) out.push(C("Ask nitro questions (ED meds)", "Before I give you nitro, have you taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension medications in the last 48 hours, or taken any nitro today?"));
+      return out;
+    };
     const HX = [["History", "Any medical history?", "q:history"], ["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"],
       ["Onset", "When did this start?", "q:onset"], ["Provokes", "Does anything make it better or worse?", "q:provocation"], ["Quality", "What does it feel like?", "q:quality"], ["Radiates", "Does it go anywhere?", "q:radiation"],
       ["Severity", "Rate it 0 to 10", "q:severity"], ["Time", "How long has it been going on?", "q:time"], ["Pertinent negatives (quick yes/no)", PN_SCRIPT, "x:ros"]];
@@ -11030,8 +11129,10 @@ const NEXT = (() => {
     if (proto === "1232") STROKE_CH.filter(x => !ev[x[2]]).forEach(x => prefix.push(C(x[0], x[1], "stroke")));
     const has12 = !!(ev["a:12lead"] || (st.rev && st.rev.twelve) || (st.x && st.x.ecg) || (st.pq || []).some(q => q.id === "12lead"));
     if ((proto === "1211" || sc.base === "stemi") && !has12) prefix.push(C("12-lead", "Get a 12-lead", "monitor"));
-    if ((has12 || proto === "1211" || sc.base === "stemi") && !ev["a:v4r"] && !(st.x && st.x.v4r) && !(st.x && st.x.arrest) && st.tg && st.tg.twelve) prefix.push(C("Move V4 to V4R", "Partner, move V4 to V4R", "monitor"));
-    if ((has12 || proto === "1211" || sc.base === "stemi") && !ev["a:v789"] && !(st.x && st.x.v789) && !(st.x && st.x.arrest) && st.tg && st.tg.twelve) prefix.push(C("Move V4, V5, V6 to V7, V8, V9", "Partner, move V4, V5, V6 to the back and label them V7, V8, V9", "monitor"));
+    if (has12 && !ev["a:v4r"] && !(st.x && st.x.v4r) && !(st.x && st.x.arrest) && st.tg && st.tg.twelve) prefix.push(C("Move V4 to V4R", "Partner, move V4 to V4R", "monitor"));
+    if (has12 && !ev["a:v789"] && !(st.x && st.x.v789) && !(st.x && st.x.arrest) && st.tg && st.tg.twelve) prefix.push(C("Move V4, V5, V6 to V7, V8, V9", "Partner, move V4, V5, V6 to the back and label them V7, V8, V9", "monitor"));
+    if ((want.has("aspirin") || proto === "1211" || sc.base === "stemi") && !ev["q:asa_q"] && !(st.x && st.x.asaQ) && !ev["t:aspirin"]) prefix.push(C("Ask aspirin questions", "Before I give you aspirin, are you allergic to aspirin, do you have any stomach ulcers or GI bleeding, or have you taken any aspirin today?"));
+    if ((want.has("nitro") || proto === "1211" || proto === "1214" || sc.base === "stemi" || sc.base === "chf") && !ev["q:ntg_q"] && !ev["q:pde5"] && !ev["q:ed"] && !(st.x && st.x.ntgQ) && !ev["t:nitro"]) prefix.push(C("Ask nitro questions (ED meds)", "Before I give you nitro, have you taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension medications in the last 48 hours, or taken any nitro today?"));
     if (sc.peds && !ev["a:broselow"]) prefix.unshift(C("Broselow tape", "Broselow tape, what color are they?", "peds"));
     slots.forEach((sl, si) => {
       const live = sl.filter(id => !used.has(id) && !done(id)); if (!live.length) return;
@@ -11048,7 +11149,7 @@ const NEXT = (() => {
     let lim = Math.max(4, 10 - prefix.length); const split = l => l < out.length && out[l].slot !== 99 && out[l].slot === out[l - 1].slot;
     // never cut a protocol step in half (e.g. the 3 midazolam routes): grow into the 12-chip budget, else stop before that step
     while (split(lim) && prefix.length + lim + 2 < 12) lim++; if (split(lim)) { let b = lim; while (b > 1 && out[b - 1].slot === out[lim].slot) b--; if (b >= 3) lim = b; }
-    out = out.slice(0, lim);
+    out = out.slice(0, Math.min(lim, Math.max(2, 10 - prefix.length)));
     return [...prefix, ...out, C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Transport", "Let's transport, load and go", "radio")];
   }
   function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => ({ label: l, say: pron(s, F) }))]); }
