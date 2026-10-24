@@ -38,6 +38,14 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.11.4-protocolaudit
+- Audited every `MED_QUIZ` entry against LA County MCG 1317.* drug-reference text: dose / repeat / max-prior-to-Base / contraindications now match protocol wording only (no invented package-insert contraindications).
+- **Diphenhydramine (MCG 1317.15):** Contraindications corrected to **None** (was hypersensitivity / neonates / nursing mothers).
+- Also corrected contras for aspirin, nitro (tamponade; dropped RV/hypersensitivity), albuterol, epi (None), push-dose epi (None), amiodarone (None in cardiac arrest), adenosine, atropine (tachycardia / thyrotoxicosis), midazolam, naloxone, D10 (None), glucagon (insulinoma), ondansetron (allergy / pregnancy / <6 mo), fentanyl, morphine, ketorolac, TXA, calcium (hypercalcemia only), bicarb, magnesium.
+- Fixed several wrong MCG reference numbers (naloxone 1317.29, glucagon 1317.20, ondansetron 1317.34, TXA 1317.41, calcium 1317.11, bicarb 1317.39).
+- Oral glucose: no MCG 1317 sheet — TP 1203 only (15 g PO if awake and alert).
+- Tests: `tests/sim_v2114.js`, `tests/browser/v2114_ui.mjs`.
+
 ### 2.11.3-maxbase
 - Max Dose quiz question now asks for **maximum dose prior to Base contact** (LA County MCG 1317.* wording).
 - Corrected Midazolam max to **10 mg prior to Base** (20 mg only WITH Base — used as distractor).

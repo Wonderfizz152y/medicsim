@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.11.3-maxbase 494b6ce62a">
+<meta name="medicsim-version" content="2.11.4-protocolaudit 0cbd237fed">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1162,7 +1162,7 @@ const DOSING = (() => {
     aspirin: {
       name: "Aspirin",
       shortName: "aspirin",
-      ref: "MCG 1317.3 / MCG 1317.7 · TP 1211",
+      ref: "MCG 1317.7 · TP 1211",
       defaultDose: { v: 325, u: "mg" },
       defaultRoute: "PO",
       dose: {
@@ -1190,7 +1190,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Allergy to aspirin, active GI bleeding / stomach ulcers, or unable to chew/swallow",
+        correct: "Known aspirin allergy or bleeding GI ulcers",
         distractors: [
           "SBP < 100 mmHg or PDE5 inhibitor use within 48 hours",
           "Heart rate < 60 bpm or 2nd/3rd degree heart block",
@@ -1213,7 +1213,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 3–5 minutes as needed while SBP ≥ 100 mmHg",
+        correct: "Every 5 minutes prn ×2 for chest pain (total 3 doses); every 3–5 min prn ×2 for CHF while SBP ≥ 100 mmHg",
         distractors: [
           "None (single dose only; do not repeat)",
           "Every 15–20 minutes as needed for chest pain",
@@ -1229,7 +1229,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "SBP < 100 mmHg, PDE5 inhibitor / ED meds (sildenafil, tadalafil, vardenafil) within 48 hours, right ventricular infarction (V4R STE), or hypersensitivity",
+        correct: "PDE5 / ED meds (sildenafil, tadalafil, vardenafil) within 48 hours, SBP < 100 mmHg, or suspected cardiac tamponade",
         distractors: [
           "Active stomach ulcers, GI bleeding, or aspirin allergy",
           "Sinus tachycardia > 100 bpm or hypertension (SBP > 160 mmHg)",
@@ -1240,7 +1240,7 @@ const DOSING = (() => {
     albuterol: {
       name: "Albuterol",
       shortName: "albuterol",
-      ref: "MCG 1317.1 / 1317.3 · TP 1237",
+      ref: "MCG 1317.3 · TP 1237",
       defaultDose: { v: 5, u: "mg" },
       defaultRoute: "NEB",
       dose: {
@@ -1268,7 +1268,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypersensitivity to albuterol (use caution in tachyarrhythmias)",
+        correct: "Known hypersensitivity / allergy to albuterol",
         distractors: [
           "SBP < 120 mmHg or history of COPD",
           "SpO2 < 90% or bilateral wheezing on auscultation",
@@ -1307,7 +1307,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "None in life-threatening anaphylaxis / severe allergic reaction",
+        correct: "None",
         distractors: [
           "Heart rate > 100 bpm or patient anxiety",
           "SBP < 100 mmHg or audible wheezing/stridor",
@@ -1330,7 +1330,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 3–5 minutes (every other 2-minute CPR cycle)",
+        correct: "Every 5 minutes (may repeat ×2; maximum total dose 3 mg)",
         distractors: [
           "Every 10–15 minutes",
           "Every 30 seconds during compressions",
@@ -1346,7 +1346,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "None in cardiac arrest",
+        correct: "None",
         distractors: [
           "Asystole or pulseless electrical activity (PEA)",
           "Age > 65 years or history of hypertension",
@@ -1377,7 +1377,7 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "Titrate to SBP > 90 mmHg — contact Base concurrently (no fixed mg max prior to Base)",
+        correct: "Titrate to SBP > 90 mmHg (no fixed mg maximum listed prior to Base contact)",
         distractors: [
           "10 mcg (1 mL) single dose maximum prior to Base contact",
           "1 mg (100 mL) fixed maximum prior to Base contact",
@@ -1385,11 +1385,11 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "SBP ≥ 90 mmHg (not hypotensive), traumatic shock, or untreated hypovolemia before initial fluid bolus",
+        correct: "None",
         distractors: [
-          "Post-ROSC hypotension with SBP < 70 mmHg",
-          "Refractory anaphylactic shock after IM epinephrine and NS bolus",
-          "Symptomatic bradycardia with poor perfusion refractory to TCP"
+          "SBP ≥ 90 mmHg, traumatic shock, or untreated hypovolemia (not listed as contraindications)",
+          "Age > 65 years or history of coronary artery disease",
+          "Concurrent use of amiodarone or atropine"
         ]
       }
     },
@@ -1408,7 +1408,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Repeat 150 mg IV/IO once in 3–5 minutes (after 2nd subsequent shock / cycle)",
+        correct: "May repeat 150 mg IV/IO ×1 after additional defibrillation ×2 (max total 450 mg)",
         distractors: [
           "Repeat 300 mg every 1 minute continuously",
           "None (single 300 mg dose only; never give a second dose)",
@@ -1424,7 +1424,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "None in VF/pulseless VT arrest (in perfusing rhythms: bradycardia, 2nd/3rd degree heart block, cardiogenic shock, hypersensitivity)",
+        correct: "None in cardiac arrest",
         distractors: [
           "Refractory ventricular fibrillation after 3 defibrillations",
           "Pulseless ventricular tachycardia",
@@ -1436,7 +1436,7 @@ const DOSING = (() => {
       name: "Adenosine",
       shortName: "adenosine",
       ref: "MCG 1317.1 · TP 1213",
-      defaultDose: { v: 6, u: "mg" },
+      defaultDose: { v: 12, u: "mg" },
       defaultRoute: "IV",
       dose: {
         correct: "12 mg rapid IV push + 10 mL NS flush (may repeat ×1 in 1–2 min per MCG 1317.1)",
@@ -1463,7 +1463,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "2nd or 3rd degree AV block, sick sinus syndrome, known atrial fibrillation/flutter or WPW, poison/drug-induced tachycardia, or severe bronchospasm",
+        correct: "Sinus tachycardia; 2nd/3rd degree heart block without pacemaker; WPW with atrial fibrillation (wide-complex irregular); sick sinus syndrome; heart transplant; or carbamazepine (Tegretol) for seizure disorder",
         distractors: [
           "Regular narrow-complex SVT with HR > 160 bpm",
           "SBP > 100 mmHg in an alert patient",
@@ -1474,7 +1474,7 @@ const DOSING = (() => {
     atropine: {
       name: "Atropine",
       shortName: "atropine",
-      ref: "MCG 1317.7 / 1317.9 · TP 1212 / TP 1241",
+      ref: "MCG 1317.9 · TP 1212 / TP 1241",
       defaultDose: { v: 1, u: "mg" },
       defaultRoute: "IV",
       dose: {
@@ -1502,7 +1502,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypersensitivity (ineffective in infranodal 2nd-degree Type II / 3rd-degree AV block; use TCP)",
+        correct: "Tachycardia or thyrotoxicosis",
         distractors: [
           "Symptomatic sinus bradycardia with HR < 40 bpm and poor perfusion",
           "Organophosphate poisoning with bronchorrhea and salivation",
@@ -1517,7 +1517,7 @@ const DOSING = (() => {
       defaultDose: { v: 10, u: "mg" },
       defaultRoute: "IN",
       dose: {
-        correct: "10 mg IM/IN (or 5 mg IV/IO) for active seizure (5 mg IM/IN/IV for agitation; 2 mg for sedation)",
+        correct: "Seizure: 10 mg IM/IN or 5 mg IV/IO; agitation/psych: 5 mg IM/IN/IV (or 10 mg IM/IN single); sedation for cardioversion/TCP: 5 mg IV/IO/IM/IN",
         distractors: [
           "50 mg deep IM single dose",
           "0.4 mg SL every 5 minutes",
@@ -1525,7 +1525,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Repeat once in 5–10 minutes IM/IN (or q 2–5 min IV) if seizure continues",
+        correct: "Repeat ×1 in 5 min (IM/IN/psych/sedation) or in 2 min (IV seizure) if needed",
         distractors: [
           "None (single dose only; never repeat)",
           "Every 30 minutes as needed",
@@ -1541,7 +1541,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypotension / shock (SBP < 90 mmHg), severe respiratory depression without airway support, or hypersensitivity to benzodiazepines",
+        correct: "Respiratory depression or shock / poor perfusion",
         distractors: [
           "Generalized tonic-clonic status epilepticus",
           "Active eclamptic seizure in pregnancy",
@@ -1552,7 +1552,7 @@ const DOSING = (() => {
     naloxone: {
       name: "Naloxone (Narcan)",
       shortName: "naloxone",
-      ref: "MCG 1317.27 · TP 1241",
+      ref: "MCG 1317.29 · TP 1241",
       defaultDose: { v: 2, u: "mg" },
       defaultRoute: "IN",
       dose: {
@@ -1564,7 +1564,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 2–3 minutes as needed to restore adequate respirations",
+        correct: "Titrate in increments to adequate respiratory rate and tidal volume (may repeat as needed)",
         distractors: [
           "Every 20 minutes as needed",
           "None (single dose only)",
@@ -1580,7 +1580,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypersensitivity to naloxone (assist ventilations with BVM first if apneic or SpO2 < 90%)",
+        correct: "Hypersensitivity",
         distractors: [
           "Respiratory rate < 8/min with pinpoint pupils",
           "Suspected fentanyl or heroin overdose",
@@ -1619,11 +1619,11 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypersensitivity to diphenhydramine, neonates/premature infants, nursing mothers",
+        correct: "None",
         distractors: [
-          "Acute dystonic reaction (oculogyric crisis / torticollis) from haloperidol",
-          "Urticaria, pruritus, or angioedema",
-          "Heart rate > 80 bpm or SBP > 110 mmHg"
+          "Hypersensitivity to diphenhydramine, neonates/premature infants, nursing mothers",
+          "Acute dystonic reaction (oculogyric crisis / torticollis) from antipsychotic meds",
+          "Urticaria, pruritus, or angioedema from allergic reaction"
         ]
       }
     },
@@ -1658,18 +1658,18 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Normoglycemia / hyperglycemia (BG ≥ 60 mg/dL without hypoglycemia) or intracranial hemorrhage without hypoglycemia",
+        correct: "None",
         distractors: [
+          "Intracranial hemorrhage without hypoglycemia (not listed as a contraindication)",
           "Symptomatic hypoglycemia with BG < 60 mg/dL and altered mental status",
-          "Diabetic patient on insulin with diaphoresis and confusion",
-          "Inability to swallow oral glucose"
+          "Diabetic patient on insulin with diaphoresis and confusion"
         ]
       }
     },
     oralglucose: {
       name: "Oral Glucose",
       shortName: "oral glucose",
-      ref: "MCG 1317.21 · TP 1203",
+      ref: "TP 1203 (no MCG 1317 oral-glucose sheet)",
       defaultDose: { v: 15, u: "g" },
       defaultRoute: "PO",
       dose: {
@@ -1681,7 +1681,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "May repeat once in 10–15 minutes if still hypoglycemic and alert",
+        correct: "None listed (TP 1203: 15 g PO if awake and alert)",
         distractors: [
           "Every 2 minutes regardless of mental status",
           "None (never repeat oral glucose)",
@@ -1689,15 +1689,15 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "30 g (2 tubes) prior to Base contact",
+        correct: "15 g (single dose listed in TP 1203) prior to Base contact",
         distractors: [
+          "30 g (2 tubes) prior to Base contact",
           "75 g (5 tubes) prior to Base contact",
-          "100 g PO prior to Base contact",
-          "15 g (1 tube) absolute maximum — never repeat prior to Base"
+          "100 g PO prior to Base contact"
         ]
       },
       contra: {
-        correct: "Decreased level of consciousness, unable to swallow or protect airway, absent gag reflex",
+        correct: "Not awake and alert (TP 1203: administer only if awake and alert)",
         distractors: [
           "Alert hypoglycemic patient with BG 48 mg/dL who can swallow",
           "History of Type 1 or Type 2 diabetes",
@@ -1708,7 +1708,7 @@ const DOSING = (() => {
     glucagon: {
       name: "Glucagon",
       shortName: "glucagon",
-      ref: "MCG 1317.19 · TP 1203",
+      ref: "MCG 1317.20 · TP 1203",
       defaultDose: { v: 1, u: "mg" },
       defaultRoute: "IM",
       dose: {
@@ -1720,7 +1720,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "May repeat once in 15–20 minutes if no IV access and hypoglycemia persists",
+        correct: "May repeat ×1 in 20 minutes prn",
         distractors: [
           "Every 2 minutes IV push",
           "Every 5 minutes × 4",
@@ -1736,7 +1736,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypersensitivity to glucagon, pheochromocytoma / insulinoma",
+        correct: "Known insulinoma (insulin-secreting tumor)",
         distractors: [
           "Hypoglycemia with BG < 60 mg/dL when IV access is unsuccessful",
           "Altered mental status unable to take oral glucose",
@@ -1747,7 +1747,7 @@ const DOSING = (() => {
     ondansetron: {
       name: "Ondansetron (Zofran)",
       shortName: "ondansetron",
-      ref: "MCG 1317.33 · TP 1205",
+      ref: "MCG 1317.34 · TP 1205",
       defaultDose: { v: 4, u: "mg" },
       defaultRoute: "ODT",
       dose: {
@@ -1775,7 +1775,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Congenital long QT syndrome, hypersensitivity, children < 4 years old (and PKU for ODT)",
+        correct: "Known allergy to ondansetron; pregnancy (any gestational age); or age < 6 months",
         distractors: [
           "Nausea and vomiting following opioid administration",
           "Motion sickness or gastroenteritis in an adult",
@@ -1786,7 +1786,7 @@ const DOSING = (() => {
     fentanyl: {
       name: "Fentanyl",
       shortName: "fentanyl",
-      ref: "MCG 1317.18 / 1317.19 · TP 1205 / MCG 1345",
+      ref: "MCG 1317.19 · TP 1205 / MCG 1345",
       defaultDose: { v: 50, u: "mcg" },
       defaultRoute: "IV",
       dose: {
@@ -1798,7 +1798,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 5 minutes IV (or 10–15 minutes IM/IN) as needed for pain",
+        correct: "Every 5 minutes prn",
         distractors: [
           "Every 1 minute rapid push",
           "None (single 50 mcg dose only)",
@@ -1814,7 +1814,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "SBP < 90 mmHg (hypotension), respiratory depression (RR < 10 / hypoxia), altered mental status / head injury, or hypersensitivity",
+        correct: "Hypersensitivity or pregnant patient in labor",
         distractors: [
           "Severe isolated extremity fracture pain with BP 138/84",
           "Acute burn pain or chest pain refractory to nitroglycerin",
@@ -1825,7 +1825,7 @@ const DOSING = (() => {
     morphine: {
       name: "Morphine Sulfate",
       shortName: "morphine",
-      ref: "MCG 1317.26 / 1317.27 · TP 1205 / MCG 1345",
+      ref: "MCG 1317.27 · TP 1205 / MCG 1345",
       defaultDose: { v: 4, u: "mg" },
       defaultRoute: "IV",
       dose: {
@@ -1853,7 +1853,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "SBP < 90 mmHg (hypotension), respiratory depression, altered mental status, or hypersensitivity",
+        correct: "Hypotension or evidence of poor perfusion; history of allergy to morphine or other narcotics; or pregnant patient in labor",
         distractors: [
           "Acute extremity fracture with normal vital signs",
           "Alert patient with flank pain and BP 142/88",
@@ -1864,7 +1864,7 @@ const DOSING = (() => {
     ketorolac: {
       name: "Ketorolac (Toradol)",
       shortName: "ketorolac",
-      ref: "MCG 1317.22 / 1317.23 · TP 1205 / MCG 1345",
+      ref: "MCG 1317.22 · TP 1205 / MCG 1345",
       defaultDose: { v: 15, u: "mg" },
       defaultRoute: "IV",
       dose: {
@@ -1892,7 +1892,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "NSAID/aspirin allergy, active GI bleed/ulcer, renal disease, pregnancy, multisystem trauma/active bleeding, anticoagulants, or age < 4 or > 65",
+        correct: "Active bleeding; active wheezing; age < 4 or > 65; NSAID allergy; anticoagulation; current steroid use; head/multisystem trauma; history of upper GI bleed or PUD; renal disease/kidney transplant; known/suspected pregnancy; or suspected sepsis/septic shock",
         distractors: [
           "Isolated musculoskeletal pain or renal colic in a healthy 35-year-old",
           "SBP > 110 mmHg with normal mental status",
@@ -1903,11 +1903,11 @@ const DOSING = (() => {
     txa: {
       name: "Tranexamic Acid (TXA)",
       shortName: "TXA",
-      ref: "MCG 1317.39 · TP 1244 / TP 1217",
+      ref: "MCG 1317.41 · TP 1244 / TP 1217",
       defaultDose: { v: 1, u: "g" },
       defaultRoute: "IV",
       dose: {
-        correct: "1 g in 100 mL NS infused IV/IO over 10 minutes",
+        correct: "1 g in 50 or 100 mL NS infused IV/IO over 10 minutes",
         distractors: [
           "1 g rapid IV push over 10 seconds",
           "50 mg IM single injection",
@@ -1931,7 +1931,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Injury occurred > 3 hours ago, age < 15 years (pediatric), isolated head injury, or active thromboembolic event",
+        correct: "Age ≤ 14 years (or on length-based tape); > 3 hours post injury/delivery; isolated traumatic brain injury; traumatic arrest with CPR > 5 minutes; active known thrombotic disease (DVT/PE); or known allergic reaction to TXA",
         distractors: [
           "Hemorrhagic shock within 1 hour of penetrating torso trauma",
           "Severe postpartum hemorrhage within 3 hours of delivery",
@@ -1942,7 +1942,7 @@ const DOSING = (() => {
     calcium: {
       name: "Calcium Chloride",
       shortName: "calcium chloride",
-      ref: "MCG 1317.9 · TP 1210 / TP 1241",
+      ref: "MCG 1317.11 · TP 1210 / TP 1241 / TP 1243",
       defaultDose: { v: 1, u: "g" },
       defaultRoute: "IV",
       dose: {
@@ -1954,7 +1954,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Single dose (or repeat per Base order)",
+        correct: "May repeat ×1 for persistent symptoms / ECG abnormalities (hyperkalemia or crush); single dose for arrest or CCB overdose",
         distractors: [
           "Every 1 minute continuously",
           "Every 20 minutes × 4",
@@ -1970,7 +1970,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypercalcemia, ventricular fibrillation (unless hyperkalemia suspected), digoxin toxicity",
+        correct: "Hypercalcemia",
         distractors: [
           "Suspected hyperkalemic cardiac arrest (ESRD / missed dialysis / peaked T waves)",
           "Calcium channel blocker overdose with hypotension and bradycardia",
@@ -1981,7 +1981,7 @@ const DOSING = (() => {
     bicarb: {
       name: "Sodium Bicarbonate",
       shortName: "sodium bicarbonate",
-      ref: "MCG 1317.37 · TP 1210 / TP 1241",
+      ref: "MCG 1317.39 · TP 1210 / TP 1241 / TP 1243",
       defaultDose: { v: 50, u: "mEq" },
       defaultRoute: "IV",
       dose: {
@@ -1993,7 +1993,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 5–10 minutes as needed for QRS > 0.12 sec in TCA overdose / per Base",
+        correct: "May repeat ×1 for crush with persistent ECG abnormalities; further / TCA dosing as indicated",
         distractors: [
           "Every 30 seconds during CPR",
           "Every 20 minutes IM",
@@ -2009,7 +2009,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Metabolic or respiratory alkalosis, hypocalcemia, severe pulmonary edema",
+        correct: "Evidence of pulmonary edema, hypernatremia, or hypocalcemia",
         distractors: [
           "Tricyclic antidepressant (TCA) overdose with QRS > 0.12 sec and hypotension",
           "Suspected hyperkalemic cardiac arrest or crush syndrome",
@@ -2020,11 +2020,11 @@ const DOSING = (() => {
     magnesium: {
       name: "Magnesium Sulfate",
       shortName: "magnesium sulfate",
-      ref: "MCG 1317.24 / 1317.25 · TP 1217 / TP 1210 / TP 1213 / TP 1237",
+      ref: "MCG 1317.24 · TP 1217",
       defaultDose: { v: 4, u: "g" },
       defaultRoute: "IV",
       dose: {
-        correct: "4 g IV/IO slow push/infusion for eclampsia (or 2 g IV/IO for Torsades / severe asthma)",
+        correct: "4 g in 100 mL NS or sterile water IV over 20 minutes (or 10 g IM — 5 g each buttock — if no IV)",
         distractors: [
           "10 mg IM single injection",
           "300 mg rapid IV push",
@@ -2048,7 +2048,7 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Heart block, severe renal failure, hypotension (for asthma/Torsades)",
+        correct: "Known heart block or myasthenia gravis (caution in severe kidney disease / ESRD)",
         distractors: [
           "Eclamptic seizure in third-trimester pregnancy or postpartum",
           "Polymorphic VT (Torsades de Pointes) with prolonged QT",
