@@ -38,6 +38,13 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.11.3-maxbase
+- Max Dose quiz question now asks for **maximum dose prior to Base contact** (LA County MCG 1317.* wording).
+- Corrected Midazolam max to **10 mg prior to Base** (20 mg only WITH Base — used as distractor).
+- Corrected Adenosine to current MCG 1317.1: **12 mg × 2 (24 mg) prior to Base**.
+- Corrected Ondansetron max to **8 mg (may repeat ×1)**; Calcium to **2 g (may repeat ×1)**; Epi arrest to **3 mg prior to Base**.
+- Fentanyl/Morphine distractors now include the WITH-Base absolute max (250 mcg / 20 mg).
+
 ### 2.11.2-medquiz
 - **Pre-Administration Multiple-Choice Medication Check (MCG 1317.1–1317.41):**
   - Before administering a medication (by voice, typed text, or chip tap), an interactive 4-question multiple-choice knowledge check modal (`#medQuizModal`) prompts for **Dose & Route**, **Repeat Interval**, **Maximum Dose**, and **Contraindications** across all 23 LA County formulary medications (`aspirin`, `nitro`, `albuterol`, `epi_im`, `epi_arrest`, `pushepi`, `amio`, `adenosine`, `atropine`, `midaz`, `naloxone`, `diphen`, `d10`, `oralglucose`, `glucagon`, `ondansetron`, `fentanyl`, `morphine`, `ketorolac`, `txa`, `calcium`, `bicarb`, `magnesium`).

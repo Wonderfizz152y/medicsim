@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.11.2-medquiz 4bcd8b2a55">
+<meta name="medicsim-version" content="2.11.3-maxbase 494b6ce62a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1182,11 +1182,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "325 mg (single dose)",
+        correct: "325 mg (single dose) prior to Base contact",
         distractors: [
-          "650 mg (2 doses)",
-          "975 mg (3 doses)",
-          "162 mg total"
+          "650 mg (2 doses) prior to Base contact",
+          "975 mg (3 doses) prior to Base contact",
+          "162 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1221,11 +1221,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "3 doses (1.2 mg total)",
+        correct: "3 doses (1.2 mg total) prior to Base contact",
         distractors: [
-          "1 dose (0.4 mg total)",
-          "5 doses (2.0 mg total)",
-          "No maximum dose while chest pain persists"
+          "1 dose (0.4 mg total) prior to Base contact",
+          "5 doses (2.0 mg total) prior to Base contact",
+          "No maximum — continue every 3–5 min until pain free (no Base needed)"
         ]
       },
       contra: {
@@ -1260,11 +1260,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "3 doses (15 mg) prior to Base contact / continuous in severe distress",
+        correct: "3 doses (15 mg) prior to Base contact (continuous neb OK in severe distress)",
         distractors: [
-          "1 dose (5 mg total) absolute maximum",
-          "30 mg IV push total",
-          "2 puffs (180 mcg) total"
+          "1 dose (5 mg) absolute maximum prior to Base contact",
+          "30 mg IV push prior to Base contact",
+          "Unlimited nebulizer doses with no Base contact required"
         ]
       },
       contra: {
@@ -1301,9 +1301,9 @@ const DOSING = (() => {
       max: {
         correct: "3 doses (1.5 mg total) prior to Base contact",
         distractors: [
-          "0.5 mg single dose absolute maximum",
-          "10 mg IM total",
-          "Unlimited doses every 2 minutes"
+          "0.5 mg (1 dose) absolute maximum prior to Base contact",
+          "10 mg IM total prior to Base contact",
+          "Unlimited IM doses with no Base contact required"
         ]
       },
       contra: {
@@ -1338,11 +1338,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "No maximum during resuscitation / 3 mg (3 doses) per TP 1210 prior to Base contact",
+        correct: "3 mg (3 doses) prior to Base contact (TP 1210 / MCG 1317.17)",
         distractors: [
-          "1 mg single dose maximum",
-          "0.5 mg total maximum",
-          "150 mcg total maximum"
+          "1 mg (single dose) absolute maximum prior to Base contact",
+          "No maximum / unlimited epinephrine during resuscitation (no Base needed)",
+          "150 mcg total prior to Base contact"
         ]
       },
       contra: {
@@ -1377,11 +1377,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "Titrate to SBP > 90 mmHg (contact Base concurrently)",
+        correct: "Titrate to SBP > 90 mmHg — contact Base concurrently (no fixed mg max prior to Base)",
         distractors: [
-          "10 mcg (1 mL) single dose maximum",
-          "300 mg total",
-          "1.2 mg (3 doses) fixed cap"
+          "10 mcg (1 mL) single dose maximum prior to Base contact",
+          "1 mg (100 mL) fixed maximum prior to Base contact",
+          "1.2 mg (3 doses) fixed cap prior to Base contact"
         ]
       },
       contra: {
@@ -1416,11 +1416,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "450 mg total (300 mg + 150 mg)",
+        correct: "450 mg total (300 mg + 150 mg) prior to Base contact",
         distractors: [
-          "300 mg total",
-          "900 mg total",
-          "18 mg total"
+          "300 mg (first dose only) absolute maximum prior to Base contact",
+          "900 mg total prior to Base contact",
+          "18 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1439,7 +1439,7 @@ const DOSING = (() => {
       defaultDose: { v: 6, u: "mg" },
       defaultRoute: "IV",
       dose: {
-        correct: "6 mg rapid IV push (1st dose), then 12 mg rapid IV push (2nd dose) with immediate NS flush",
+        correct: "12 mg rapid IV push + 10 mL NS flush (may repeat ×1 in 1–2 min per MCG 1317.1)",
         distractors: [
           "150 mg slow IV infusion over 10 minutes",
           "1 mg slow IV push over 2 minutes",
@@ -1447,19 +1447,19 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 1–2 minutes if SVT persists (12 mg rapid IV push)",
+        correct: "May repeat ×1 after 1–2 minutes if SVT persists (second 12 mg rapid IV push)",
         distractors: [
           "Every 10–15 minutes as needed",
-          "None (do not repeat if 6 mg fails)",
+          "None (do not repeat if first 12 mg fails)",
           "Every 5–10 minutes IM"
         ]
       },
       max: {
-        correct: "18 mg total (6 mg + 12 mg) — or 30 mg if 2nd 12 mg given per Base",
+        correct: "24 mg total (12 mg × 2) prior to Base contact",
         distractors: [
-          "6 mg total maximum",
-          "3 mg total maximum",
-          "300 mg total maximum"
+          "6 mg + 12 mg (18 mg) prior to Base contact (outdated AHA 6/12 sequence)",
+          "12 mg (single dose) absolute maximum prior to Base contact",
+          "36 mg (12 mg × 3) prior to Base contact"
         ]
       },
       contra: {
@@ -1494,11 +1494,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "3 mg total (or unlimited titrated to secretions in organophosphate poisoning per TP 1241)",
+        correct: "3 mg total prior to Base contact for bradycardia (organophosphate: titrate to secretions per TP 1241)",
         distractors: [
-          "1 mg total maximum",
-          "12 mg total for bradycardia",
-          "0.5 mg total maximum"
+          "1 mg (single dose) absolute maximum prior to Base contact",
+          "12 mg total for bradycardia prior to Base contact",
+          "0.5 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1533,11 +1533,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "20 mg total (two doses for seizure) prior to Base contact",
+        correct: "10 mg total prior to Base contact (20 mg total only WITH Base contact)",
         distractors: [
-          "2 mg total maximum for status epilepticus",
-          "100 mg total prior to Base contact",
-          "50 mg single dose"
+          "20 mg total prior to Base contact (the WITH-Base absolute max)",
+          "2 mg total maximum for status epilepticus prior to Base contact",
+          "50 mg single dose prior to Base contact"
         ]
       },
       contra: {
@@ -1572,11 +1572,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "8 mg total",
+        correct: "8 mg total (all routes) prior to Base contact",
         distractors: [
-          "2 mg total maximum",
-          "20 mg total maximum",
-          "0.4 mg total maximum"
+          "2 mg total maximum prior to Base contact",
+          "20 mg total prior to Base contact",
+          "0.4 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1611,11 +1611,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "50 mg",
+        correct: "50 mg (single dose) prior to Base contact",
         distractors: [
-          "150 mg (3 doses)",
-          "25 mg maximum",
-          "100 mg IV push"
+          "150 mg (3 doses) prior to Base contact",
+          "25 mg maximum prior to Base contact",
+          "100 mg IV push prior to Base contact"
         ]
       },
       contra: {
@@ -1650,11 +1650,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "250 mL (25 g) total",
+        correct: "250 mL (25 g) prior to Base contact (Contact Base for further dosing)",
         distractors: [
-          "125 mL (12.5 g) single dose maximum",
-          "1000 mL (100 g) total",
-          "50 mL (5 g) total"
+          "125 mL (12.5 g) absolute maximum prior to Base contact",
+          "1000 mL (100 g) prior to Base contact",
+          "50 mL (5 g) prior to Base contact"
         ]
       },
       contra: {
@@ -1689,11 +1689,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "30 g (2 tubes)",
+        correct: "30 g (2 tubes) prior to Base contact",
         distractors: [
-          "5 tubes (75 g)",
-          "100 g PO",
-          "5 g total"
+          "75 g (5 tubes) prior to Base contact",
+          "100 g PO prior to Base contact",
+          "15 g (1 tube) absolute maximum — never repeat prior to Base"
         ]
       },
       contra: {
@@ -1728,11 +1728,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "2 mg total (or 1 mg single dose prior to Base contact per MCG 1317.19)",
+        correct: "2 mg total (1 mg, may repeat ×1 in 20 min) prior to Base contact",
         distractors: [
-          "10 mg total",
-          "50 mg total",
-          "0.1 mg total"
+          "1 mg (single dose) absolute maximum — never repeat prior to Base",
+          "10 mg total prior to Base contact",
+          "50 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1751,7 +1751,7 @@ const DOSING = (() => {
       defaultDose: { v: 4, u: "mg" },
       defaultRoute: "ODT",
       dose: {
-        correct: "4 mg ODT PO or slow IV push",
+        correct: "4 mg ODT PO or 4 mg slow IV/IM",
         distractors: [
           "50 mg deep IM",
           "15 mg IV rapid push",
@@ -1759,19 +1759,19 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "None (single dose; do not repeat)",
+        correct: "May repeat ×1 in 15 minutes prn (MCG 1317.34)",
         distractors: [
-          "Every 5 minutes up to 3 doses",
+          "None (single dose; never repeat)",
           "Every 2 minutes until nausea resolves",
-          "Repeat 4 mg every 10 minutes × 4"
+          "Repeat 4 mg every 5 minutes × 4"
         ]
       },
       max: {
-        correct: "4 mg (single dose)",
+        correct: "8 mg total (4 mg × 2) prior to Base contact",
         distractors: [
-          "16 mg total",
-          "12 mg total",
-          "50 mg total"
+          "4 mg (single dose) absolute maximum prior to Base contact",
+          "16 mg total prior to Base contact",
+          "12 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1808,9 +1808,9 @@ const DOSING = (() => {
       max: {
         correct: "150 mcg total prior to Base contact",
         distractors: [
-          "50 mcg total maximum",
-          "500 mcg total prior to Base contact",
-          "12 mg total"
+          "250 mcg total prior to Base contact (the WITH-Base absolute max)",
+          "50 mcg (single dose) absolute maximum prior to Base contact",
+          "500 mcg total prior to Base contact"
         ]
       },
       contra: {
@@ -1847,9 +1847,9 @@ const DOSING = (() => {
       max: {
         correct: "12 mg total prior to Base contact",
         distractors: [
-          "4 mg single dose maximum",
-          "150 mcg total",
-          "50 mg total"
+          "20 mg total prior to Base contact (the WITH-Base absolute max)",
+          "4 mg (single dose) absolute maximum prior to Base contact",
+          "50 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1884,11 +1884,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "15 mg IV or 30 mg IM (single dose)",
+        correct: "15 mg IV or 30 mg IM (single dose) prior to Base contact",
         distractors: [
-          "60 mg IV total",
-          "150 mg IM total",
-          "4 mg IV total"
+          "60 mg IV total prior to Base contact",
+          "150 mg IM total prior to Base contact",
+          "30 mg IV (or 60 mg IM) prior to Base contact"
         ]
       },
       contra: {
@@ -1923,11 +1923,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "1 g",
+        correct: "1 g (single dose) prior to Base contact",
         distractors: [
-          "3 g prehospital total",
-          "10 g total",
-          "100 mg total"
+          "3 g prehospital total prior to Base contact",
+          "10 g total prior to Base contact",
+          "100 mg total prior to Base contact"
         ]
       },
       contra: {
@@ -1962,11 +1962,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "1 g prior to Base contact",
+        correct: "2 g total (1 g, may repeat ×1) prior to Base contact",
         distractors: [
-          "10 g initial push",
-          "50 mg maximum",
-          "100 mg maximum"
+          "1 g (single dose) absolute maximum — never repeat prior to Base",
+          "10 g initial push prior to Base contact",
+          "50 mg maximum prior to Base contact"
         ]
       },
       contra: {
@@ -2001,11 +2001,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "50 mEq (or titrated to QRS narrowing per Base)",
+        correct: "50 mEq (may repeat ×1 for crush / persistent ECG) prior to Base contact; further dosing per Base",
         distractors: [
-          "5 mEq maximum",
-          "500 mEq single bolus",
-          "1 g maximum"
+          "5 mEq maximum prior to Base contact",
+          "500 mEq single bolus prior to Base contact",
+          "No maximum — push continuously until QRS narrows (no Base needed)"
         ]
       },
       contra: {
@@ -2040,11 +2040,11 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "4 g (eclampsia) / 2 g (Torsades/asthma)",
+        correct: "4 g IV (or 10 g IM) prior to Base contact for preeclampsia/eclampsia (Torsades/asthma: Base Physician order only)",
         distractors: [
-          "20 g IV push",
-          "100 mg total",
-          "12 mg total"
+          "20 g IV push prior to Base contact",
+          "2 g IV for eclampsia prior to Base contact (underdose)",
+          "Unlimited magnesium without Base contact for any indication"
         ]
       },
       contra: {
@@ -2123,7 +2123,7 @@ const DOSING = (() => {
   const Q_META = [
     { k: "dose", label: "Dose & Route", shortLabel: "Dose", prompt: "Select the correct dose and route" },
     { k: "repeat", label: "Repeat Time / Interval", shortLabel: "Repeat time", prompt: "Select the repeat interval" },
-    { k: "max", label: "Max Dose", shortLabel: "Max dose", prompt: "Select the maximum dose" },
+    { k: "max", label: "Max Dose Prior to Base Contact", shortLabel: "Max prior to Base", prompt: "Select the maximum dose prior to Base contact" },
     { k: "contra", label: "Contraindications", shortLabel: "Contraindications", prompt: "Select the contraindications" }
   ];
 
@@ -12674,7 +12674,7 @@ const NEXT = (() => {
     let graded = null;
     activeQuizState = { quiz, text, tap, loggedMe, firstChoice, getGraded: () => graded };
     $("#mqTitle").textContent = `💊 ${quiz.name} — Medication Check`;
-    $("#mqSub").textContent = `LA County EMS Ref. ${quiz.ref} · Select the correct Dose, Repeat Interval, Max Dose, and Contraindications before administering:`;
+    $("#mqSub").textContent = `LA County EMS Ref. ${quiz.ref} · Select the correct Dose, Repeat Interval, Max Dose Prior to Base Contact, and Contraindications before administering:`;
     const LETTERS = ["A", "B", "C", "D"];
     $("#mqBody").innerHTML = quiz.questions.map((q, qi) => {
       if (q.autoPeds) firstChoice[q.id] = q.correctIndex;
@@ -12741,7 +12741,7 @@ const NEXT = (() => {
       closeMedQuiz();
       addMsg({
         speaker: g.score === g.total ? "find" : "warn",
-        text: `💊 Medication check — ${quiz.shortName} (${quiz.ref}): ${g.score}/${g.total} (${g.doseOk ? "✓" : "✗"} Dose · ${g.repeatOk ? "✓" : "✗"} Repeat · ${g.maxOk ? "✓" : "✗"} Max · ${g.contraOk ? "✓" : "✗"} Contraindications).`
+        text: `💊 Medication check — ${quiz.shortName} (${quiz.ref}): ${g.score}/${g.total} (${g.doseOk ? "✓" : "✗"} Dose · ${g.repeatOk ? "✓" : "✗"} Repeat · ${g.maxOk ? "✓" : "✗"} Max (pre-Base) · ${g.contraOk ? "✓" : "✗"} Contraindications).`
       });
       submit(text, tap, true);
     };
@@ -13391,7 +13391,7 @@ const NEXT = (() => {
       <h4>Patient course</h4>${cues}
       <h4>Rhythm / 12-lead interpretation${sum.interp.first.n ? ` · ${sum.interp.first.ok}/${sum.interp.first.n} right first try` : ""}</h4>${ip}
       <h4>Medications${sum.medErr ? ` · <b style="color:#ff8a95">${sum.medErr} dose/route issue(s)</b>` : ""}</h4>${meds}
-      ${sum.medQuiz && sum.medQuiz.length ? `<h4>Medication knowledge check (MCG 1317) · ${sum.medQuiz.reduce((a, q) => a + q.score, 0)}/${sum.medQuiz.reduce((a, q) => a + q.total, 0)}</h4><table class="log"><tr><th>Medication</th><th>Dose</th><th>Repeat</th><th>Max</th><th>Contra</th><th>Score</th></tr>${sum.medQuiz.map(q => `<tr><td>${esc(q.name)} <small>(${esc(q.ref)})</small></td><td>${q.doseOk ? "✔" : "✘"}</td><td>${q.repeatOk ? "✔" : "✘"}</td><td>${q.maxOk ? "✔" : "✘"}</td><td>${q.contraOk ? "✔" : "✘"}</td><td><b>${q.score}/${q.total}</b></td></tr>`).join("")}</table>` : ""}
+      ${sum.medQuiz && sum.medQuiz.length ? `<h4>Medication knowledge check (MCG 1317) · ${sum.medQuiz.reduce((a, q) => a + q.score, 0)}/${sum.medQuiz.reduce((a, q) => a + q.total, 0)}</h4><table class="log"><tr><th>Medication</th><th>Dose</th><th>Repeat</th><th>Max prior to Base</th><th>Contra</th><th>Score</th></tr>${sum.medQuiz.map(q => `<tr><td>${esc(q.name)} <small>(${esc(q.ref)})</small></td><td>${q.doseOk ? "✔" : "✘"}</td><td>${q.repeatOk ? "✔" : "✘"}</td><td>${q.maxOk ? "✔" : "✘"}</td><td>${q.contraOk ? "✔" : "✘"}</td><td><b>${q.score}/${q.total}</b></td></tr>`).join("")}</table>` : ""}
       <h4>Radio report / handoff</h4>${radio}</div>${hist}`;
   }
   function flowHtml() {
@@ -13411,7 +13411,7 @@ const NEXT = (() => {
       if (sm.cues.length) { L.push("", "PATIENT COURSE:"); sm.cues.forEach(c => L.push(`${fmtT(c.t)} ${c.worse ? "worse" : "improving"}: ${c.text}`)); }
       if (sm.interp.log.length) { L.push("", "INTERPRETATION:"); sm.interp.log.forEach(x => L.push(`${fmtT(x.t)} ${x.kind}: you said ${x.said}; ${x.ok ? "correct" : "actual " + x.act}`)); }
       if (sm.meds.length) { L.push("", "MEDS:"); sm.meds.forEach(m => L.push(`${fmtT(m.t)} ${m.name} ${[m.dose, m.route].filter(Boolean).join(" ")}${m.ok ? "" : " !! " + m.notes.join(" ")}`)); }
-      if (sm.medQuiz && sm.medQuiz.length) { L.push("", "MEDICATION QUIZ (MCG 1317):"); sm.medQuiz.forEach(q => L.push(`${q.name} (${q.ref}): ${q.score}/${q.total} [Dose:${q.doseOk ? "OK" : "X"} Repeat:${q.repeatOk ? "OK" : "X"} Max:${q.maxOk ? "OK" : "X"} Contra:${q.contraOk ? "OK" : "X"}]`)); }
+      if (sm.medQuiz && sm.medQuiz.length) { L.push("", "MEDICATION QUIZ (MCG 1317):"); sm.medQuiz.forEach(q => L.push(`${q.name} (${q.ref}): ${q.score}/${q.total} [Dose:${q.doseOk ? "OK" : "X"} Repeat:${q.repeatOk ? "OK" : "X"} Max(pre-Base):${q.maxOk ? "OK" : "X"} Contra:${q.contraOk ? "OK" : "X"}]`)); }
       sm.radio.forEach(r => { L.push("", `${r.mode === "base" ? "BASE REPORT" : "HANDOFF"} ${r.g.score}%:`); r.g.items.forEach(i => L.push(`${i.ok ? "[x]" : "[ ]"} ${i.label}${i.note ? " (" + i.note + ")" : ""}`)); }); }
     if (typeof DEVICE !== "undefined" && st.x.dv && st.x.dv.log.length) { L.push("", "MONITOR / DEFIBRILLATOR:"); DEVICE.summary(st).log.forEach(l => L.push(`${fmtT(l.t)} ${l.text}`)); }
     L.push("", "CHECKLIST:"); checklist.forEach(c => L.push(`${c.done ? "[x]" : c.optional ? "[-]" : "[ ]"} ${c.label} (Ref. ${c.ref})`));
