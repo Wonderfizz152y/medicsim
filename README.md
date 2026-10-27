@@ -38,6 +38,12 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.12.0-100calls
+- Expanded the call bank to **108** playable scenarios (was 76): 32 new distinct calls in `src/scx_70_expand.js` covering trauma (GSW, evisceration, amputation/TQ, burns, crush, fall/spine, facial airway, ped vs auto, open femur, blunt abd), cardiac (epigastric ACS, symptomatic sinus brady), respiratory (spontaneous PTX, croup, smoke inhalation, hyperventilation), tox/neuro (meningitis, organophosphate, TCA OD, cocaine CP, ETOH DTs, CO, anticholinergic, agitation), metabolic/GI (upper GI bleed, heat stroke, hypothermia, dialysis hyperK), and OB/peds (shoulder dystocia, prolapsed cord, peds FB airway, peds dehydration).
+- Radio report CC/FIND patterns extended for SMOK, COMO, HOTN, ALOC, CHOK provider impressions.
+- Confused-orientation place string always includes "?" for in-character wrong answers.
+- Tests: `tests/sim_v2120.js` (count ≥100, unique new ids, smoke-start sample); full `tests/run_all.sh` green.
+
 ### 2.11.4-protocolaudit
 - Audited every `MED_QUIZ` entry against LA County MCG 1317.* drug-reference text: dose / repeat / max-prior-to-Base / contraindications now match protocol wording only (no invented package-insert contraindications).
 - **Diphenhydramine (MCG 1317.15):** Contraindications corrected to **None** (was hypersensitivity / neonates / nursing mothers).
