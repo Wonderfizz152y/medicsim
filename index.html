@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.12.0-100calls 5007c688a4">
+<meta name="medicsim-version" content="2.13.0 8d658c9ba6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -646,6 +646,14 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
   .mq-footer .actions button{flex:1;padding:.5em .6em;font-size:.86em}
 }
 
+/* v2.13.0 L-HABBO panel + Reassess */
+.lhabbo-panel{background:#0f1a1d}.lhabbo-panel .ae-head{color:#bfeaf5}.lhabbo-panel .ae-prog i{background:#22b8cf}
+.lhabbo-panel button{background:#12252b;border-color:#2b5866;color:#d6f3fa}.lhabbo-panel button b{color:#5fd3ea}
+.next-rs.due{background:#5a1f12;border-color:#ff8a5c;color:#ffe0d2;animation:rsPulse 1.2s ease-in-out infinite}
+@keyframes rsPulse{50%{box-shadow:0 0 0 3px rgba(255,138,92,.35)}}
+.next-bar .next-chips button.c-reassess{background:#5a1f12;border-color:#ff8a5c;color:#ffe0d2}
+.lhabbo-panel[hidden],.next-rs[hidden],.next-lh[hidden]{display:none!important}
+
 </style>
 </head>
 <body>
@@ -748,8 +756,9 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
         <div class="notice" id="notice" hidden></div>
         <div class="interim" id="interim"></div>
         <div class="aeiou-panel" id="aeiouPanel" hidden aria-label="AEIOU-TIPS workup (tap = same as saying it)"></div>
+        <div class="aeiou-panel lhabbo-panel" id="lhabboPanel" hidden aria-label="L-HABBO stroke screen (tap = same as saying it)"></div>
         <div class="dest-panel" id="destPanel" hidden aria-label="Post-Transport Destination and Trauma Triage (Ref. 506) selector"></div>
-        <div class="next-bar" id="nextBar" hidden aria-label="Next step suggestions (tap = same as saying it)"><div class="next-head"><span class="lbl">Next</span><span class="next-step" id="nextStep"></span><button type="button" class="next-ae" id="btnAeiou" hidden>AEIOU-TIPS</button><button type="button" class="next-all" id="btnAll">All actions ▾</button></div><div class="next-chips" id="nextChips"></div></div>
+        <div class="next-bar" id="nextBar" hidden aria-label="Next step suggestions (tap = same as saying it)"><div class="next-head"><span class="lbl">Next</span><span class="next-step" id="nextStep"></span><button type="button" class="next-ae" id="btnAeiou" hidden>AEIOU-TIPS</button><button type="button" class="next-ae next-lh" id="btnLhabbo" hidden>L-HABBO</button><button type="button" class="next-ae next-rs" id="btnReassess" hidden title="Reassess: HABBO → ABCs → BP, SpO₂, RR → rest">↻ Reassess</button><button type="button" class="next-all" id="btnAll">All actions ▾</button></div><div class="next-chips" id="nextChips"></div></div>
         <div class="assess-row" id="assessRow" aria-label="Quick assess (tap = same as saying it)"><span class="lbl">Assess</span>
           <button type="button" data-say="Checking radial pulse">Radial</button><button type="button" data-say="Checking carotid pulse">Carotid</button><button type="button" data-say="Listening to lung sounds">🩺 Lungs</button><button type="button" data-say="Checking skin signs">Skin</button><button type="button" data-say="Feeling the forehead">Forehead</button><button type="button" data-say="Checking pupils">Pupils</button><button type="button" data-say="Open your mouth, checking the airway">Mouth/airway</button><button type="button" data-say="Expose the patient">Expose</button><button type="button" data-say="Palpate the abdomen">Abdomen</button><button type="button" data-say="Is the patient tracking me?">Tracking?</button><button type="button" data-say="What do I see?">What do I see?</button>
           <button type="button" class="help" id="btnHelp">❓ What can I say?</button></div>
@@ -3145,7 +3154,7 @@ const NLU = (() => {
   const Q = [
     ["greet", /\b(hi|hello|hey|good (morning|afternoon|evening))\b|^ ?morning\b|my name is|i'?m (\w+ )?(a |the |one of the |with |from )?(paramedics?|medics?|fire|emts?)\b|we'?re (the )?(paramedics|fire department|here to help)|\bwith the fire department/],
     ["name", /what'?s (your|his|her) (full |first |last )?name|your (full |first |last )?name|(his|her) name|who are you|call you|what should i call|first and last name/],
-    ["age", /how old|your age|(his|her|their|the patient'?s) age|what('?s| is) (your|his|her|their|the) age\b|how many years old|\b(birthday|date of birth|dob)\b|when (were|was) (you|he|she) born|what year (were|was) (you|he|she) born/],
+    ["age", /how old|your age|(his|her|their|the patient'?s) age|what('?s| is) (your|his|her|their|the) age\b|how many years old|\b(birthday|date of birth|dob)\b|when (were|was) (you|he|she) born|what year (were|was) (you|he|she) born|(are|is) (you|he|she|they|the patient) (over|older than) 40|\b40 or older\b|\bover (the age of )?40\b/],
     ["cc", /what'?s (going on|wrong|happening|the problem|up|the matter)|what is (wrong|the matter|going on|the problem|bothering)|(?<!(know|remember|recall|recollect) )what happened(?! to you)|why (did|'d) (you|they|someone|you guys|y'all) call|why (are|were) (we|you guys) (called|here)|what'?s (been )?bothering|what (brings|brought) (us|you|ya)|what (seems to be|is) the (problem|issue|trouble)|what'?s the (issue|trouble)|made you call|what brings|chief complaint|how can (i|we) help|what can (i|we) do for you|what seems to be|tell me what('?s| is)? (going on|happened|wrong)|how are you (feeling|doing)(?! now)|how (do|are) you feel(?! (any )?better)|what'?s bothering|what'?s got you (feeling|down|worried)|are you (ok|okay|alright)\b|call (911|9 1 1|us)( today)?\b|^ ?what happened ?\??$/],
     // v2.10.6: "when did you start it / that medication" = when the drug was started (not symptom onset)
     ["medstart", /\bwhen did (you|she|he|they|u|we) (first )?(start|begin|get started on|get put on|first take|get prescribed|get) (it|that|them|those|on (it|that|this)|taking|the (new )?(med|medication|medicine|pill|pills|prescription|drug|tablets?)s?\b|(that|this|your|her|his|the new) (new )?(med|medication|medicine|pill|pills|prescription|drug|tablets?)s?\b|((the|that|this|your|her|his) )?(reglan|haldol|compazine|metoclopramide|haloperidol|prochlorperazine))|\bwhen (was|were) (it|that|they|the (new )?(med|medication|medicine|pill|pills|prescription|drug)s?|(that|this|your|her|his) (new )?(med|medication|medicine|pill|pills|prescription|drug)s?|reglan|haldol|compazine) (started|prescribed|filled|first given)|\bhow long (have|has) (you|she|he|they) been (on|taking) (it|that|this|them|those|the|your|her|his|reglan|haldol|compazine)|\bwhen did (the|that|this|your|her|his) (new )?(med|medication|medicine|pill|pills|prescription|drug|reglan|haldol|compazine)s? (start|get started|begin)|\bwhen did (they|the (er|ed|doctor|hospital|psychiatrist)|your (doctor|psychiatrist)|(her|his) (doctor|psychiatrist)) (start|put|prescribe|give) (you|her|him|that|it|the)|\bwhat day did (you|she|he) (start|begin)/],
@@ -3174,7 +3183,8 @@ const NLU = (() => {
     ["drugs", /\bdrugs\b|alcohol|\bdrink(ing)? (alcohol|beer)|\bdrunk\b|any drinking|been drinking|drinking (tonight|today|last night)|use anything|(take|took) anything (that you know|today|recreational)|\bheroin\b|\bopioids?\b|\boxy\b|\bsmoke\b|smoking|smoked|cigarett|vape|weed|marijuana|\bmeth\b|methamphetamine|\bcrystal\b|cocaine|substance|what did (you|he|she) (use|take)|take anything that you know|did (he|she) take anything/],
     ["headache", /headache|head (hurt|pound|throb)|pain in your head|migraine/],
     ["weakness", /\bweak(ness)?\b|move your (arms|legs|fingers|toes|hands|feet)|\bnumb(ness)?\b|tingl|can'?t move|feel (your|me touching) (arm|leg|face)|feel me touching|\bslurr|trouble speaking|vision|see ok/],
-    ["seizurehx", /seizure(s)? before|history of seizures|epilep|convuls|had a seizure/],
+    ["seizurehx", /seizure(s)? before|history of (a )?seizures?|seizure history|epilep|convuls|had a seizure/],
+    ["bedbound", /bed ?(bound|ridden)|bedridden|wheel ?chair|walk(s)? (on (his|her|your|their) own|normally|independently)|(normally|usually) (walk|get around)|baseline mobility|\bambulat|use a (walker|cane)/],
     ["pregnant", /pregnan|could you be\b/],
     ["lmp", /last (menstrual )?period|\blmp\b|menstrua/],
     ["contractions", /contraction|how (far|close) apart|how often (are|is) (the )?(pains?|contractions?|cramps?)|how long (do|does) (they|the pains?|each one) last/],
@@ -3251,6 +3261,9 @@ const NLU = (() => {
     ["hives", /(check|look|examine) (for|at) (a |any )?(rash|rashes|hives|urticaria|petechiae|welts)|urticaria|petechia|(any|is there a) (rash|hives) (on|anywhere)|skin (rash|hives)|check (his|her) skin for/],
     ["preg", /(check|assess|palpate|look) (for )?(a )?(pregnancy|pregnant|gravid|fundal|fundus)|fundal height|\bgravid|pregnancy test|is she (visibly )?pregnant\b(?!\?)/],
     ["lungs", /\blung sounds|lungs? sound|(check|assess|listen to|auscultate) (the |his |her |your )?lungs|breath sounds|auscultat|listen to (his|her|your|their|the) (chest|lungs|back)|stethoscope|\bwheez|crackles|rales|rhonchi/],
+    ["lhabbo", /\b(?:(?:l|el)[ -]?)?h[ao]bb?o\b|\blhabbo\b/],
+    ["reassess", /\b(re ?-?assess(ing|ment)?|re ?-?evaluat(e|ing|ion))\b(?! (on |of )?(the |his |her |your |our |their |a )?(baby|newborn|infant|lungs?|lung sounds|breath\w*|bp|blood pressure|pressure|sugar|glucose|bgl|gcs|pupils|pain|vitals|vital signs|airway|skin|pulses?|sats?|spo2|rhythm|neuro|lams|stroke|chest|abdomen|perfusion|every|after|mental|ventilat\w*|capno\w*|etco2|tube|i-?gel|cord|fundus|bleed\w*|wound|motor|cms|distal)\b)/],
+    ["asymmetry", /\basymmetr|obvious (asymmetry|deficit)|one[- ]sided (weakness|droop)|lopsided|unilateral (weakness|deficit)/],
     ["neuro", /(raise|lift|hold|put|stick|keep|bring|extend|stretch|hold out|put out) (up |out )?(both of |both )?(your|ur|those|them|the|both) ?(arms?|hands?)\b(?! (to|on) (your|the) (chest|side|belly|lap))|\b(arms?|hands?) (out|up|straight out|straight up|outstretched)\b[^.?!]{0,25}(in front|for me|palms|close|eyes|ten seconds|hold)|\bpalms up\b|close (your|ur) eyes and (hold|keep)|\b(hold|keep) (them|those|it|em|'em) (up |out |steady )?(there|up|out|steady|like that)\b|(hold|keep)[^.?!]{0,30}\bfor (ten|10) seconds|arm drift|pronator|check (for |his |her )?(a |any |the )?(arm )?drift|drift test|\bdrift\b|(squeeze|grip|grab) (my|both (of )?my) (hands|fingers)|(grip|grab) my hand\b|show me (your|ur) teeth|(give me a|can you|go ahead and) (big )?smile|smile (big|wide|really big)|mlapss|hold (your|her|his|their|both) arms (out|up)|grip strength|\bgrips?\b|pronator|\bdrift\b|facial (droop|symmetry|asymmetry)|\bdroop|smile for me|\blapss\b|\blams\b|stroke (scale|exam|assessment|screen)|cincinnati|be ?fast|\bfast exam|smile for me|facial droop|arm drift|squeeze (my|both) (hands|fingers)|squeeze both (of )?my|grip strength|hold (your|both) arms|neuro (exam|check|assessment)|pronator/],
     ["chestrise", /chest rise|(is|are) (the|his|her) chest (rising|moving)|(seeing|see|getting|get) (good |any )?(chest )?rise|rise and fall|chest (going|coming) up/],
     ["trauma", /\bany (bruis|injur|deformit)\w* (anywhere|on (him|her|them))|trauma|head to toe|head ?- ?to ?- ?toe|check (him|her|them|the (baby|child|kid|infant|patient|toddler) )?for (any |other )?(injur|bruis|marks|trauma)|look (him|her|them) over|full body (check|exam|sweep|survey)|blood sweep|look for (any )?(bruis|marks|signs of (abuse|trauma|injury))|secondary (survey|assessment)|physical exam|\bdcap|check (him|her|them) for injur|any injur|rapid (trauma|assessment)|hit (his|her|your) head|look for injur/],
@@ -3464,6 +3477,10 @@ const NLU = (() => {
     if (out.assess.length && /^\s*(the |a |what'?s )?(bp|sugar|pulse|sats|gcs)/.test(t)) rm("cc");
     if (out.tx.length || out.assess.length) q = q.filter(x => !["radiation", "meds", "history", "drugs", "events", "provocation"].includes(x) || isQuestion || /\bany\b|do you|did you|what/.test(t));
     if (q.includes("greet") && q.length > 1 && q.includes("cc")) {/* keep both */ }
+    // v2.13.0 L-HABBO / reassess macros own their sub-steps
+    if (out.assess.includes("reassess")) { out.assess = out.assess.filter(a => !["lhabbo", "asymmetry", "neuro", "bgl", "vitals", "bp", "spo2", "rr", "pulse", "skin", "airway", "lungs", "gcs", "recheck", "newborn"].includes(a)); q = q.filter(x => !["seizurehx", "age", "bedbound", "lkw"].includes(x)); }
+    if (out.assess.includes("lhabbo")) { out.assess = out.assess.filter(a => !["neuro", "bgl", "asymmetry"].includes(a)); q = q.filter(x => !["seizurehx", "age", "bedbound", "lkw", "weakness", "onset", "time"].includes(x)); }
+    if (out.assess.includes("asymmetry") && !/lams|mlapss|lapss|stroke (scale|screen)|cincinnati|be ?fast/.test(t)) { out.assess = out.assess.filter(a => a !== "neuro"); q = q.filter(x => x !== "weakness"); }
     out.questions = q;
     return out;
   }
@@ -3504,6 +3521,7 @@ const NLU = (() => {
     "q:syncope": ["did you pass out", "did you black out", "did you faint", "lose consciousness"],
     "q:palpitations": ["is your heart racing", "do you feel your heart pounding", "heart fluttering"],
     "q:pregnant": ["any chance you're pregnant", "could you be pregnant", "are you expecting"],
+    "q:bedbound": ["is she bed bound", "is he in a wheelchair", "does she normally walk on her own", "is he bedridden"],
     "q:lkw": ["when was she last normal", "last known well", "when was he last seen normal"],
     "q:fever": ["have you had a fever", "any chills", "running a temperature"],
     "q:cough": ["have you been coughing", "coughing anything up", "any phlegm"],
@@ -4089,6 +4107,76 @@ const STROKE = (() => {
   return { model, lams, deficit, mlapss, drift, grip, smile };
 })();
 
+/* ===== lhabbo.js ===== */
+/* v2.13.0 L-HABBO stroke screen (LA County TP 1232 #7 mLAPSS criteria, Adrian's order):
+ *   L = Last known well time
+ *   H = History of epilepsy / seizure          (criterion: NO history)
+ *   A = Age 40 or older                         (criterion: YES)
+ *   B = Bed-bound or wheelchair-bound           (criterion: NO)
+ *   B = Blood glucose 60-400 mg/dL              (criterion: YES)
+ *   O = Obvious asymmetry (face / arm / grip)   (criterion: YES)
+ * HABBO (without L) is also the first step of every REASSESSMENT after a condition change.
+ * The screen result uses the same STROKE.mlapss() as the stroke scale, so the two can never disagree. */
+const LHABBO = (() => {
+  const ITEMS = [
+    { id: "L", letter: "L", key: "lh:L", label: "Last known well time", say: "When was the patient last known well?" },
+    { id: "H", letter: "H", key: "lh:H", label: "History of epilepsy / seizure", say: "Any history of seizures or epilepsy?" },
+    { id: "A", letter: "A", key: "lh:A", label: "Age 40 or older", say: "How old are you? Are you 40 or older?" },
+    { id: "B1", letter: "B", key: "lh:B1", label: "Bed-bound or wheelchair-bound", say: "Is the patient normally bed bound or in a wheelchair?" },
+    { id: "B2", letter: "B", key: "lh:B2", label: "Blood glucose 60–400", say: "Check a blood sugar" },
+    { id: "O", letter: "O", key: "lh:O", label: "Obvious asymmetry (face / arm / grip)", say: "Any obvious asymmetry? Check the face, arms and grip" },
+  ];
+  const HABBO = ITEMS.filter(i => i.id !== "L");
+  // event keys that credit each item (voice or tap: a tap sends the same utterance)
+  const CREDIT = { "q:lkw": "lh:L", "q:seizurehx": "lh:H", "q:age": "lh:A", "q:bedbound": "lh:B1", "a:bgl": "lh:B2",
+    "a:asymmetry": "lh:O", "a:neuro": "lh:O", "a:smile": "lh:O", "a:grip": "lh:O", "a:drift": "lh:O" };
+  // graded on stroke calls (TP 1232); a scenario can opt in with lhabbo: {...}
+  const strokeCall = sc => !!sc && (sc.protocol === "1232" || (sc.base === "stroke" && !sc.protocol) || !!(sc.lhabbo && sc.lhabbo.graded));
+  const res = (v, st) => { try { return v == null ? "" : String(typeof v === "function" ? v(st) : Array.isArray(v) ? v[0] : v); } catch (e) { return ""; } };
+  const quote = s => s ? `“${s.replace(/^\.+/, "").trim()}”` : "";
+  function who(sc) { const b = sc.bystander; return b ? (b.role || b.name || "bystander") : "bystander"; }
+  // one source for each answer: scenario lhabbo override > bystander > patient
+  function said(sc, st, k) {
+    const ov = sc.lhabbo && sc.lhabbo[k]; if (ov) return { text: res(ov, st), src: "" };
+    const by = sc.bystanderAnswers || {}, pt = sc.answers || {};
+    if (by[k] != null) return { text: res(by[k], st), src: who(sc) };
+    if (pt[k] != null) return { text: res(pt[k], st), src: "patient" };
+    return { text: "", src: "" };
+  }
+  /* facts for every item. crit = SIM's mlapssCrit() (seizureHx, age, wheelchair, bg); m = STROKE.model; bgKnown: BG measured. */
+  function facts(sc, st, crit, m, bgKnown) {
+    const F = {}, he = sc.patient.sex === "F" ? "she" : "he";
+    const l = said(sc, st, "lkw");
+    F.L = { known: !!l.text, text: l.text ? `${quote(l.text)}${l.src ? " (" + l.src + ")" : ""}` : "Unknown: no witness can give a time (document unknown LKWT; Base for destination)" };
+    const h = said(sc, st, "seizurehx");
+    F.H = { met: !crit.seizureHx, text: (crit.seizureHx ? "YES, seizure history" : "No seizure / epilepsy history") + (h.text ? ` (${h.src ? h.src + ": " : ""}${quote(h.text)})` : "") };
+    F.A = { met: crit.age >= 40, text: `${crit.age >= 40 ? "Yes" : "NO"}: ${crit.age} years old` };
+    const b = said(sc, st, "bedbound");
+    F.B1 = { met: !crit.wheelchair, text: (crit.wheelchair ? "YES, bed-bound / wheelchair-bound at baseline" : "No, not bed-bound or wheelchair-bound") + (b.text ? ` (${b.src ? b.src + ": " : ""}${quote(b.text)})` : "") };
+    const bg = crit.bg; F.B2 = bgKnown && bg != null ? { met: bg >= 60 && bg <= 400, text: `${Math.round(bg)} mg/dL: ${bg >= 60 && bg <= 400 ? "within 60–400" : "OUTSIDE 60–400 (treat / consider a mimic)"}` } : { met: null, text: "not checked yet" };
+    const def = STROKE.deficit(m), parts = [];
+    if (m.face) parts.push(`${m.side} facial droop`); if (m.arm) parts.push(`${m.side} arm ${m.arm >= 2 ? "falls" : "drifts"}`); if (m.grip) parts.push(`${m.side} grip ${m.grip >= 2 ? "absent" : "weak"}`);
+    F.O = { met: def, text: def ? `Yes: ${parts.join(", ")}` : `No obvious asymmetry: face, arms and grips are symmetric${/aphasi|ataxi|dysmetri|vertigo|neglect|dysarthri/i.test(String(st.tg && st.tg.neuro || "")) ? " (other deficits don't count toward the screen; 1232 ❷)" : ""}` };
+    F.L.met = null; F.he = he;
+    return F;
+  }
+  function result(m, crit) { const r = STROKE.mlapss(m, crit); return r; }
+  // the full walk-through text, in Adrian's order, labeled by letter
+  function walk(sc, st, crit, m) {
+    const F = facts(sc, st, crit, m, true), r = result(m, crit);
+    const mark = f => f.met === true ? " ✓" : f.met === false ? " ✗" : "";
+    const lines = ITEMS.map(it => `${it.letter} · ${it.label}: ${F[it.id].text}${mark(F[it.id])}`);
+    const tail = r.pos ? "L-HABBO screen POSITIVE (H, A, B, B, O all met): suspected stroke. Calculate LAMS (TP 1232 #8); LKWT + LAMS decide the stroke center (Ref. 521)."
+      : `L-HABBO screen NEGATIVE (${r.fails.join("; ")}). If you still suspect a stroke, calculate LAMS and CONTACT BASE for destination (TP 1232 ❷).`;
+    return { lines, tail, pos: r.pos, fails: r.fails, F };
+  }
+  // HABBO for a reassessment (no L): H, A, B carried forward; B (glucose) and O re-measured now
+  function habbo(sc, st, crit, m) { const F = facts(sc, st, crit, m, true); return HABBO.map(it => `${it.letter}: ${it.id === "B2" ? "BG " + F.B2.text : F[it.id].text}`).join("; "); }
+  function status(ev) { return ITEMS.map(it => ({ ...it, done: !!(ev && ev[it.key]) })); }
+  return { ITEMS, HABBO, CREDIT, strokeCall, facts, result, walk, habbo, status, said };
+})();
+if (typeof module !== "undefined") module.exports = LHABBO;
+
 /* ===== sim.js ===== */
 /* =====================================================================
  * SIMULATION CORE: state, physiology tick, assessments, treatments,
@@ -4282,7 +4370,8 @@ const SIM = (() => {
     szTick(dt);
     if (typeof INTERP !== "undefined") ipTick();
     if (typeof RADIO !== "undefined") radioTick();
-    if (typeof COURSE !== "undefined" && !st.ended) { const c = COURSE.cue(st, sc, mental()); if (c) { log("find", c); ui.say([{ speaker: "find", text: c, cue: true }]); } }
+    if (typeof COURSE !== "undefined" && !st.ended) { const c = COURSE.cue(st, sc, mental()); if (c) { log("find", c); const ln = [{ speaker: "find", text: c, cue: true }]; const ch = condChange(c, "trend"); if (ch) ln.push(ch); ui.say(ln); } }
+    if (!st.ended) { cbChangeTick(); wuTick(); }
     partnerTick();
     if (st.x.mode === "primary" && typeof DRILLS !== "undefined") {
       if (st.t >= DRILLS.PRIMARY_SECONDS - 30 && !st.x.drill30) { st.x.drill30 = true; event("30 seconds left.", "find"); }
@@ -4344,6 +4433,67 @@ const SIM = (() => {
       ch({ label: "Trauma assessment during CPR", ok: !!st.events["x:traumacpr"], detail: st.events["x:traumacpr"] ? `at ${fm(st.events["x:traumacpr"][0] - c.t0)}` : "not done", ref: "1210-P ❶ / standard practice*" }); }
     return { items, ccf, longest: c.longest, shocks: sh.length, epi: epi.length, amio: amio.length, rosc: c.roscT != null };
   }
+  // ---------- v2.13.0 condition change → reassessment (HABBO → ABCs → BP → SpO2 → RR → rest) ----------
+  const REASSESS_CUE = "↻ Condition change: REASSESS now: HABBO (H seizure/epilepsy hx · A age ≥ 40 · B bed/wheelchair-bound · B blood glucose 60–400 · O obvious asymmetry), then ABCs, then BP, SpO₂, RR, then the rest of the vitals.";
+  function condChange(text, kind) {
+    if (st.x.mode === "primary" || st.x.arrest) return null;
+    const L = st.x.chg = st.x.chg || [], last = L[L.length - 1];
+    if (last && st.t - last.t < 45) return null; // one reassessment window per burst of change
+    const dir = /better|improv/i.test(text) ? "better" : "worse";
+    // same direction again: only a new change once the last one was reassessed (and not within 2 min); keeps the cue meaningful
+    if (last && last.dir === dir && (st.t - last.t < 120 || !(st.evSeq || []).some(e => e.i > last.i && RS_USER(e.k)))) return null;
+    L.push({ t: st.t, i: (st.evSeq || []).length, text: String(text).replace(/^Reassess:\s*/, ""), kind, dir }); rec("x:chg");
+    log("find", REASSESS_CUE); return { speaker: "find", text: REASSESS_CUE, cue: true, reassess: true };
+  }
+  function cbChangeTick() { // a curveball (vomiting, seizure, rhythm change) is a condition change too; arrest has its own code flow
+    const cb = st.x.cb; if (!cb || !cb.on || st.x.cbChg || cb.kind === "arrest" || st.x.arrest) return;
+    st.x.cbChg = true; const ch = condChange("curveball: " + (cb.kind || "change"), "curveball"); if (ch) ui.say([ch]);
+  }
+  // unconscious + wheezing (anaphylaxis / severe bronchospasm): IM epinephrine is the FIRST medication (1219 #4, 1237, MCG 1317.17)
+  const wheezing = () => { const l = String((st.tg && st.tg.lungs) || ""); return /wheez/i.test(l) && !/\b(no|without) (\w+ )?wheez/i.test(l); };
+  function wuTick() {
+    if (st.x.wu || st.x.arrest || mental() !== "unresponsive" || !wheezing()) return;
+    st.x.wu = { t0: st.t }; rec("x:wu");
+    if (n(st, "epi") > 0) { st.x.wu.first = "epi"; st.x.wu.pre = true; rec("x:wuEpiFirst"); }
+  }
+  const WU_MEDS = new Set(["epi", "albuterol", "diphen", "ondansetron", "midaz", "naloxone", "d10", "glucagon", "oralglucose", "pushepi", "magnesium", "fentanyl", "morphine", "ketorolac", "calcium", "aspirin", "nitro", "atropine", "adenosine", "amio", "bicarb"]);
+  function wuCheck(id, tx) {
+    if (!WU_MEDS.has(id) || st.x.arrest) return null;
+    if (!st.x.wu) wuTick();
+    const w = st.x.wu; if (!w || w.first) return null;
+    w.first = id; w.firstT = st.t;
+    if (id === "epi" && (tx.route === "IM" || !tx.route)) { rec("x:wuEpiFirst"); return null; }
+    rec("x:wuWrongFirst");
+    const peds = PEDS(), what = id === "epi" ? `epinephrine ${tx.route || ""}`.trim() : (TX_LABEL[id] || id);
+    return dev(`Unconscious + wheezing: the FIRST medication is epinephrine IM, ${peds ? "1 mg/mL, 0.01 mg/kg by the length-based tape color code (MCG 1309)" : "0.5 mg (0.5 mL of 1 mg/mL) lateral thigh"}. You gave ${what} first${id === "albuterol" ? " (albuterol doesn't reverse airway edema or shock)" : ""}.`, sc.base === "asthma" ? "1237 / MCG 1317.17" : "1219 #4 / MCG 1317.17", "critical");
+  }
+  // per-change reassessment grading from the ordered event log
+  const RS_STEPS = [
+    { id: "habbo", label: "HABBO" }, { id: "abc", label: "ABCs" }, { id: "bp", label: "BP" }, { id: "spo2", label: "SpO₂" }, { id: "rr", label: "RR" }, { id: "rest", label: "rest of vitals" }];
+  function RS_USER(k) { return !/^x:/.test(k) || k === "x:reassess"; } // student actions only (not engine bookkeeping)
+  function reassessSummary() {
+    if (!st) return null;
+    const L = st.x.chg || [], seq = st.evSeq || [], ever = k => !!st.events[k] || (k === "q:age" && !!st.x.age);
+    const out = L.map((c, ci) => {
+      const end = ci + 1 < L.length ? L[ci + 1].i : Infinity, tEnd = c.t + 300;
+      const win = seq.filter(e => e.i > c.i && e.i <= end && e.t <= tEnd && RS_USER(e.k)), f = keys => { const e = win.find(x => keys.includes(x.k)); return e ? e.i : null; };
+      const fT = keys => { const e = win.find(x => keys.includes(x.k)); return e ? e.t : null; };
+      const H = ever("q:seizurehx"), A = ever("q:age"), B1 = ever("q:bedbound"), B2 = f(["a:bgl"]), O = f(["lh:O"]);
+      const habboMissing = [!H && "H (seizure/epilepsy history)", !A && "A (age ≥ 40)", !B1 && "B (bed-bound / wheelchair)", B2 == null && "B (blood glucose recheck)", O == null && "O (obvious asymmetry recheck)"].filter(Boolean);
+      const vit = k => f([k, "a:vitals"]);
+      const abcA = f(["a:airway", "a:lungs", "a:chestrise"]), abcC = f(["a:pulse", "a:pulsecheck", "a:skin", "a:caprefill"]);
+      const idx = { habbo: [B2, O, f(["q:seizurehx", "q:age", "q:bedbound", "lh:H", "lh:A", "lh:B1"])].filter(x => x != null), abc: [abcA, abcC].filter(x => x != null),
+        bp: [vit("a:bp")].filter(x => x != null), spo2: [vit("a:spo2")].filter(x => x != null), rr: [vit("a:rr")].filter(x => x != null),
+        rest: [f(["a:gcs", "a:avpu", "a:orient4", "q:orient", "a:pupils", "a:temp", "a:12lead", "a:etco2", "a:painresp", "a:verbalstim", "a:capno"])].filter(x => x != null) };
+      const firstI = id => idx[id].length ? Math.min(...idx[id]) : null;
+      const steps = RS_STEPS.map(s => ({ ...s, i: firstI(s.id), done: s.id === "habbo" ? !habboMissing.length : s.id === "abc" ? abcA != null && abcC != null : idx[s.id].length > 0 }));
+      const missing = steps.filter(s => !s.done && s.id !== "rest").map(s => s.id === "habbo" ? "HABBO: " + habboMissing.join(", ") : s.id === "abc" ? (abcA == null && abcC == null ? "ABCs" : abcA == null ? "ABCs (airway / breathing)" : "ABCs (circulation: pulse / skin)") : s.label);
+      const got = steps.filter(s => s.i != null), order = [...got].sort((a, b) => a.i - b.i), orderOk = got.every((s, k) => k === 0 || got[k - 1].i <= s.i);
+      const anyT = win.length ? win[0].t : null;
+      return { t: c.t, text: c.text, dir: c.dir, kind: c.kind, steps, missing, orderOk, order: order.map(s => s.label), started: anyT, startedIn: anyT == null ? null : Math.round(anyT - c.t), done: !missing.length, habboMissing, reassessTap: !!fT(["x:reassess"]) };
+    });
+    return { changes: out, ok: out.length > 0 && out.every(c => c.done && c.orderOk), any: out.length > 0 };
+  }
   function mental() { let m = sc.mental ? sc.mental(st) : "alert"; if (st && st.x.rvDrop > 18 && ["alert", "anxious"].includes(m)) m = "confused"; return typeof COURSE !== "undefined" && st ? COURSE.mental(m, st) : m; }
   const H = { event: (t, k) => event(t, k), rec: k => rec(k), dev: (t, r, l) => { const d = dev(t, r, l); ui.say([d]); return d; }, devQuiet: (t, r, l) => dev(t, r, l), log: (k, t) => log(k, t) };
   const PEDS = () => sc.patient.age < 15 || !!sc.peds;
@@ -4359,6 +4509,8 @@ const SIM = (() => {
   function rec(key) {
     if (st.x.cb && st.x.cb.on && !/^cb:|@cb$/.test(key)) rec(key + "@cb");
     (st.events[key] = st.events[key] || []).push(st.t);
+    (st.evSeq = st.evSeq || []).push({ k: key, t: st.t, i: st.evSeq.length + 1 }); // v2.13.0: ordered log for reassessment grading
+    if (typeof LHABBO !== "undefined" && LHABBO.CREDIT[key]) rec(LHABBO.CREDIT[key]); // v2.13.0: L-HABBO letters credited by voice OR tap
     st.evOrder = st.evOrder || {};
     if (st.evOrder[key] == null) st.evOrder[key] = (st.evN = (st.evN || 0) + 1);
     if (key === "q:asa_q" || key === "q:blood") {
@@ -4498,7 +4650,36 @@ const SIM = (() => {
   }
   function mlapssCrit() {
     const a = sc.answers || {}, sz = String(typeof a.seizurehx === "function" ? "" : a.seizurehx || ""), hx = [sc.history, a.history, a.pmh, (sc.bystanderAnswers || {}).history].map(x => { try { return String(typeof x === "function" ? x(Object.assign({}, st, { x: Object.assign({}, st.x, { bgl: 100, post: 1 }) })) : x || ""); } catch (e) { return ""; } }).join(" ");
-    return { seizureHx: (/\b(yes|seiz|epilep)/i.test(sz) && !/^\W*(no|nope|never|not)\b/i.test(sz)) || (/\bseizures?\b|epilep|convuls/i.test(hx) && !/\bno (history of )?(seizures|epilep)/i.test(hx)), age: sc.patient.age, wheelchair: /wheelchair|bedridden|bed-bound|bedbound/i.test(hx + " " + (sc.scene || "")), bg: st.v.bgl };
+    return { seizureHx: (/\b(yes|seiz|epilep)/i.test(sz) && !/^\W*(no|nope|never|not)\b/i.test(sz)) || (/\bseizures?\b|epilep|convuls/i.test(hx) && !/\bno (history of )?(seizures|epilep)/i.test(hx)), age: sc.patient.age, wheelchair: /wheelchair|bedridden|bed-bound|bedbound/i.test(hx + " " + (sc.scene || "")) || bedboundYes(), bg: st.v.bgl };
+  }
+  function bedboundYes() { const b = (sc.bystanderAnswers || {}).bedbound != null ? sc.bystanderAnswers.bedbound : (sc.answers || {}).bedbound; let t = ""; try { t = String(typeof b === "function" ? b(st) : b || ""); } catch (e) { t = ""; } return /^\W*(yes|yeah|she is|he is|always|she'?s (been )?(in a wheelchair|bed)|he'?s (been )?(in a wheelchair|bed))/i.test(t); }
+  // v2.13.0 L-HABBO walk-through (TP 1232 #7 mLAPSS criteria), in Adrian's order, labeled by letter
+  function lhabboWalk() {
+    ["q:lkw", "q:seizurehx", "q:age", "q:bedbound"].forEach(k => rec(k)); st.x.age = true;
+    const bgLine = assess("bgl").join(" "), m = SM(); rec("a:asymmetry");
+    const w = LHABBO.walk(sc, st, mlapssCrit(), m); st.x.lhabbo = { t: st.t, pos: w.pos, fails: w.fails }; rec("x:lhabbo");
+    st.rev.neuro = st.rev.neuro || { t: st.t, val: "L-HABBO: " + (w.pos ? "positive" : "negative") };
+    return ["L-HABBO stroke screen (TP 1232 #7, mLAPSS criteria):", ...w.lines, w.tail].join("\n");
+  }
+  function asymmetryText() {
+    const m = SM(), def = STROKE.deficit(m), g = st.tg.gcs || [4, 5, 6], gsum = g[0] + g[1] + g[2];
+    if (neuroHow() === "seizing") return "Obvious asymmetry: can't judge during an active seizure (watch for a Todd's paralysis once postictal).";
+    const parts = []; if (m.face) parts.push(`${m.side} facial droop`); if (m.arm) parts.push(`${m.side} arm ${m.arm >= 2 ? "falls / no movement" : "drifts"}`); if (m.grip) parts.push(`${m.side} grip ${m.grip >= 2 ? "absent" : "weak"}`);
+    return `O · Obvious asymmetry${gsum <= 8 ? " (by observation / passive tone, GCS " + gsum + ")" : ""}: ${def ? "YES: " + parts.join(", ") : "none: face, arms, and grips symmetric"}.`;
+  }
+  // Reassess macro: HABBO → ABCs → BP, SpO2, RR → rest of the vitals, with fresh values
+  function reassessWalk() {
+    rec("x:reassess"); const he = sc.patient.sex === "F" ? "she" : "he", lines = ["↻ Reassessment (HABBO → ABCs → BP, SpO₂, RR → rest):"];
+    const hx = [];
+    if (!st.events["q:seizurehx"]) rec("q:seizurehx"); if (!st.events["q:age"] && !st.x.age) { rec("q:age"); st.x.age = true; } if (!st.events["q:bedbound"]) rec("q:bedbound");
+    const bg = assess("bgl").join(" "); rec("a:asymmetry"); const crit = mlapssCrit(), F = LHABBO.facts(sc, st, crit, SM(), true);
+    lines.push(`HABBO: H ${F.H.text} · A ${F.A.text} · B ${F.B1.text} · B ${bg.replace(/\.$/, "")} (${F.B2.met ? "60–400" : "OUTSIDE 60–400"}) · ${asymmetryText().replace(/^O · /, "O ")}`);
+    const ab = []; ab.push(...assess("airway")); ab.push(...assess("lungs")); ab.push(...assess("pulse")); ab.push(...assess("skin"));
+    lines.push("ABCs: " + ab.join(" "));
+    lines.push("BP / SpO₂ / RR: " + [...assess("bp"), ...assess("spo2"), ...assess("rr")].join(" "));
+    const rest = [`HR ${Math.round(st.v.hr || 0)}.`, ...assess("gcs")]; if (st.rev.etco2 && st.v.etco2 != null) rest.push(`EtCO2 ${Math.round(st.v.etco2)} mmHg.`); if (st.rev.temp) rest.push(...assess("temp"));
+    lines.push("Rest of the vitals: " + rest.join(" "));
+    void he; void hx; return lines.join("\n");
   }
   function strokeScreen() {
     const tg = st.tg, neuro = tg.neuro || "", m = SM(), g = tg.gcs || [4, 5, 6], gsum = g[0] + g[1] + g[2];
@@ -4742,10 +4923,13 @@ const SIM = (() => {
         lastText = saveT; lastSites = saveS; st.x.preLines = saveP; st.x.inLook = false;
         out.push(`(${FOCUS_LABEL[f.id] || f.id}) ${again}`); break; }
       case "vitals": ["pulse", "bp", "rr", "spo2", "skin"].forEach(k => out.push(...assess(k))); break;
+      case "lhabbo": out.push(lhabboWalk()); break;
+      case "asymmetry": { const a = asymmetryText(); R("neuro", a); out.push(a); break; }
+      case "reassess": out.push(reassessWalk()); break;
       default: { if (sc.assessX && sc.assessX[id]) { const r = sc.assessX[id](st, H); out.push(r); R(id, r); break; } const f = X(id); if (f) { out.push(f); const panel = { caprefill: "skin", mucous: "skin", hives: "skin", grip: "neuro", drift: "neuro", droop: "neuro", speech: "neuro", orient4: "gcs", avpu: "gcs" }[id]; if (panel === "neuro") R("neuro", f); } }
     }
     if (FOCUS_LABEL[id] && !st.x.inLook) st.x.focus = { id, text: lastText, sites: lastSites.slice(), t: st.t };
-    if (id !== "vitals") log("assess", `Assessed ${id.toUpperCase()}: ${out.join(" ")}`);
+    if (id !== "vitals" && id !== "reassess" && id !== "lhabbo") log("assess", `Assessed ${id.toUpperCase()}: ${out.join(" ")}`);
     return out;
   }
 
@@ -4781,6 +4965,7 @@ const SIM = (() => {
     let narr = TX_LABEL[id] || id;
     const allergic = (sc.allergies || []).find(a => (id === "morphine" && /morphine|codeine|opiate/.test(a)) || (id === "fentanyl" && /fentanyl/.test(a)) || (id === "aspirin" && /aspirin|nsaid/.test(a)));
     if (allergic) notes.push(dev(`${narr} given to a patient with a documented allergy (${allergic}).`, "1201"));
+    { const wd = wuCheck(id, tx); if (wd) notes.push(wd); }
     if (OB_TX.has(id) && !sc.ob) { log("assess", "N/A: " + id); return [{ speaker: "find", text: "Not applicable on this call: there's no delivery or newborn here." }]; }
     if (sc.preTreat) { const r = sc.preTreat(id, st, tx, H); if (r && r.block) { log("tx", "(not done) " + id); return r.lines || []; } if (r && r.narr) narr = r.narr; if (r && r.notes) notes.push(...r.notes); }
     if (id === "magnesium") { narr = /\bim\b|buttock/i.test(tx.raw || "") ? "Magnesium sulfate 10 g IM (5 g with 1 mL lidocaine 2% in each buttock)" : "Magnesium sulfate 4 g in 100 mL NS IV over 20 minutes"; if (sc.mgBase) { { const g0 = (tx.doses || []).find(d => /^g$|gram/i.test(d.u || "")); if (g0 && !/\bim\b|buttock/i.test(tx.raw || "")) narr = `Magnesium sulfate ${g0.v} g IV`; } // MCG 1317.24 Prehospital considerations: polymorphic VT / torsades "may be indicated, only with Base Physician order"
@@ -5437,8 +5622,22 @@ const SIM = (() => {
     if ((v14Dep(st.tg) || (st.x && st.x.hadV14Dep)) && !base.some(c => (c.keys || []).includes("a:v789"))) {
       base.push({ label: "Posterior leads (V7, V8, V9: move V4–V6 to back) obtained for V1–V4 ST depression", keys: ["a:v789"], ref: "standard practice* (instructor standard: ST depression in V1–V4)", critical: true });
     }
-    return base.map(c => ({ ...c, done: c.all ? c.keys.every(keyDone) : (c.keys.some(k => k.startsWith("!")) ? c.keys.every(keyDone) : c.keys.some(keyDone)), time: firstTime(c.keys) }));
+    // v2.13.0 L-HABBO on every stroke-protocol call (graded per letter)
+    if (typeof LHABBO !== "undefined" && LHABBO.strokeCall(sc) && !base.some(c => c.keys.includes("lh:L"))) {
+      const item = { label: "L-HABBO stroke screen (L last known well, H seizure hx, A age ≥ 40, B bed/wheelchair, B glucose 60–400, O asymmetry)", keys: LHABBO.ITEMS.map(i => i.key), all: true, ref: "1232 #7 (mLAPSS criteria)", lhabbo: true };
+      const iL = base.findIndex(c => c.keys.some(k => /^a:(neuro|smile|grip|drift)$/.test(k))); if (iL >= 0) base.splice(iL, 0, item); else base.push(item);
+    }
+    // v2.13.0 unconscious + wheezing: IM epinephrine first
+    if (st.x.wu && !st.x.arrest && !base.some(c => c.keys.includes("x:wuEpiFirst"))) {
+      const ep = base.findIndex(c => c.keys.includes("t:epi")), item = { label: `Unconscious + wheezing: IM epinephrine FIRST (${PEDS() ? "1 mg/mL by color code, MCG 1309" : "0.5 mg of 1 mg/mL"}) before any other med`, keys: ["x:wuEpiFirst"], ref: "1219 #4 / 1237 / MCG 1317.17", critical: true };
+      if (ep >= 0) base.splice(ep, 0, item); else base.unshift(item);
+    }
+    // v2.13.0 reassessment after each condition change
+    const rs = reassessSummary();
+    if (rs && rs.any) base.push({ label: "Reassessed after condition change (HABBO → ABCs → BP → SpO₂ → RR → rest)", keys: ["x:reassess"], ref: "standard practice* (instructor standard: reassess on change; HABBO = L-HABBO items H, A, B, B, O)", reassess: true });
+    return base.map(c => c.reassess ? { ...c, done: rs.ok, time: (rs.changes.find(x => x.started != null) || {}).started ?? null } : ({ ...c, done: c.all ? c.keys.every(keyDone) : (c.keys.some(k => k.startsWith("!")) ? c.keys.every(keyDone) : c.keys.some(keyDone)), time: firstTime(c.keys) }));
   }
+  function lhabboStatus() { if (!st || typeof LHABBO === "undefined") return null; const its = LHABBO.ITEMS.map(i => ({ ...i, done: !!st.events[i.key], t: (st.events[i.key] || [])[0] })); return { graded: LHABBO.strokeCall(sc), items: its, missed: its.filter(i => !i.done), result: st.x.lhabbo || null }; }
   // ---------- assessment flow (instructor's expected order) ----------
   // tracking → intro/consent → radial+carotid → skin/forehead → partner BP/SpO2/RR → chief complaint
   // → AVPU → fix ABCs/life threats → A&O → if altered find why → history/allergies/meds/OPQRST/negatives → treat & transport.
@@ -5677,7 +5876,7 @@ const SIM = (() => {
     st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() };
   }
 
-  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
+  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -7539,7 +7738,7 @@ SCENARIOS.push({
       rr: tired ? 10 : 24 + 14 * s, spo2: 96 - 18 * s + 6 * O2(st), etco2: s > 0.72 ? 44 + 55 * (s - 0.72) : 30 + 4 * s,
       temp: 98.8, bgl: 118, gcs: s > 0.97 ? [2, 2, 5] : tired ? [3, 4, 6] : [4, 5, 6], pupils: "PERRL, 4 mm", pain: 0,
       skin: s > 0.75 ? "Pale, diaphoretic, perioral cyanosis; accessory muscle use" : s > 0.4 ? "Pale, diaphoretic; accessory muscle use" : "Warm, dry, normal color",
-      lungs: s > 0.85 ? "Severely diminished, nearly silent chest" : s > 0.4 ? "Diffuse inspiratory and expiratory wheezes, prolonged expiratory phase" : "Faint end-expiratory wheezes, good air movement",
+      lungs: s > 0.95 ? "Severely diminished, nearly silent chest; only faint high-pitched expiratory wheezes" : s > 0.85 ? "Severely diminished, nearly silent chest" : s > 0.4 ? "Diffuse inspiratory and expiratory wheezes, prolonged expiratory phase" : "Faint end-expiratory wheezes, good air movement",
       rhythm: "sinus", rhythmName: "Sinus tachycardia", capno: "shark",
       twelve: { st: {}, text: "Sinus tachycardia. Normal axis. No acute ST changes." },
       neuro: "No deficits", edema: "None", trauma: "None", airway: "Patent; speaks 1-2 words",
@@ -7762,6 +7961,7 @@ SCENARIOS.push({
     feelnow: "...same...", pde5: "...(confused)",
   },
   bystanderAnswers: {
+    bedbound: "No, she walks fine on her own. She was gardening this morning.",
     cc: "She was fine, we were having coffee, and she dropped the cup. Her right arm just stopped working and she can't get her words out.",
     lkw: "She was completely normal at 9:55. We were talking about the grandkids, and then at about ten she dropped the cup. So 9:55, right before.",
     onset: "Right around ten. She was normal at 9:55 for sure.",
@@ -8517,7 +8717,7 @@ addS(clone("hypo", {
     allergies: st => st.x.bgl < 60 ? "..." : "No allergies.", hospital: st => st.x.bgl < 60 ? "..." : "Do I have to go? Well... if you think so.", refusal: st => st.x.bgl < 60 ? "..." : "I suppose I'd rather stay home.",
     feelnow: st => st.x.bgl < 60 ? "..." : "Much better. A little embarrassed.", seizurehx: "No.",
   },
-  bystanderAnswers: { cc: "I came in at eight and found her on the floor, mumbling. Her left arm wasn't moving right. She was fine last night at six when I left.", meds: "Glipizide, metformin, furosemide. Her pill box for yesterday is empty AND today's morning slot is empty.", history: "Diabetes, blood pressure, mild heart failure. No strokes.", lkw: "She was normal at 6 PM last night when I left.", lastoral: "She didn't want dinner.", allergies: "None.", seizurehx: "No, never." },
+  bystanderAnswers: { bedbound: "No, she gets around fine with her cane. She lives alone.", cc: "I came in at eight and found her on the floor, mumbling. Her left arm wasn't moving right. She was fine last night at six when I left.", meds: "Glipizide, metformin, furosemide. Her pill box for yesterday is empty AND today's morning slot is empty.", history: "Diabetes, blood pressure, mild heart failure. No strokes.", lkw: "She was normal at 6 PM last night when I left.", lastoral: "She didn't want dinner.", allergies: "None.", seizurehx: "No, never." },
   targets(st) { const v = SCENARIOS.find(s => s.id === "hypo").targets(st); v.hr -= 14; v.sbp += 8; v.temp = 97.4; v.neuro = st.x.bgl < 60 ? "Confused, slurred speech; LEFT arm drift and weaker left grip; no facial droop" : "Left-sided weakness has RESOLVED; moves all extremities equally; speech clear"; v.trauma = "Small bruise on the right hip; no head injury; no deformity"; return v; },
   ambient: st => st.x.bgl < 60 ? pick(["(mumbling, picking at the blanket)", "(tries to sit up, left arm gives way)"]) : null,
   fallback: st => st.x.bgl < 60 ? pick(["...mmh...", "(mumbles)", "...what...?"]) : pick(["Sorry dear, what was that?", "Could you say that again?"]),
@@ -8670,7 +8870,7 @@ addS(G({
     events: "Walking back from lunch, then bam, spinning.", seizurehx: "No.", severity: st => `Headache is a ${st.v.pain}.`, time: "Never had vertigo before.", drugs: "No.",
     feelnow: "Still spinning.",
   },
-  bystanderAnswers: { cc: "He came back from lunch and almost fell into the wall. His speech sounds a little off to me.", lkw: "He was totally normal at lunch, maybe 12:45.", history: "He's always saying his blood pressure is high." },
+  bystanderAnswers: { bedbound: "No, he walks everywhere. He takes the stairs.", cc: "He came back from lunch and almost fell into the wall. His speech sounds a little off to me.", lkw: "He was totally normal at lunch, maybe 12:45.", history: "He's always saying his blood pressure is high." },
   checklist: [
     { label: "Blood glucose", keys: ["a:bgl"], ref: "1232 #5", critical: true },
     { label: "mLAPSS / LAMS performed", keys: ["a:neuro"], ref: "1232 #7", critical: true },
@@ -8705,7 +8905,7 @@ addS(G({
     lastoral: "Lunch at noon.", events: "Doing the crossword, then I couldn't find the words.", dizzy: "No.", seizurehx: "Never.", hospital: "Do I have to? Cedars, I suppose.",
     refusal: "I'd rather stay home, honestly.", feelnow: "Perfectly fine.", orient: "Culver City, Tuesday the 20th. October.",
   },
-  bystanderAnswers: { cc: "At about 3:15 his face drooped on the right and his words came out jumbled. It went away around 3:35.", lkw: "He was normal at 3:10, we were talking about the crossword.", meds: "He stopped his Xarelto a month ago because of the cost. He's on metoprolol.", history: "AFib and blood pressure." },
+  bystanderAnswers: { bedbound: "No, he walks on his own, plays golf twice a week.", cc: "At about 3:15 his face drooped on the right and his words came out jumbled. It went away around 3:35.", lkw: "He was normal at 3:10, we were talking about the crossword.", meds: "He stopped his Xarelto a month ago because of the cost. He's on metoprolol.", history: "AFib and blood pressure." },
   checklist: [
     { label: "Blood glucose", keys: ["a:bgl"], ref: "1232 #5", critical: true },
     { label: "mLAPSS / LAMS", keys: ["a:neuro"], ref: "1232 #7", critical: true },
@@ -8731,7 +8931,7 @@ addS(clone("stroke", {
   answers: { greet: "...eh...", name: "...Arturo...", cc: "...I'm... okay... (doesn't move left side)", weakness: "...nothing wrong... (ignores left arm)", consent: "...mm.", orient: "...the... kitchen..." },
   confusedAnswers: ["...eh...", "(stares to the right, doesn't answer)", "...I'm fine..."],
   fallback: ["...eh...", "(stares to the right)", "...okay..."], ambient: st => st.sev > 0.8 ? "(snoring respirations, drooling)" : pick(["(tries to get up, slides to the left)", "(mumbling, staring right)"]),
-  bystanderAnswers: { cc: "He was cooking, then he just slumped down. He's not moving his left side.", lkw: "He was fine at 8:50, he was yelling at me about the sauce. He fell at 8:52.", history: "Blood pressure, diabetes. He smokes.", meds: "I don't know. Metformin? He has a pill box in his locker.", seizurehx: "No, never.", allergies: "I don't know.", weakness: "He walks fine, works twelve-hour shifts." },
+  bystanderAnswers: { bedbound: "No, he walks fine. He was standing at the stove.", cc: "He was cooking, then he just slumped down. He's not moving his left side.", lkw: "He was fine at 8:50, he was yelling at me about the sauce. He fell at 8:52.", history: "Blood pressure, diabetes. He smokes.", meds: "I don't know. Metformin? He has a pill box in his locker.", seizurehx: "No, never.", allergies: "I don't know.", weakness: "He walks fine, works twelve-hour shifts." },
   targets(st) {
     const s = st.sev; const sbp = 208 - 30 * E(st, "nitro");
     return { hr: 88, sbp, dbp: 116, rr: 20, spo2: 94 + 3 * O2(st), etco2: 38, temp: 98.6, bgl: 188, gcs: s > 0.8 ? [2, 2, 5] : [3, 3, 6], pupils: "PERRL 3 mm; gaze deviated to the RIGHT", pain: 0,
@@ -8808,7 +9008,7 @@ addS(G({
     meds: "Levetiracetam... and dexamethasone. I'm on a new chemo too.", history: "Brain tumor. They took most of it out last year. I get seizures sometimes.", allergies: "Dilantin. Bad rash.",
     orient: st => st.x.post > 0.6 ? "Home. Encino. Tuesday evening." : "...don't know...", pregnant: "No.", lastoral: "Dinner at six.", feelnow: "Tired. Arm's weak.",
   },
-  bystanderAnswers: { cc: "She just stopped talking mid-sentence, started staring, and her right arm started jerking. It's been like 8 minutes and it won't stop.", history: "She has a brain tumor, a glioma. Surgery last year. She has focal seizures sometimes but they usually stop in a minute.", meds: "Keppra, dexamethasone, and chemo pills.", lkw: "She was normal at 7:15, talking to me about dinner.", allergies: "Dilantin.", onset: "About 7:17." },
+  bystanderAnswers: { bedbound: "No, she walks on her own. She works full time.", cc: "She just stopped talking mid-sentence, started staring, and her right arm started jerking. It's been like 8 minutes and it won't stop.", history: "She has a brain tumor, a glioma. Surgery last year. She has focal seizures sometimes but they usually stop in a minute.", meds: "Keppra, dexamethasone, and chemo pills.", lkw: "She was normal at 7:15, talking to me about dinner.", allergies: "Dilantin.", onset: "About 7:17." },
   checklist: [
     { label: "Recognized focal seizure with ALOC as ACTIVE seizure", keys: ["t:midaz"], ref: "1231 #6 ❶", critical: true },
     { label: "Midazolam 10 mg IM/IN (or 5 mg IV/IO if existing access)", keys: ["t:midaz"], ref: "1231 #6", critical: true },
@@ -12454,6 +12654,56 @@ addS(G({
 }));
 
 
+/* ===== scx_80_v2130.js ===== */
+/* v2.13.0: unconscious + wheezing → IM epinephrine FIRST (TP 1219 / MCG 1317.17). Found unresponsive, wheezing, hives after a bee sting. */
+addS(clone("anaph", {
+  id: "anaph_unresp", title: "Anaphylaxis: found unresponsive", protocol: "1219", refs: ["1219", "1237", "MCG 1317.17"], difficulty: "Advanced",
+  dispatchTitle: "38 y/o male, stung by a bee, now unresponsive", dispatchShort: "Griffith Park picnic area.",
+  summary: "38 y/o male stung by a bee, found unresponsive and wheezing.",
+  dispatch: "Engine 56 / RA 56, respond to Griffith Park, the picnic area off Crystal Springs Dr. 38-year-old male stung by a bee, now unresponsive. Time of call 1412.",
+  scene: "Scene safe. The patient is lying on the grass next to a picnic blanket. He doesn't respond as you walk up, and you can hear him wheezing from a few feet away. There are hives on his neck and his face is swollen. His wife is kneeling next to him holding his phone.",
+  patient: { name: "Daniel Okafor", age: 38, sex: "M", weightKg: 84 }, bystander: { name: "Grace", role: "wife", sex: "F" },
+  personality: "Unresponsive at first. After epinephrine he wakes up groggy and scared, hoarse, short phrases.",
+  approach: { see: "Scene is safe: a picnic area in the park. A man in his late 30s is lying on his side on the grass next to a picnic blanket. You can hear him wheezing from several feet away. His face is swollen and blotchy, with hives on his neck. A woman is kneeling next to him, shaking his shoulder.",
+    track: "Eyes closed; he is NOT tracking you and doesn't respond to your voice as you walk up. Loud wheezing; lips look dusky." },
+  allergies: ["bee stings"], startSev: 0.97,
+  answers: {
+    greet: st => st.sev > 0.9 ? "(no response, loud wheezing)" : "Wha... what happened...? (hoarse)",
+    name: "Daniel... Okafor.", age: "Thirty-eight.", consent: "Yes... please.",
+    cc: st => st.sev > 0.6 ? "Can't... breathe... my throat..." : "I can breathe better now... my throat's still tight.",
+    onset: "The bee... maybe ten minutes...?", events: "Got stung on my hand... then I got itchy... then I don't remember.",
+    allergies: "Bees. I know I'm allergic.", meds: "Nothing... no EpiPen... I never filled it.", history: "Nothing. Just the bee thing.",
+    lastoral: "A sandwich, maybe half an hour ago.", drugs: "No.", orient: "The park... Griffith Park.",
+    sob: st => st.sev > 0.5 ? "Yes... tight... wheezy." : "Better.", swelling: "My face feels huge... itchy.",
+    seizurehx: "No.", feelnow: st => st.sev < 0.4 ? "A lot better. My heart's racing." : "Not... really...",
+  },
+  bystanderAnswers: {
+    cc: "He got stung by a bee on his hand. He's allergic. Within a few minutes he was scratching, his face swelled up, he started wheezing, and then he just went down. He hasn't answered me since.",
+    events: "He got stung, said he felt itchy and tight, sat down, and then he slumped over. That was maybe three or four minutes ago.",
+    onset: "The sting was about ten minutes ago. He passed out a few minutes ago.",
+    allergies: "Bees. He had a bad reaction as a kid. The doctor gave him an EpiPen prescription but he never filled it.",
+    meds: "Nothing. He doesn't take anything.", history: "Nothing, he's healthy. Just the bee allergy.",
+    name: "Daniel Okafor. He's 38.", age: "38.", lastoral: "We had sandwiches about half an hour ago.", drugs: "No, nothing.",
+    seizurehx: "No, never.",
+  },
+  checklist: [
+    { label: "Epinephrine 0.5 mg (1 mg/mL) IM lateral thigh", keys: ["t:epi"], ref: "1219 #4 / MCG 1317.17", critical: true },
+    { label: "Airway opened / positioned, high-flow O2 (NRB or BVM)", keys: ["t:nrb", "t:bvm", "a:airway"], ref: "1219 #2" },
+    { label: "Base contact (required for anaphylaxis)", keys: ["t:base"], ref: "1219", critical: true },
+    { label: "Vascular access", keys: ["t:iv", "t:io"], ref: "1219 #5" },
+    { label: "NS 1 L for poor perfusion", keys: ["t:ns"], ref: "1219 #6" },
+    { label: "Blood pressure assessed", keys: ["a:bp"], ref: "1201" },
+    { label: "Lung sounds / airway assessed", keys: ["a:lungs", "a:airway"], ref: "1219 #1" },
+    { label: "Allergen / exposure identified (bee sting)", keys: ["q:allergies", "q:events", "q:cc"], ref: "1201" },
+    { label: "Albuterol only for persistent wheeze AFTER epi", keys: ["t:albuterol"], ref: "1219 #8", optional: true },
+    { label: "Avoid CPAP (unresponsive, upper airway edema)", keys: ["!t:cpap"], ref: "1237 / MCG 1315" },
+  ],
+  pi: { correct: "ANPH", accept: [], differential: ["ANPH", "ALRX", "SOBB"],
+    clues: { ANPH: "Known bee allergy + sting, hives, facial swelling, wheezing, and unresponsiveness = anaphylaxis with shock/respiratory compromise.", ALRX: "Not just an allergic reaction: he is unresponsive with wheezing (multisystem).", SOBB: "The wheezing is from anaphylaxis, not primary asthma." },
+    explain: "Unconscious + wheezing after a known allergen = anaphylaxis. IM epinephrine 0.5 mg (1 mg/mL) is the FIRST medication; albuterol does not fix airway edema or shock.", keyFindingKeys: ["a:skin", "a:airway", "a:bp", "a:lungs"] },
+  expected: "Unresponsive anaphylaxis with wheezing after a bee sting. FIRST medication: epinephrine 0.5 mg (1 mg/mL) IM lateral thigh, before albuterol or anything else. Then airway/high-flow O2 (BVM if needed), IV, NS 1 L, Base contact. Reassess after every condition change (HABBO, ABCs, BP/SpO2/RR, then the rest).",
+}));
+
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
 const META = {
@@ -12512,7 +12762,7 @@ SCENARIOS.forEach(sc => { if (META[sc.id]) Object.assign(sc, META[sc.id]); });
 const RuleBasedPatient = (() => {
   const CAN_TALK = ["alert", "anxious", "confused", "aphasic"];
   const GENERIC = {
-    greet: "Hi...", consent: "Okay.", reassure: "Okay... thank you.", thanks: "Mm-hm.", seizurehx: "No, never.",
+    greet: "Hi...", consent: "Okay.", reassure: "Okay... thank you.", thanks: "Mm-hm.", seizurehx: "No, never.", bedbound: "No, I get around on my own.",
     pde5: "No.", ed: "No.", asa_q: "No — I'm not allergic to aspirin, no stomach ulcers or GI bleeding, and I haven't taken any aspirin today.", ntg_q: "No — I haven't taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension meds in the last 48 hours, I'm not allergic to nitroglycerin, and I haven't taken any nitro today.", drugs: "No, nothing like that.", cough: "No.", swelling: "No.", headache: "No headache.", weakness: "No.",
     nausea: "No.", dizzy: "No.", sweaty: "A little.", lkw: "I'm... not sure exactly.", hospital: "Wherever you think is best.",
     refusal: "No, I'll go.", understand: "Yes.", feelnow: "About the same.", time: "It's been pretty constant.",
@@ -12642,7 +12892,7 @@ const RuleBasedPatient = (() => {
     if (a != null) return [{ speaker: "patient", text: resolve(a, st) }];
     if (q === "asa_q" || q === "ntg_q") return [{ speaker: "patient", text: medScreenAnswer(q, sc, st, false), noTrunc: true }];
     if (byAns[q] && sc.patient.age < 15 && a == null) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
-    if (byAns[q] && ["lkw", "onset", "events"].includes(q)) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
+    if (byAns[q] && ["lkw", "onset", "events", "bedbound", "seizurehx"].includes(q)) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
     if (q === "age") return [{ speaker: "patient", text: `I'm ${sc.patient.age}.` }];
     if (GENERIC[q]) return [{ speaker: "patient", text: GENERIC[q] }];
     return [];
@@ -13430,10 +13680,10 @@ const NEXT = (() => {
     alb_bvm: ["Albuterol in-line BVM", "Albuterol 5 milligrams in line with the BVM"], alb_rep: ["Repeat albuterol", "Repeat albuterol 5 milligrams"],
     // v2.10.7: partner IV prep, peds arrest (TP 1210-P / MCG 1302 / MCG 1309), mandated report
     ivsetup: ["IV setup (partner)", "Can you set up my IV and spike a bag?"], shoulderroll: ["Shoulder roll", "Partner, put a towel under his shoulders"],
-    epi_peds: ["Epi IO (color code)", "Epinephrine IO, color code dose"], ns_peds: ["NS 20 mL/kg (color code)", "Normal saline bolus IO, color code"],
+    epi_peds: ["Epi IO (color code)", "Epinephrine IO, color code dose"], epi_im_peds: ["Epi IM 1 mg/mL (color code)", "Epinephrine IM, 1 milligram per mL, color code dose"], ns_peds: ["NS 20 mL/kg (color code)", "Normal saline bolus IO, color code"],
     dcfs: ["Report: DCFS / LE", "This is suspected child abuse, notify law enforcement and DCFS"], dph: ["Notify Public Health", "Notify Public Health of the pool drowning"],
   };
-  const BASE_ID2 = { epi_peds: "epi", ns_peds: "ns" };
+  const BASE_ID2 = { epi_peds: "epi", epi_im_peds: "epi", ns_peds: "ns" };
   // chip id -> treatment event it satisfies (variants map to the base drug/device)
   const BASE_ID = { alb_cpap: "albuterol", alb_hhn: "albuterol", alb_nrb: "albuterol", alb_bvm: "albuterol", cpap_neb: "cpap", alb_rep: "albuterol#2", nal_rep: "naloxone#2", mid_im10: "midaz", mid_iv5: "midaz", mid_peds: "midaz", diphen_im: "diphen" };
   /* Protocol treatment order (slots) per LA County TP. Each slot = one decision point in protocol sequence.
@@ -13470,6 +13720,12 @@ const NEXT = (() => {
   const PN_SCRIPT = "I'm going to ask you a few quick questions real quick. Just answer yes or no. Do you have a headache? Any blurred vision? Any ringing in your ears? Any dizziness? Do you feel weaker than normal? Any nausea? Any diarrhea? Any vomiting? Any chest pain? Any shortness of breath?";
   // v2.10.7: stroke screen pieces in Adrian's order (TP 1232 #8 LAMS: face, arm, grip)
   const STROKE_CH = [["Smile (facial droop)", "Smile for me, show me your teeth", "a:smile"], ["Grip (squeeze fingers)", "Squeeze my fingers with both hands", "a:grip"], ["Arm drift (eyes closed, 10 s)", "Close your eyes, hold both arms straight out, palms up, and keep them there for ten seconds", "a:drift"]];
+  // v2.13.0 L-HABBO stroke screen (TP 1232 #7 mLAPSS criteria), Adrian's order: L, then H, A, B, B, O
+  const LHABBO_RUN = ["Run L-HABBO screen", "Run the L-HABBO stroke screen", "x:lhabbo"];
+  const LHABBO_CH = [["L · Last known well", "When was he last known well?", "lh:L"], ["H · Seizure / epilepsy history", "Any history of seizures or epilepsy?", "lh:H"],
+    ["A · Age 40 or older?", "How old is he? Is he 40 or older?", "lh:A"], ["B · Bed-bound / wheelchair?", "Is he normally bed bound or in a wheelchair?", "lh:B1"],
+    ["B · Blood glucose 60–400", "Check a blood sugar", "lh:B2"], ["O · Obvious asymmetry", "Any obvious asymmetry? Check the face, arms and grip", "lh:O"]];
+  const REASSESS = ["↻ Reassess", "I'm going to reassess"];
   const ALL = [
     ["Talk to patient", [["Intro + consent", "Hello, my name is Adrian, I'm here to help, is that okay?"], ["Chief complaint", "What's bothering you today?"], ["Name", "What's your name?"],
       ["Where are we / year", "Where are we right now, and what year is it?"], ["What happened", "What happened today?"], ["How old are you?", "How old are you?"], ["History", "Any medical history?"], ["Allergies", "Any allergies?"],
@@ -13484,7 +13740,8 @@ const NEXT = (() => {
       ["Nail bed pressure", "Nail bed pressure"], ["Pupils", "Check pupils"],
       ["Lung sounds", "Listen to lung sounds"], ["Heart sounds", "Listen to heart sounds"], ["JVD", "Check for JVD"], ["Trachea", "Check the trachea"], ["Chest rise", "Check his chest rise"],
       ["Expose chest", "Expose the chest"], ["Abdomen", "Palpate the abdomen"], ["Abdomen (distension / rigidity / bruising)", "Check the abdomen for distension, rigidity, or bruising"], ["Pelvis", "Check the pelvis"], ["Legs", "Expose the legs"], ["Head trauma?", "Any trauma to the head?"],
-      ["Stroke scale", "Do a stroke scale, mLAPSS and LAMS"], ...STROKE_CH, ["Trauma assessment", "Trauma assessment, head to toe"], ["Broselow tape", "Broselow tape, what color are they?"], ["Smell", "Any smell of alcohol on his breath?"], ["Med bottles", "Check for med bottles"], ["Cap refill", "Check capillary refill"]]],
+      ["Stroke scale", "Do a stroke scale, mLAPSS and LAMS"], ...STROKE_CH, REASSESS, ["Trauma assessment", "Trauma assessment, head to toe"], ["Broselow tape", "Broselow tape, what color are they?"], ["Smell", "Any smell of alcohol on his breath?"], ["Med bottles", "Check for med bottles"], ["Cap refill", "Check capillary refill"]]],
+    ["L-HABBO", [LHABBO_RUN, ...LHABBO_CH]],
     ["Partner", [["BP, SpO₂, RR", "Partner, get BP, SpO2 and resp rate"], ["Blood pressure", "Partner, get a blood pressure"], ["Resp rate", "Partner, count respirations"], ["Pulse ox", "Partner, get a pulse ox"], ["Recycle BP", "Partner, recycle the BP"], ["NRB 15 L", "Partner, nonrebreather at 15 liters"], ["Cannula 4 L", "Partner, nasal cannula at 4 liters"],
       ["BVM + capno", "Partner, bag him with the BVM and put capno on"], ["OPA", "Partner, insert an OPA"], ["NPA", "Partner, insert an NPA"], ["Suction", "Partner, suction the airway"],
       ["i-gel", "Partner, insert an i-gel"], ["Recovery position", "Partner, roll him into the recovery position"], ["SMR", "Partner, spinal motion restriction"], ["Start compressions", "Partner, start compressions"],
@@ -13494,7 +13751,7 @@ const NEXT = (() => {
       ["Temperature", "Check a temperature"], ["Rhythm check", "Rhythm check"], ["Pulse check", "Pulse check"], ["Shock 200 J", "Defibrillate at 200 joules"], ["Sync cardioversion", "Synchronized cardioversion"],
       ["Pace", "Transcutaneous pacing"], ["Vector change", "Change pad position to anterior posterior"]]],
     ["Meds", ["iv", "io", "aspirin", "nitro", "fentanyl", "ondansetron", "albuterol", "alb_cpap", "alb_hhn", "alb_nrb", "cpap_neb", "alb_bvm", "epi", ["Epi 1 mg IV/IO", "Epinephrine 1 milligram IV push"], "pushepi", ["Amiodarone 300 mg", "Amiodarone 300 milligrams IV push"], "amio",
-      "adenosine", "atropine", "epi_peds", "naloxone", ["Naloxone 2 mg IM", "Naloxone 2 milligrams IM"], ["Naloxone 1 mg IV", "Naloxone 1 milligram IV push"], "d10", "glucagon", "oralglucose", "diphen", "diphen_im", "midaz", "mid_im10", "mid_iv5", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "permhypo", "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
+      "adenosine", "atropine", "epi_peds", "epi_im_peds", "naloxone", ["Naloxone 2 mg IM", "Naloxone 2 milligrams IM"], ["Naloxone 1 mg IV", "Naloxone 1 milligram IV push"], "d10", "glucagon", "oralglucose", "diphen", "diphen_im", "midaz", "mid_im10", "mid_iv5", "calcium", "bicarb", "magnesium", "ns", ["NS 1 L", "Normal saline 1 liter IV"], "permhypo", "txa", "needle", "chestseal", "tourniquet", "pelvicbinder", "bandage"]
       .map(x => Array.isArray(x) ? x : TXSAY[x])],
     ["Transport / Radio", [["Transport", "Let's transport, load and go"], ["Contact Base", "Base, this is Medic 12, how copy?"], ["Notify hospital", "Notify the receiving hospital"],
       ["Head up 30°", "Elevate the head of the gurney 30 degrees"], ["Keep warm", "Put a blanket on and keep warm"], ["Terminate (Base)", "Terminate resuscitation"],
@@ -13569,6 +13826,11 @@ const NEXT = (() => {
     const cs = sim.code && sim.code();
     if (st.x.arrest || (cs && cs.roscT != null && !cs.roscRecT)) return fin("code", st.flags.cpr ? "Code: CPR running" : "Code: cardiac arrest", codeChips(sim));
     const f = sim.flow(), step = f.steps.find(s => !s.done && !s.na) || { id: "radio" };
+    // v2.13.0: a condition change puts Reassess (HABBO → ABCs → BP, SpO2, RR → rest) first until it's started
+    const chg = (st.x.chg || [])[(st.x.chg || []).length - 1], rsPending = !!(chg && st.t - chg.t < 300 && !(st.evSeq || []).some(e => e.i > chg.i && /^(x:reassess|a:bgl|lh:O|a:airway|a:lungs|a:bp|a:vitals)$/.test(e.k)));
+    if (rsPending) { const r = suggestBase(); return { ...r, title: "↻ Condition changed: reassess", chips: [{ ...C(REASSESS[0], REASSESS[1], "reassess"), grp: "reassess" }, ...r.chips.filter(c => c.say !== REASSESS[1])] }; } // not re-capped: keeps Contact Base / Transport
+    return suggestBase();
+    function suggestBase() {
     // unresponsive / not-tracking patient: AVPU stimulus and ABC/pulse checks come before intro/consent (intro stays available, last)
     const m = sim.mental ? sim.mental() : "alert", notTracking = !["alert", "anxious"].includes(m) && !st.x.avpuAuto;
     if (notTracking && ["track", "intro", "pulses", "skin", "partner", "cc", "avpu"].includes(step.id)) {
@@ -13607,7 +13869,8 @@ const NEXT = (() => {
       why: () => { const ae = sim.aeiou(), o = []; ae.items.filter(i => !i.done && AE_SAY[i.id]).forEach(i => { o.push(C(AE_SAY[i.id][0], AE_SAY[i.id][1], "aeiou")); if (i.id === "S") o.push(...strokeChips()); }); return o; },
       hx: () => [...HX.filter(x => !ev[x[2]]).map(x => C(x[0], x[1])), ...medScreenChips(), ...ivPrepChip()],
     };
-    const strokeChips = () => STROKE_CH.filter(x => !ev[x[2]]).map(x => ({ ...C(x[0], x[1], "stroke") }));
+    const lhLeft = () => (typeof LHABBO !== "undefined" && LHABBO.strokeCall(sc) || sc.protocol === "1232") && LHABBO_CH.some(x => !ev[x[2]]);
+    const strokeChips = () => [...(lhLeft() ? [C(LHABBO_RUN[0], LHABBO_RUN[1], "stroke")] : []), ...STROKE_CH.filter(x => !ev[x[2]]).map(x => ({ ...C(x[0], x[1], "stroke") }))];
     const pedsEarly = () => sc.peds && !ev["a:broselow"] ? [C("Broselow tape", "Broselow tape, what color are they?", "peds")] : [];
     const ivPrepChip = () => st.flags.iv || st.x.ivPrep || (st.pq || []).some(q => q.id === "ivsetup") || sc.tag === "ARREST" ? [] : [C("IV setup (partner)", "Can you set up my IV and spike a bag?", "partner")];
     const medScreenChips = () => {
@@ -13642,7 +13905,8 @@ const NEXT = (() => {
       return fin(step.id, title, out);
     }
     if (step.id === "tx") return fin("tx", "Treatment (protocol order)", txChips(sim, ev));
-    return fin("radio", "Transport / radio", [C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Notify hospital", "Notify the receiving hospital", "radio"), C("Recycle BP", "Partner, recycle the BP"), C("Reassess", "Partner, get BP, SpO2 and resp rate"), C("Pain 0-10", "Rate it 0 to 10")]);
+    return fin("radio", "Transport / radio", [C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Notify hospital", "Notify the receiving hospital", "radio"), C("Recycle BP", "Partner, recycle the BP"), C("Reassess", "I'm going to reassess"), C("Pain 0-10", "Rate it 0 to 10")]);
+    }
   }
   // Treatment group: protocol slots in order; inside a slot, correct + plausible alternatives are shuffled (seeded) so position is no giveaway.
   function txChips(sim, ev) {
@@ -13673,7 +13937,9 @@ const NEXT = (() => {
     // anything still missing from history (allergies before meds) comes before treatment
     vitalChips(sim).filter(c => c.label !== "BP, SpO₂, RR").forEach(c => prefix.push(c));
     [["Allergies", "Any allergies?", "q:allergies"], ["Medications", "What medications do you take?", "q:meds"]].forEach(([l, s2, k]) => { if (!ev[k]) prefix.push(C(l, s2)); });
-    if (proto === "1232") STROKE_CH.filter(x => !ev[x[2]]).forEach(x => prefix.push(C(x[0], x[1], "stroke")));
+    if (proto === "1232") { if (LHABBO_CH.some(x => !ev[x[2]])) prefix.push(C(LHABBO_RUN[0], LHABBO_RUN[1], "stroke")); STROKE_CH.filter(x => !ev[x[2]]).forEach(x => prefix.push(C(x[0], x[1], "stroke"))); }
+    // v2.13.0 unconscious + wheezing: IM epinephrine is the first medication
+    if (st.x.wu && !st.x.wu.first && !ev["t:epi"] && !st.x.arrest) { const e = TXSAY[sc.peds ? "epi_im_peds" : "epi"]; if (e) prefix.unshift({ ...C(e[0], e[1], "meds"), slot: -1 }); }
     const has12 = !!(ev["a:12lead"] || (st.rev && st.rev.twelve) || (st.x && st.x.ecg) || (st.pq || []).some(q => q.id === "12lead"));
     if ((proto === "1211" || sc.base === "stemi") && !has12) prefix.push(C("12-lead", "Get a 12-lead", "monitor"));
     if (has12 && !ev["a:v4r"] && !(st.x && st.x.v4r) && !(st.x && st.x.arrest) && st.tg && st.tg.twelve) prefix.push(C("Move V4 to V4R", "Partner, move V4 to V4R", "monitor"));
@@ -13701,7 +13967,7 @@ const NEXT = (() => {
   }
   function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => ({ label: l, say: pron(s, F) }))]); }
   function aeiouChips() { return AE_SAY; }
-  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips };
+  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS };
 })();
 
 /* ===== ui.js ===== */
@@ -13763,7 +14029,7 @@ const NEXT = (() => {
   function startScenario(sc, opts) {
     opts = opts || {};
     skipSpeech();
-    closeMedQuiz(); chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; destOpen = false; destAutoShown = false; destTriageForce = false; destSig = ""; document.body.classList.remove("coding"); $("#instrCap").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; if ($("#btnDest")) $("#btnDest").hidden = true; if ($("#destBtnLabel")) $("#destBtnLabel").textContent = "Destination"; $("#txStrip").innerHTML = "";
+    closeMedQuiz(); chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; lhOpen = false; lhSig = ""; destOpen = false; destAutoShown = false; destTriageForce = false; destSig = ""; document.body.classList.remove("coding"); $("#instrCap").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; if ($("#btnDest")) $("#btnDest").hidden = true; if ($("#destBtnLabel")) $("#destBtnLabel").textContent = "Destination"; $("#txStrip").innerHTML = "";
     $("#scTitle").textContent = sc.dispatchTitle;
     $("#scRef").textContent = "LA County EMS · impression & protocol: your call";
     $("#dispatch").innerHTML = `<b>DISPATCH:</b> ${esc(sc.dispatch)}<details><summary>Scene size-up</summary>${esc(sc.scene)}</details>`;
@@ -14402,12 +14668,12 @@ const NEXT = (() => {
   let zxShockN = 0, zxShockUntil = 0;
 
   // ---------------- v2.9: next-step bar, All actions sheet, AEIOU-TIPS panel, code panel ----------------
-  let nextSig = "", aeSig = "", allCat = 0, aeOpen = false, destOpen = false, destAutoShown = false, destTriageForce = false, destSig = "";
+  let nextSig = "", aeSig = "", lhSig = "", lhOpen = false, allCat = 0, aeOpen = false, destOpen = false, destAutoShown = false, destTriageForce = false, destSig = "";
   const mmss = x => x == null ? "--:--" : `${Math.floor(Math.max(0, x) / 60)}:${String(Math.floor(Math.max(0, x) % 60)).padStart(2, "0")}`;
   function renderV29() {
     const st = SIM.state, sc = SIM.scenario; const bar = $("#nextBar"); if (!bar) return;
     const live = !!(st && !st.ended);
-    bar.hidden = !live; if (!live) { $("#codePanel").hidden = true; $("#aeiouPanel").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; $("#instrCap").hidden = true; codeWas = false; document.body.classList.remove("coding"); return; }
+    bar.hidden = !live; if (!live) { $("#codePanel").hidden = true; $("#aeiouPanel").hidden = true; if ($("#lhabboPanel")) $("#lhabboPanel").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; $("#instrCap").hidden = true; codeWas = false; document.body.classList.remove("coding"); return; }
     const sg = typeof NEXT !== "undefined" ? NEXT.suggest(SIM) : null;
     if (sg) { const sig = sg.step + "|" + sg.title + "|" + sg.chips.map(c => c.say).join("|");
       if (sig !== nextSig) { nextSig = sig; $("#nextStep").textContent = sg.title;
@@ -14422,6 +14688,16 @@ const NEXT = (() => {
     if (showAe && aeOpen) { const sig = ae.items.map(i => i.done ? 1 : 0).join("");
       if (sig !== aeSig) { aeSig = sig; const SAY = NEXT.aeiouChips(), F = SIM.scenario.patient.sex === "F";
         pan.innerHTML = `<div class="ae-head">AEIOU-TIPS: why is the patient altered? <span class="ae-prog"><i style="width:${Math.round(100 * ae.n / ae.total)}%"></i></span> ${ae.n}/${ae.total} considered</div><div class="ae-grid">${ae.items.map(i => `<button type="button" class="${i.done ? "done" : ""}" data-say="${esc(F ? SAY[i.id][1].replace(/\bhis\b/g, "her").replace(/\bhe\b/g, "she") : SAY[i.id][1])}"><b>${i.done ? "✔" : esc(i.id.replace("2", ""))}</b>${esc(i.label)}</button>`).join("")}</div>`; } }
+    // v2.13.0 L-HABBO tap panel (L, H, A, B, B, O in Adrian's order) and the Reassess button
+    { const lh = SIM.lhabbo && SIM.lhabbo(), b = $("#btnLhabbo"), p = $("#lhabboPanel");
+      const showLh = !!(lh && !st.x.arrest && (lh.graded || (sc.refs || []).includes("1232") || lh.items.some(i => i.done) || lhOpen));
+      if (b) { b.hidden = !showLh; if (showLh) b.textContent = `L-HABBO ${lh.items.length - lh.missed.length}/${lh.items.length}`; }
+      if (p) { p.hidden = !(showLh && lhOpen);
+        if (showLh && lhOpen) { const sig = lh.items.map(i => i.done ? 1 : 0).join("") + (lh.result ? (lh.result.pos ? "P" : "N") : ""), F = sc.patient.sex === "F";
+          if (sig !== lhSig) { lhSig = sig; const CH = NEXT.LHABBO_CH, R = NEXT.LHABBO_RUN, pr = t => F ? t.replace(/\bhim\b/g, "her").replace(/\bhis\b/g, "her").replace(/\bhe\b/g, "she") : t;
+            p.innerHTML = `<div class="ae-head">L-HABBO stroke screen (TP 1232 #7) <span class="ae-prog"><i style="width:${Math.round(100 * (lh.items.length - lh.missed.length) / lh.items.length)}%"></i></span> ${lh.items.length - lh.missed.length}/${lh.items.length}${lh.result ? " · " + (lh.result.pos ? "POSITIVE" : "NEGATIVE") : ""}</div><div class="ae-grid">${CH.map((c, i) => { const it = lh.items[i]; return `<button type="button" class="${it.done ? "done" : ""}" data-say="${esc(pr(c[1]))}"><b>${esc(it.letter)}</b>${esc(it.label)}${it.done ? " ✔" : ""}</button>`; }).join("")}<button type="button" data-say="${esc(R[1])}"><b>▶</b>${esc(R[0])}</button></div>`; } } } }
+    { const rb = $("#btnReassess"), chg = (st.x.chg || [])[(st.x.chg || []).length - 1], pend = !!(chg && st.t - chg.t < 300 && !(st.evSeq || []).some(e => e.i > chg.i && e.k === "x:reassess"));
+      if (rb) { rb.hidden = !!st.x.arrest; rb.classList.toggle("due", pend); rb.textContent = pend ? "↻ Reassess now" : "↻ Reassess"; } }
     // Post-Transport Destination & Trauma Triage (Ref. 506) selector
     const transported = !!(st.flags.transport || st.events["t:transport"] || st.x.dest || (st.x.triage && st.x.triage.length));
     if (transported && !destAutoShown) { destAutoShown = true; destOpen = true; }
@@ -14647,6 +14923,7 @@ const NEXT = (() => {
         </div>
       </div>`}
       ${flowHtml()}
+      ${v213Html()}
       ${partnerBox(st)}
       ${deviceBox(st)}
       <div class="db-box" style="margin-top:1em"><h3>Time-stamped log</h3><table class="log">${logHtml}</table></div>
@@ -14675,6 +14952,14 @@ const NEXT = (() => {
       ${sum.medQuiz && sum.medQuiz.length ? `<h4>Medication knowledge check (MCG 1317) · ${sum.medQuiz.reduce((a, q) => a + q.score, 0)}/${sum.medQuiz.reduce((a, q) => a + q.total, 0)}</h4><table class="log"><tr><th>Medication</th><th>Dose</th><th>Repeat</th><th>Max prior to Base</th><th>Contra</th><th>Score</th></tr>${sum.medQuiz.map(q => `<tr><td>${esc(q.name)} <small>(${esc(q.ref)})</small></td><td>${q.doseOk ? "✔" : "✘"}</td><td>${q.repeatOk ? "✔" : "✘"}</td><td>${q.maxOk ? "✔" : "✘"}</td><td>${q.contraOk ? "✔" : "✘"}</td><td><b>${q.score}/${q.total}</b></td></tr>`).join("")}</table>` : ""}
       <h4>Radio report / handoff</h4>${radio}</div>${hist}`;
   }
+  // v2.13.0: L-HABBO stroke screen, reassessment after condition change, unconscious + wheezing (epi first)
+  function v213Html() {
+    const lh = SIM.lhabbo && SIM.lhabbo(), rs = SIM.reassessSummary && SIM.reassessSummary(), wu = SIM.wu, st = SIM.state, o = [];
+    if (lh && (lh.graded || lh.items.some(i => i.done))) o.push(`<h4>L-HABBO stroke screen (TP 1232 #7)${lh.graded ? ` · ${lh.items.length - lh.missed.length}/${lh.items.length}` : " <small>(not graded on this call)</small>"}</h4>${lh.items.map(i => `<div class="ck ${i.done ? "done" : lh.graded ? "miss" : ""}"><span class="i">${i.done ? "✔" : lh.graded ? "✘" : "–"}</span><div><b>${esc(i.letter)}</b> · ${esc(i.label)}${i.done ? ` <small>· ${fmtT(i.t)}</small>` : lh.graded ? " <small>· MISSED</small>" : ""}</div></div>`).join("")}${lh.result ? `<p class="fine">Screen result: ${lh.result.pos ? "POSITIVE" : "NEGATIVE" + (lh.result.fails.length ? " (" + esc(lh.result.fails.join("; ")) + ")" : "")}</p>` : ""}${lh.graded && lh.missed.length ? `<p class="fine"><b>Missed:</b> ${lh.missed.map(i => esc(i.letter + " (" + i.label + ")")).join(", ")}</p>` : ""}`);
+    if (rs && rs.any) o.push(`<h4>Reassessment after condition change · ${rs.changes.filter(c => c.done && c.orderOk).length}/${rs.changes.length}</h4><p class="fine">Expected: HABBO (H seizure/epilepsy hx, A age ≥ 40, B bed/wheelchair-bound, B glucose 60–400, O obvious asymmetry) → ABCs → BP → SpO₂ → RR → rest of the vitals.</p>${rs.changes.map(c => `<div class="ck ${c.done && c.orderOk ? "done" : "miss"}"><span class="i">${c.done && c.orderOk ? "✔" : "✘"}</span><div><b>${fmtT(c.t)} · ${c.dir === "better" ? "improving" : "worse"}</b>: ${esc(c.text)}<br><small>${c.startedIn == null ? "No reassessment after this change." : `Started ${c.startedIn} s later. Your order: ${esc(c.order.join(" → ") || "none")}.`}${c.missing.length ? " Missing: " + esc(c.missing.join("; ")) + "." : ""}${c.startedIn != null && !c.orderOk ? " Out of order." : ""}</small></div></div>`).join("")}`);
+    if (wu) { const ok = !!(st.events["x:wuEpiFirst"]); o.push(`<h4>Unconscious + wheezing (1219 #4 / 1237 / MCG 1317.17)</h4><div class="ck ${ok ? "done" : "miss"}"><span class="i">${ok ? "✔" : "✘"}</span><div><b>IM epinephrine first</b> <small>(${SIM.scenario.peds ? "1 mg/mL by color code, MCG 1309" : "0.5 mg of 1 mg/mL IM"})</small><br><small>${wu.first ? `First medication after ${fmtT(wu.t0)}: ${esc(wu.first === "epi" ? "epinephrine" : wu.first)}${ok ? "" : " (should have been IM epinephrine)"}` : "No medication given."}</small></div></div>`); }
+    return o.length ? `<div class="db-box" style="margin-top:1em"><h3>v2.13 checks</h3>${o.join("")}</div>` : "";
+  }
   function flowHtml() {
     const f = SIM.flow();
     const rows = f.steps.map((s, i) => `<div class="ck ${s.na ? "" : s.done ? "done" : "miss"}"><span class="i">${s.na ? "–" : s.done ? "✔" : "✘"}</span><div><b>${i + 1}. ${esc(s.label)}</b>${s.done && !s.na ? ` <small>· ${fmtT(s.t)}</small>` : ""}${s.na ? `<br><small>N/A: ${esc(s.naText || "")}</small>` : ""}${s.note && !s.na ? `<br><small>${esc(s.note)}</small>` : ""}</div></div>`).join("");
@@ -14698,6 +14983,9 @@ const NEXT = (() => {
     L.push("", "CHECKLIST:"); checklist.forEach(c => L.push(`${c.done ? "[x]" : c.optional ? "[-]" : "[ ]"} ${c.label} (Ref. ${c.ref})`));
     { const f = SIM.flow(); L.push("", "ASSESSMENT FLOW:"); f.steps.forEach((s, i) => L.push(`${s.na ? "[n/a]" : s.done ? "[x]" : "[ ]"} ${i + 1}. ${s.label}${s.done && !s.na ? " @" + fmtT(s.t) : ""}${s.note && !s.na ? " (" + s.note + ")" : ""}`)); f.flags.forEach(x => L.push("ORDER: " + x)); L.push("Sequence: " + f.seq.join(" > ")); }
     { const ae = SIM.aeiou && SIM.aeiou(); if (ae && ae.altered) { L.push("", `AEIOU-TIPS (${ae.n}/${ae.total} considered):`); ae.items.forEach(it => L.push(`${it.done ? "[x]" : "[ ]"} ${it.label}${!it.done && ae.missedKey.includes(it.id) ? " <- KEY MISSED" : ""}`)); } }
+    { const lh = SIM.lhabbo && SIM.lhabbo(); if (lh && (lh.graded || lh.items.some(i => i.done))) { L.push("", `L-HABBO STROKE SCREEN (TP 1232 #7)${lh.graded ? "" : " (not graded on this call)"}:`); lh.items.forEach(i => L.push(`${i.done ? "[x]" : "[ ]"} ${i.letter} ${i.label}${i.done ? " @" + fmtT(i.t) : lh.graded ? " <- MISSED" : ""}`)); if (lh.result) L.push(`Result: ${lh.result.pos ? "POSITIVE" : "NEGATIVE"}`); } }
+    { const rs = SIM.reassessSummary && SIM.reassessSummary(); if (rs && rs.any) { L.push("", "REASSESSMENT AFTER CONDITION CHANGE (HABBO = H, A, B, B, O of L-HABBO → ABCs → BP → SpO2 → RR → rest):"); rs.changes.forEach(c => L.push(`${c.done && c.orderOk ? "[x]" : "[ ]"} ${fmtT(c.t)} ${c.dir === "better" ? "improving" : "worse"}: ${c.text}. ${c.startedIn == null ? "Not reassessed." : "Order: " + c.order.join(" > ") + "."}${c.missing.length ? " Missing: " + c.missing.join("; ") + "." : ""}${c.startedIn != null && !c.orderOk ? " OUT OF ORDER." : ""}`)); } }
+    { const wu = SIM.wu; if (wu) L.push("", `UNCONSCIOUS + WHEEZING: ${st.events["x:wuEpiFirst"] ? "[x] IM epinephrine given first" : "[ ] IM epinephrine NOT first (first med: " + (wu.first || "none") + ")"}`); }
     { const cs = SIM.codeSummary && SIM.codeSummary(); if (cs) { L.push("", "CODE MANAGEMENT (TP 1210):"); cs.items.forEach(it => L.push(`${it.ok ? "[x]" : "[ ]"} ${it.label}: ${it.detail} (Ref. ${it.ref})`)); } }
     L.push("", "DEVIATIONS:"); st.devs.forEach(d => L.push(`${fmtT(d.t)} ${d.level}: ${d.text} [${d.ref}]`)); if (!st.devs.length) L.push("none");
     L.push("", "LOG:"); st.log.forEach(l => L.push(`${fmtT(l.t)} [${l.kind}] ${l.text}`));
@@ -14837,6 +15125,9 @@ const NEXT = (() => {
     $("#btnAll").onclick = openAll;
     $("#instrCap").onclick = toggleInstr; $("#instrCap").onkeydown = e => { if (e.key === "Enter" || e.key === " " || (e.key === "Escape" && instrOpen)) { e.preventDefault(); e.stopPropagation(); toggleInstr(); } };
     $("#btnAeiou").onclick = () => { aeOpen = !aeOpen; aeSig = ""; render(); };
+    if ($("#btnLhabbo")) $("#btnLhabbo").onclick = () => { lhOpen = !lhOpen; lhSig = ""; render(); };
+    if ($("#lhabboPanel")) $("#lhabboPanel").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
+    if ($("#btnReassess")) $("#btnReassess").onclick = () => submit("I'm going to reassess", true);
     $("#aeiouPanel").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
     if ($("#btnDest")) $("#btnDest").onclick = () => { destOpen = !destOpen; destSig = ""; render(); };
     if ($("#destPanel")) $("#destPanel").onclick = e => {
