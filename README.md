@@ -38,6 +38,13 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.5 — one oxygen rule (Adrian: "if a nasal cannula will bring them above 94% or not")
+- One rule shared by the engine and Watch: target SpO2 94% (COPD: the app's existing 88–92% target, so 88). Nasal cannula if the patient's own oxygen-response model, re-run as a what-if with a cannula on, reaches the target; otherwise NRB. BVM for inadequate ventilation is unchanged. Arrest → NRB/BVM.
+- Interactive: "put him on oxygen" with no device named → the rule's device (was: NC if SpO2 ≥ 90). A cannula that can't reach 94 just leaves the patient under 94 until escalated.
+- Grading: checklist items that took only the NRB now also take a cannula applied when the rule says cannula (recorded as t:ncok). NRB still accepted everywhere it was. Carbon monoxide / smoke ("regardless of SpO2") and the droplet-mask item stay NRB-only.
+- Watch: device by the same rule; a measured SpO2 under target gets oxygen even if the checklist has no O2 item; a cannula that can't hold the target is escalated to the NRB. Next-step coach chip offers the rule's device.
+- tests/sim_v2145.js; sim_v2144 STEMI timing check now allows the O2 delegation before the 4-lead/12-lead.
+
 ### 2.14.4
 - Watch mode, EMT works in parallel: the EMT partner runs a task queue. Whenever the EMT is free and the call still needs a hands-on task, Adrian hands it off in one short line ("Partner, go ahead and get me a 4-lead, then a 12-lead", "Partner, put him on a non-rebreather at 15 liters", "Partner, start bagging him with the BVM and put capno on", "Partner, check a blood sugar"…) and keeps going with his own history/assessment. The EMT reports back ("Leads are on, monitor's up", "12-lead's done") and Adrian does the interpretation.
 - Order: life threats first (BVM / O2 by the app's existing device rules), then 4-lead → 12-lead, glucose, temperature, capnography, positioning. Tasks come only from the scenario's own checklist; meds, IV/IO, rhythm / 12-lead reads and the transport decision stay with the paramedic. No auto-delegation during an arrest or while the EMT is bagging / on compressions.

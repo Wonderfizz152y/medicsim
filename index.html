@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.14.4 f1a049f15d">
+<meta name="medicsim-version" content="2.14.5 b2b8eefbfd">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -4357,7 +4357,7 @@ const fmtT = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s /
 
 const SIM = (() => {
   let sc = null, st = null, timer = null, ui = null, lastInteraction = 0, lastAmbient = 0;
-  const TX_LABEL = { ivsetup: "IV setup (start kit out, 1 L NS spiked, line primed)", shoulderroll: "Shoulder roll (padding under the shoulders, airway neutral)", dcfs: "Suspected child abuse: DCFS / law enforcement report (mandated reporter)", blanket: "Blanket applied to keep the patient warm", obkit: "OB kit opened and set up for delivery", deliver: "Controlled delivery: supporting the head and perineum", drynewborn: "Newborn dried, warmed and stimulated with a towel", clampcord: "Cord clamped in two places and cut", placenta: "Placenta managed", fundal: "Fundal massage", skintoskin: "Newborn placed skin-to-skin on mother's chest, both covered", magnesium: "Magnesium sulfate", txa: "Tranexamic acid (TXA) 1 g in 100 mL NS IV over 10 min", cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", permhypo: "Permissive hypotension (keep SBP ~70+)", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing", removepatch: "Medication patch removed", removeheat: "Heating pad removed", pads: "Defib/pacing pads applied", tourniquet: "Tourniquet applied", smr: "Spinal motion restriction", gurney: "Gurney to bedside" };
+  const TX_LABEL = { ivsetup: "IV setup (start kit out, 1 L NS spiked, line primed)", shoulderroll: "Shoulder roll (padding under the shoulders, airway neutral)", dcfs: "Suspected child abuse: DCFS / law enforcement report (mandated reporter)", blanket: "Blanket applied to keep the patient warm", obkit: "OB kit opened and set up for delivery", deliver: "Controlled delivery: supporting the head and perineum", drynewborn: "Newborn dried, warmed and stimulated with a towel", clampcord: "Cord clamped in two places and cut", placenta: "Placenta managed", fundal: "Fundal massage", skintoskin: "Newborn placed skin-to-skin on mother's chest, both covered", magnesium: "Magnesium sulfate", txa: "Tranexamic acid (TXA) 1 g in 100 mL NS IV over 10 min", cpr: "CPR", stopcpr: "Hold CPR", defib: "Defibrillation", cardiovert: "Sync cardioversion", pace: "TCP", cpap: "CPAP", bvm: "BMV", sga: "Supraglottic airway (i-gel)", opa: "OPA/NPA", suction: "Suction", nrb: "O2 NRB 15 L/min", nc: "O2 nasal cannula", ncok: "O2 nasal cannula (brings SpO2 to the 94% target)", o2: "Oxygen", aspirin: "Aspirin", nitro: "Nitroglycerin", iv: "IV access", io: "IO access", permhypo: "Permissive hypotension (keep SBP ~70+)", ns: "Normal saline", albuterol: "Albuterol", pushepi: "Push-dose epinephrine", epi: "Epinephrine", amio: "Amiodarone", atropine: "Atropine", adenosine: "Adenosine", d10: "Dextrose 10%", oralglucose: "Oral glucose", glucagon: "Glucagon", naloxone: "Naloxone", midaz: "Midazolam", ondansetron: "Ondansetron", fentanyl: "Fentanyl", morphine: "Morphine", ketorolac: "Ketorolac", diphen: "Diphenhydramine", calcium: "Calcium chloride", bicarb: "Sodium bicarbonate", fowler: "Fowler's / sitting up", supine: "Supine", recovery: "Recovery position", protect: "Protect from injury", base: "Base contact", notify: "Receiving-center notification", transport: "Transport initiated", leavebehind: "Leave Behind Naloxone", vagal: "Valsalva", cooling: "Passive cooling", bandage: "Bleeding control: direct pressure & dressing", removepatch: "Medication patch removed", removeheat: "Heating pad removed", pads: "Defib/pacing pads applied", tourniquet: "Tourniquet applied", smr: "Spinal motion restriction", gurney: "Gurney to bedside" };
 
   function newState(scn) {
     const x = {}, events = {};
@@ -4505,6 +4505,26 @@ const SIM = (() => {
     }
     v.pain = tg.pain == null ? null : clamp(Math.round(tg.pain), 0, 10);
     v.spo2 = v.spo2 == null ? null : clamp(v.spo2, 40, 100);
+  }
+  /* v2.14.5 ONE oxygen rule (Adrian): "An easy way to figure it out is if a nasal cannula will bring them above ninety-four percent or not."
+   * Target SpO2 94% (COPD: the app's existing 88-92% target, so 88). Nasal cannula if THIS patient's own oxygen-response model
+   * (sc.targets + course / device / seizure-airway overlays, re-run on a throwaway copy of the state with a cannula on) reaches the target;
+   * otherwise NRB. Ventilation (BVM) is a separate decision and unchanged. Used by the interactive "oxygen" order AND Watch mode. */
+  const o2Goal = () => (sc && sc.copd ? 88 : 94);
+  const O2_RULE_EXEMPT = /regardless of SpO2|\bCO\b|smoke|carbon monoxide|droplet|mask patient/i;
+  function spo2On(dev_) {
+    if (!st) return null; const saved = st; let r = null;
+    const cp = (o, m) => { if (!o || typeof o !== "object") return o; if (m.has(o)) return m.get(o); const c = Array.isArray(o) ? [] : Object.create(Object.getPrototypeOf(o)); m.set(o, c); for (const k of Object.keys(o)) c[k] = cp(o[k], m); return c; }; // functions kept by reference
+    try { st = cp(saved, new Map()); st.flags.o2 = dev_; st.flags.cpap = dev_ === "cpap"; if (dev_ !== "bvm") st.flags.sga = false;
+      let tg = sc.targets(st); if (typeof COURSE !== "undefined") tg = COURSE.targets(tg, st, sc);
+      if (typeof DEVICE !== "undefined") tg = DEVICE.overlay(tg, st, sc);
+      tg = szAirway(tg); r = tg.spo2 == null ? null : clamp(tg.spo2, 40, 100); }
+    catch (e) { r = null; } finally { st = saved; }
+    return r;
+  }
+  function o2Pick() {
+    if (!st || st.x.arrest) return "nrb";
+    const nc = spo2On("nc"); return nc != null && nc >= o2Goal() ? "nc" : "nrb";
   }
   function tick(dt) {
     if (!st || st.ended || quizPaused) return;
@@ -5127,7 +5147,8 @@ const SIM = (() => {
     if (id === "txa") { if (PEDS()) notes.push(dev("TXA is contraindicated at ≤ 14 years of age.", "MCG 1317.41", "deviation")); else if (!sc.txaOk) notes.push(dev("LA County TXA indications: trauma hemorrhage within 3 h (truncal with SBP < 90 / HR > SBP, or uncontrolled external), or postpartum hemorrhage with ongoing bleeding and SBP < 90, HR > SBP, or EBL > 500 mL.", "MCG 1317.41", "deviation")); }
     switch (id) {
       case "nc": case "nrb": case "o2": {
-        const dev_ = id === "o2" ? (st.v.spo2 != null && st.v.spo2 >= 90 && !st.x.arrest ? "nc" : "nrb") : id;
+        const dev_ = id === "o2" ? o2Pick() : id; // v2.14.5 one shared rule: NC only if it brings this patient to >= 94%
+        if (dev_ === "nc" && o2Pick() === "nc") rec("t:ncok"); // the cannula was the right device for THIS patient (it brings him to >= 94%)
         st.flags.o2 = dev_; narr = dev_ === "nc" ? "O2 via nasal cannula 4 L/min" : "O2 via non-rebreather 15 L/min";
         if (st.rev.spo2 && st.v.spo2 >= 96 && !["chf", "anaph"].includes(sc.base) && dev_ === "nrb" && !st.x.arrest) notes.push(dev("High-flow O2 with SpO2 ≥ 96% and no high-flow indication. Titrate to 94-98%.", "MCG 1302", "caution"));
         if (sc.copd && st.v.spo2 > 92) notes.push(dev("COPD: target SpO2 88-92%.", "MCG 1302", "caution"));
@@ -5793,6 +5814,9 @@ const SIM = (() => {
     const base = [...(sc.checklist || []), ...(typeof COURSE !== "undefined" ? COURSE.checklist(st) : [])].map(c => ({ ...c, keys: [...(c.keys || [])] }));
     for (const c of base) {
       if (c.keys.includes("q:pde5") && !c.keys.includes("q:ntg_q")) c.keys.push("q:ntg_q", "q:ed");
+      // v2.14.5 one O2 rule: an item that only took the NRB also takes a nasal cannula applied when the cannula brings THIS patient to >= 94%.
+      // Not for "regardless of SpO2" indications (carbon monoxide / smoke: the pulse ox reads falsely normal) or the droplet-mask item.
+      if (c.keys.includes("t:nrb") && !c.keys.some(k => /^t:(nc|o2|o2any|ncok)$/.test(k)) && !O2_RULE_EXEMPT.test(c.label || "")) c.keys.push("t:ncok");
     }
     const iAsa = base.findIndex(c => (c.keys || []).includes("t:aspirin"));
     if ((iAsa >= 0 || n(st, "aspirin") > 0) && !base.some(c => (c.keys || []).includes("q:asa_q"))) {
@@ -6061,7 +6085,7 @@ const SIM = (() => {
     st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() };
   }
 
-  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, headInjury, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
+  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, headInjury, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, o2Pick: () => o2Pick(), spo2On: d => spo2On(d), o2Goal, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -14046,7 +14070,7 @@ const NEXT = (() => {
       cc: () => [C("Chief complaint", "What's bothering you today?")],
       avpu: () => [C("Is he alert?", "Is he alert?")],
       abc: () => { const pool = ["nrb", "bvm", "opa", "suction", "recovery", "nc"]; if (sc.tag === "TRAUMA") pool.push("bandage", "tourniquet", "needle", "smr");
-        const o2 = !st.flags.o2 && !st.flags.cpap ? ["nrb"] : [], rest = shuffle(pool.filter(k => k !== "nrb" && !ev["t:" + k]), sc.id).slice(0, 3 - o2.length);
+        const o2 = !st.flags.o2 && !st.flags.cpap ? [sim.o2Pick ? sim.o2Pick() : "nrb"] : [], rest = shuffle(pool.filter(k => k !== o2[0] && !ev["t:" + k]), sc.id).slice(0, 3 - o2.length);
         return [C("Airway / breathing?", "Is his airway clear and is he breathing adequately?"), ...(!ev["a:lungs"] ? [C("Lung sounds", "Listen to lung sounds")] : []), ...shuffle([...o2, ...rest], sc.id + "abc").map(k => C(TXSAY[k][0], TXSAY[k][1], "partner"))]; },
       ao: () => [
         ...(!sd("ao") ? [C("A&O ×4", "What's your name, where are we, what year is it, and what happened today?")] : []),
@@ -14196,7 +14220,7 @@ const AUTOPILOT = (() => {
   const animOf = t => { for (const [re, a] of ANIM) if (re.test(t)) return a; return "talk"; };
   const emtOf = t => { if (!/^(partner|can you set up my iv|get a 12-lead)/i.test(t)) return null; for (const [re, id, label] of EMT_TASKS) if (re.test(t)) return { id, label }; return { id: "task", label: "Hands-on task" }; };
   // v2.14.4 EMT delegation lines (Adrian hands the idle EMT the next hands-on task; all parse to existing partner orders)
-  const EMT_SAY = { nrb: "Partner, put him on a non-rebreather at 15 liters", nc: "Partner, put him on a nasal cannula at 4 liters", bvm: "Partner, start bagging him with the BVM and put capno on",
+  const EMT_SAY = { nrb: "Partner, put him on a non-rebreather at 15 liters", nrbup: "Partner, he's not coming up on the cannula, switch him to a non-rebreather at 15 liters", nc: "Partner, put him on a nasal cannula at 4 liters", bvm: "Partner, start bagging him with the BVM and put capno on",
     leads: "Partner, go ahead and get me a 4-lead, then a 12-lead", monitor: "Partner, go ahead and get me a 4-lead", twelve: "Partner, get me a 12-lead", bgl: "Partner, check a blood sugar",
     temp: "Partner, check a temperature", etco2: "Partner, put capnography on", fowler: "Partner, sit him up, position of comfort" };
   // engine partner-queue task id -> what Watch shows on the EMT status chip
@@ -14356,14 +14380,17 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
   (N.LHABBO_CH || []).forEach(x => { EXTRA[x[2]] = x[1]; }); (N.STROKE_CH || []).forEach(x => { EXTRA[x[2]] = x[1]; });
   const AW = typeof AUTOPILOT_WORDS !== "undefined" ? AUTOPILOT_WORDS : {};
   const TXID = {}; Object.keys(N.TXSAY).forEach(id => { const b = (N.BASE_ID[id] || N.BASE_ID2[id] || id); (TXID[b] = TXID[b] || []).push(id); });
+  const o2Dev = () => (S.o2Pick ? S.o2Pick() : (st().v.spo2 < 94 ? "nrb" : "nc"));
+  const o2Why = (dev, ks) => { const v = st().v, nc = S.spo2On ? S.spo2On("nc") : null, g = S.o2Goal ? S.o2Goal() : 94, onlyNrb = ks && ks.includes("t:nrb") && !ks.includes("t:nc") && !ks.includes("t:o2any") && !ks.includes("t:ncok");
+    if (onlyNrb && dev === "nrb") return `SpO2 ${Math.round(v.spo2)}%: high-flow O2 by non-rebreather (protocol indication), EMT applies it`;
+    return dev === "nrb" ? `SpO2 ${Math.round(v.spo2)}%: a nasal cannula would only bring him to about ${nc == null ? "?" : Math.round(nc)}%, short of ${g}%, so non-rebreather; EMT applies it` : `SpO2 ${Math.round(v.spo2)}%: a nasal cannula brings him to ${g}% or better (about ${nc == null ? "?" : Math.round(nc)}%), so nasal cannula; EMT applies it`; };
   function txVariant(base, label) { // pick the route variant that fits the current state (same chips the app offers)
     const ids = TXID[base] || [], s = st(), arr = !!s.x.arrest && !s.x.rosc;
-    if (base === "o2any") return (s.v.spo2 < 94 || /high.?flow|nrb|non.?rebreather/i.test(label || "")) ? "nrb" : "nc";
+    if (base === "o2any") return o2Dev(); // v2.14.5 the engine's one shared O2 rule (NC only if it brings him to >= 94%)
     if (!ids.length) return null;
     if (base === "epi") { if (arr) return sc.peds ? "epi_peds" : "@Epinephrine 1 milligram IV push";
       if (/nebuli/i.test(label || "")) return sc.peds ? "@Nebulized epinephrine, color code dose" : "@Epinephrine 5 milligrams nebulized";
       return sc.peds && ids.includes("epi_im_peds") ? "epi_im_peds" : "epi"; }
-    if (base === "o2any") return (s.v.spo2 < 94 || /high.?flow|nrb|non.?rebreather/i.test(label || "")) ? "nrb" : "nc";
     if (base === "albuterol") { if (s.flags.o2 === "bvm" && ids.includes("alb_bvm")) return "alb_bvm"; if (s.flags.cpap && ids.includes("alb_cpap")) return "alb_cpap"; }
     if (sc.peds) { const p = ids.find(i => /_peds$/.test(i)); if (p) return p; }
     return ids.includes(base) ? base : ids[0]; }
@@ -14372,7 +14399,7 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     if (AW[k]) return typeof AW[k] === "function" ? AW[k](S, sc) : AW[k];
     if (EXTRA[k]) return EXTRA[k];
     const rp = k.match(/^t:removepatch:(\w+)$/); if (rp) return T("removepatch") || "Remove the patch";
-    if (k === "t:o2any") return T(txVariant("o2any", label));
+    if (k === "t:o2any" || k === "t:ncok") return T(o2Dev()); // v2.14.5 the shared 94% rule
     const m = k.match(/^t:(\w+)$/); if (m) { const id = txVariant(m[1], label); if (id) return id[0] === "@" ? id.slice(1) : T(id); }
     if (BANK[k]) return BANK[k];
     return null; }
@@ -14424,8 +14451,16 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     if (ok("bvm") && wantK("t:bvm") && !has("t:bvm") && breathBad()) return { k: "bvm", text: ES.bvm, why: "Inadequate breathing: EMT ventilates with the BVM (high-flow O2, capnography) while the medic keeps assessing", ref: "MCG 1302 / TP 1237" };
     const o2Item = pending().find(c => posKeys(c).some(k => k === "t:o2any" || k === "t:nrb" || k === "t:nc"));
     if (ok("o2") && o2Item && !s.flags.o2 && !s.flags.cpap && !posKeys(o2Item).includes("t:cpap") && !(posKeys(o2Item).includes("t:bvm") && breathBad())) {
-      const ks = posKeys(o2Item), dev = ks.includes("t:nrb") && !ks.includes("t:nc") ? "nrb" : ks.includes("t:nc") && !ks.includes("t:nrb") && !ks.includes("t:o2any") ? "nc" : txVariant("o2any");
-      return { k: "o2", text: ES[dev], why: dev === "nrb" ? `SpO2 ${Math.round(v.spo2)}%: high-flow O2 by non-rebreather, EMT applies it` : `SpO2 ${Math.round(v.spo2)}%: low-flow O2 by nasal cannula, EMT applies it`, ref: "MCG 1302 / TP 1237" }; }
+      const ks = posKeys(o2Item), dev = ks.includes("t:nrb") && !ks.includes("t:nc") && !ks.includes("t:o2any") && !ks.includes("t:ncok") ? "nrb" : ks.includes("t:nc") && !ks.includes("t:nrb") && !ks.includes("t:o2any") ? "nc" : o2Dev(); // NRB-only items = protocol high-flow indication (shock, CO, TBI...)
+      return { k: "o2", text: ES[dev], why: o2Why(dev, ks), ref: "MCG 1302 / TP 1237" }; }
+    // v2.14.5 the 94% target (Adrian's rule): a measured SpO2 under target gets oxygen even if the checklist has no O2 item;
+    // a cannula that can't hold the target is escalated to the NRB
+    const goal = S.o2Goal ? S.o2Goal() : 94, cpapNext = pending().some(c => posKeys(c).includes("t:cpap")), o2Q = queued("o2") || queued("nrb") || queued("nc");
+    if (ok("o2") && !s.flags.o2 && !s.flags.cpap && !s.x.arrest && s.rev.spo2 && v.spo2 != null && v.spo2 < goal && !cpapNext && !o2Q && !(wantK("t:bvm") && breathBad())) {
+      const dev = o2Dev(); return { k: "o2", text: ES[dev], why: `SpO2 ${Math.round(v.spo2)}% is under the ${goal}% target. ` + o2Why(dev, []), ref: "MCG 1302" }; }
+    const ncT = (s.events["t:nc"] || []).slice(-1)[0];
+    if (ok("o2up") && s.flags.o2 === "nc" && !s.x.arrest && ncT != null && s.t - ncT >= 60 && v.spo2 != null && v.spo2 < goal - 0.5 && !o2Q && o2Dev() === "nrb")
+      return { k: "o2up", text: ES.nrbup, why: `Still ${Math.round(v.spo2)}% on the cannula, under the ${goal}% target: escalate to the NRB`, ref: "MCG 1302" };
     if (!abcOk()) return null; // nothing else is delegated until the ABCs are handled
     // 2) cardiac monitoring: 4-lead, then the 12-lead (chest pain / cardiac protocols, or the checklist asks for it)
     if (ok("leads") && needMon()) { const both = need12(); emtAsked.leads = 1; if (both) emtAsked.twelve = 1;
@@ -14469,7 +14504,8 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     const fits = k => k === "t:bvm" ? (unresp || (v.rr != null && (v.rr < 10 || v.rr > 40)) || (v.spo2 != null && v.spo2 < 85 && altered)) : k === "t:cpap" ? (v.sbp >= 90 && ["alert", "anxious", "confused"].includes(m)) : true;
     const doneItems = new Set();
     const DELEG = { "t:bvm": "bvm", "t:nrb": "nrb", "t:nc": "nc" }; // v2.14.4: the EMT does the O2 / BVM, Adrian keeps going
-    for (const k of FIX) { const c = pending().find(c => posKeys(c).includes(k)); if (!c || has(k) || doneItems.has(c.label) || !fits(k)) continue; doneItems.add(c.label);
+    for (let k of FIX) { const c = pending().find(c => posKeys(c).includes(k)); if (!c || has(k) || doneItems.has(c.label) || !fits(k)) continue; doneItems.add(c.label);
+      if ((k === "t:nrb" || k === "t:nc") && posKeys(c).includes("t:nrb") && (posKeys(c).includes("t:nc") || posKeys(c).includes("t:ncok"))) k = "t:" + o2Dev(); // either device accepted: the shared 94% rule picks
       if (DELEG[k]) { emtAsked[k === "t:bvm" ? "bvm" : "o2"] = 1; await say(ES[DELEG[k]], Object.assign(lbl(c), { dt: 6, task: "emt:" + DELEG[k] })); } else await doKey(k, Object.assign(lbl(c), { dt: 6 })); }
   };
   const histQs = [["q:history", "Any medical history?"], ["q:allergies", "Any allergies?"], ["q:meds", "What medications do you take?"], ["q:lastoral", "When did you last eat?"], ["q:events", "What were you doing when this started?"]];
@@ -14679,7 +14715,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       await C.reassessIfChanged();
       const P = pending().slice().sort((x, y) => (posKeys(y).includes("t:fowler") && st().v.sbp >= 90) - (posKeys(x).includes("t:fowler") && st().v.sbp >= 90)), nDone = Object.keys(st().events).length; let did = false;
       for (const c of P) {
-        const keys = posKeys(c).filter(k => !LATE.test(k) && !k.startsWith("lh:") && ok4(k) && ((tried[k] || 0) < 2 || ((tried[k] || 0) < 4 && lastTry[k] != null && nDone > lastTry[k])));
+        const keys = (posKeys(c).includes("t:ncok") ? ["t:ncok", ...posKeys(c).filter(k => !/^t:(nrb|nc|ncok)$/.test(k))] : posKeys(c)).filter(k => !LATE.test(k) && !k.startsWith("lh:") && ok4(k) && ((tried[k] || 0) < 2 || ((tried[k] || 0) < 4 && lastTry[k] != null && nDone > lastTry[k])));
         let k = keys.find(k => k === "t:pace" || k === "t:cardiovert" || C.sayFor(k, c.label));
         if (!k) continue;
         if (inCode && /^t:(epi|amio|defib)/.test(k)) continue; // arrest epinephrine / amiodarone / shocks run on the code clock
