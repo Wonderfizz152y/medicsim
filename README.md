@@ -38,6 +38,11 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.4
+- Watch mode, EMT works in parallel: the EMT partner runs a task queue. Whenever the EMT is free and the call still needs a hands-on task, Adrian hands it off in one short line ("Partner, go ahead and get me a 4-lead, then a 12-lead", "Partner, put him on a non-rebreather at 15 liters", "Partner, start bagging him with the BVM and put capno on", "Partner, check a blood sugar"…) and keeps going with his own history/assessment. The EMT reports back ("Leads are on, monitor's up", "12-lead's done") and Adrian does the interpretation.
+- Order: life threats first (BVM / O2 by the app's existing device rules), then 4-lead → 12-lead, glucose, temperature, capnography, positioning. Tasks come only from the scenario's own checklist; meds, IV/IO, rhythm / 12-lead reads and the transport decision stay with the paramedic. No auto-delegation during an arrest or while the EMT is bagging / on compressions.
+- Engine: airway / ventilation orders (BVM, suction, OPA/NPA) go right after the task the EMT has in hand, ahead of queued tasks not yet started. Chained "then" orders queue in the order spoken ("put him on oxygen then get a 12-lead" → O2, monitor, 12-lead).
+- Watch UI: new EMT status chip under the monitor ("EMT 4-lead… · next: 12-lead" / "free"); the EMT figure animates the task actually in progress.
 ### 2.14.3
 - Watch mode, paramedic voice: defaults to the best available **en-US male** system voice (prefers Natural/Neural/Enhanced voices), pitch 0.88 / rate 0.98; the EMT, patient and bystander voices avoid it. On single-voice devices (Android Chrome) the roles are separated by pitch/rate (medic deep, EMT higher/quicker). Voices load asynchronously (`voiceschanged` + polling).
 - New **🎙 Voices** panel in the Watch controls: Paramedic voice + EMT voice pickers (English voices), pitch and rate sliders, Preview, Reset. Saved in localStorage (`medicsim.watch.*`).

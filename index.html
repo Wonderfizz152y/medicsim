@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.14.3 4052ee172f">
+<meta name="medicsim-version" content="2.14.4 f1a049f15d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -699,6 +699,11 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 .w-vitals .hr b{color:var(--grn)}.w-vitals .bp b{color:var(--wht);font-size:1em}.w-vitals .sp b{color:var(--cyan)}.w-vitals .rr b{color:var(--wht)}.w-vitals .co b{color:var(--yel)}
 .w-rhythm{font-size:.72em;color:var(--grn);margin:.2em 0;min-height:1.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .w-wave{display:block;width:100%;height:54px}.w-wave.sm{height:30px}
+.w-emt{display:flex;align-items:center;gap:.45em;padding:.45em .6em;background:var(--panel);border:1px solid var(--line);border-radius:12px;font-size:.85em;color:var(--mut)}
+.w-emt .dot{width:.65em;height:.65em;border-radius:50%;background:#4b5563;flex:none}
+.w-emt b{color:#fff}
+.w-emt[data-busy="1"]{border-color:#b45309;color:#fde68a}.w-emt[data-busy="1"] .dot{background:#f59e0b;animation:wEmtPulse 1s ease-in-out infinite}
+@keyframes wEmtPulse{50%{opacity:.35}}
 .w-track{list-style:none;margin:0;padding:.4em;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:52vh;counter-reset:none}
 .w-track li{padding:.35em .4em;border-radius:8px;font-size:.86em;color:var(--mut);display:flex;flex-wrap:wrap;align-items:center;gap:.3em}
 .w-track li .n{display:inline-flex;width:1.5em;height:1.5em;border-radius:50%;align-items:center;justify-content:center;background:#22303f;font-size:.8em;font-weight:800;color:#fff}
@@ -883,6 +888,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
           <div class="w-rhythm" id="wRhythm"></div>
           <canvas id="wECG" class="w-wave"></canvas><canvas id="wPleth" class="w-wave sm"></canvas><canvas id="wCO2" class="w-wave sm"></canvas>
         </div>
+        <div id="wEmt" class="w-emt" data-busy="0" aria-live="polite" title="What the EMT partner is doing right now"><span class="dot"></span><b>EMT</b> <span id="wEmtTxt">standing by</span></div>
         <ol id="wTrack" class="w-track"></ol>
       </aside>
     </div>
@@ -5516,6 +5522,9 @@ const SIM = (() => {
   const PT_TIME = { bp: [18, 28], spo2: [6, 10], rr: [15, 30], vitals: [40, 60], bgl: [20, 30], temp: [8, 12], monitor: [12, 20], "12lead": [35, 50], etco2: [8, 12], pulse: [8, 12], pulsecheck: [5, 8],
     nrb: [8, 12], nc: [8, 12], o2: [8, 12], bvm: [6, 10], cpap: [35, 50], opa: [8, 12], suction: [6, 10], cpr: [2, 4], stopcpr: [1, 2], pads: [12, 18], bandage: [12, 20], tourniquet: [10, 15],
     fowler: [6, 10], supine: [6, 10], recovery: [8, 12], smr: [60, 90], gurney: [40, 60], transport: [30, 45], cooling: [10, 15], protect: [3, 5], removepatch: [8, 12], removeheat: [8, 12], ivsetup: [30, 60], shoulderroll: [6, 10] };
+  const PT_WORD = { monitor: /monitor|\b(3|4|three|four)[ -]?leads?\b|leads on|electrodes/, "12lead": /\b(12|twelve)[ -]?leads?\b/, bp: /\bbp\b|blood pressure/, spo2: /spo2|\bsats?\b|pulse ?ox|saturation/, rr: /\bresp|breathing rate|\brr\b/, vitals: /vitals/, recheck: /recheck|every \d+ minutes/,
+    bgl: /sugar|glucose|\bbgl\b|dextro|accu/, temp: /\btemp/, etco2: /capno|etco2|end[ -]?tidal/, nrb: /non[ -]?rebreather|\bnrb\b|high[ -]?flow/, nc: /cannula|\bnc\b/, o2: /oxygen|\bo2\b/, bvm: /\bbvm\b|\bbag(ging)?\b|ventilat/,
+    cpap: /cpap/, fowler: /sit (him|her|them) up|fowler|position of comfort/, supine: /\bflat\b|supine/, recovery: /recovery|on (his|her|their) side/, gurney: /gurney|stretcher/, pads: /\bpads\b/, cpr: /compressions|\bcpr\b/, suction: /suction/, opa: /\bopa\b|\bnpa\b|airway adjunct|nasal (airway|trumpet)/, smr: /\bsmr\b|c-?collar|spinal motion/ };
   const pRand = ([a, b]) => Math.round(a + Math.random() * (b - a));
   const he = () => sc.patient.sex === "F" ? "she" : "he", He = () => cap1(he()), him = () => sc.patient.sex === "F" ? "her" : "him", his = () => sc.patient.sex === "F" ? "her" : "his";
   function pSay(text, extra) { log("partner", text); return Object.assign({ speaker: "partner", text }, extra || {}); }
@@ -5548,6 +5557,16 @@ const SIM = (() => {
     if (parsed.assess.includes("v4r")) { lines.push(pSay("Copy, moving V4 to V4R — 5th intercostal space, right midclavicular line.")); rec("p:order"); }
     if (parsed.assess.includes("v789")) { lines.push(pSay("Copy, moving V4, V5, and V6 to the back — V7 at the posterior axillary line, V8 at the mid-scapular line, V9 at the left paraspinal border — and labeling them V7, V8, and V9.")); rec("p:order"); }
     const raw = parsed.norm || "";
+    // v2.14.4: chained requests ("get a 4-lead, then a 12-lead", "put him on oxygen then get a 12-lead") queue in the
+    // order they were spoken. An order with no keyword of its own (the implicit monitor that comes with a 12-lead)
+    // takes the position of the next spoken order it is a prerequisite for. Stable: ties keep the parser's order.
+    if (orders.length > 1) {
+      const lc = String(text || raw).toLowerCase(), at = re => { const m = re.exec(lc); return m ? m.index : -1; };
+      const pos = orders.map(o => { const re = PT_WORD[o.id]; return re ? at(re) : -1; });
+      for (let i = orders.length - 1, nx = Infinity; i >= 0; i--) { if (pos[i] < 0) pos[i] = nx; else nx = pos[i]; }
+      const idx = orders.map((o, i) => i).sort((a, b) => pos[a] - pos[b] || a - b), sorted = idx.map(i => orders[i]);
+      orders.splice(0, orders.length, ...sorted);
+    }
     for (const o of orders) {
       const busy = (st.pBusy || 0) > st.t + 2;
       // M4: a duplicate order while the same task is still pending -> "already on it" (no second queued reading)
@@ -5561,8 +5580,15 @@ const SIM = (() => {
       if ((pVent || pCpr) && o.kind === "t" && o.id === "ivsetup") { lines.push(pSay(pVent ? "I'm on the bag, medic. I can't come off ventilations to set up the IV. Get someone on the bag and I'll spike it." : "I'm on compressions, medic. I can't come off the chest to set up the IV. Swap me out and I'll spike it.")); continue; }
       const ack = partnerAck(o, raw, P.recheckMin);
       if (o.id === "cpr" && st.tg.pulse !== false && !st.x.arrest) { lines.push(pSay(`Hold on, medic, ${he()} has a pulse. I'm not starting compressions on ${him()}.`)); continue; }
-      const dur = pRand(PT_TIME[o.id] || [8, 14]), start = Math.max(st.t, st.pBusy || 0);
-      st.pBusy = start + dur; (st.pq = st.pq || []).push(Object.assign({}, o, { due: start + dur, raw, recheckMin: P.recheckMin }));
+      const dur = pRand(PT_TIME[o.id] || [8, 14]); let start = Math.max(st.t, st.pBusy || 0);
+      // v2.14.4: life threats first: airway / ventilation jumps ahead of queued tasks the EMT hasn't started yet
+      // (the task in hand is finished first, then the bag / suction / adjunct; the rest of the queue slides back)
+      const URG = /^(bvm|suction|opa|npa)$/;
+      if (URG.test(o.id) && (st.pq || []).length) { const q = st.pq.slice().sort((a, b) => a.due - b.due);
+        let s0 = Math.max(st.t, q[0].due); for (const x of q.slice(1)) if (URG.test(x.id)) s0 = Math.max(s0, x.due);
+        for (const x of q) if (x.due > s0 && !URG.test(x.id)) x.due += dur; start = s0; st.pBusy = Math.max(st.pBusy || 0, start) + dur; }
+      else st.pBusy = start + dur;
+      (st.pq = st.pq || []).push(Object.assign({}, o, { due: start + dur, raw, recheckMin: P.recheckMin }));
       lines.push(pSay(ack + (busy ? " Right after this one." : "")));
       rec("p:order"); log("partner", `ORDER (${o.kind === "a" ? "assess" : "treat"} ${o.id}${o.capno ? " + capnography" : ""}): due in ~${Math.round(start + dur - st.t)} s`);
     }
@@ -14148,10 +14174,10 @@ const AUTOPILOT = (() => {
     [/\b(bp|blood pressure|resp|respirations|pulse ox|spo2|vitals|recycle)\b/i, "vitals", "Vitals"],
     [/nonrebreather|non-rebreather|nasal cannula|\bnrb\b|oxygen|\bo2\b/i, "o2", "Oxygen"],
     [/blood sugar|glucose|bgl/i, "bgl", "Blood glucose"],
-    [/monitor|pads|12-lead|12 lead|twelve|v4r|v7|electrod/i, "leads", "Monitor / 12-lead leads"],
+    [/monitor|pads|\b[34]-lead|12-lead|12 lead|twelve|v4r|v7|electrod/i, "leads", "Monitor / 12-lead leads"],
     [/set up my iv|spike a bag/i, "ivsetup", "IV setup (spike a bag)"],
     [/compressions|cpr/i, "cpr", "CPR compressions"],
-    [/bvm|bag (him|her)|ventilat/i, "bvm", "BVM ventilation"],
+    [/bvm|bag(ging)? (him|her)|ventilat/i, "bvm", "BVM ventilation"],
     [/spinal motion|c-?spine|c-?collar|smr/i, "cspine", "C-spine / SMR"],
     [/tourniquet|direct pressure|pressure dressing|bleeding/i, "bleed", "Bleeding control"],
     [/splint|traction/i, "splint", "Splint"],
@@ -14162,13 +14188,21 @@ const AUTOPILOT = (() => {
     [/temperature/i, "temp", "Temperature"],
   ];
   const ANIM = [ // what the medic/EMT visibly does (renderer sprite actions)
-    [/compressions|cpr/i, "cpr"], [/defibrillat|shock|joules/i, "shock"], [/cardiover/i, "shock"], [/pacing|pace\b/i, "pace"], [/bvm|bag (him|her)/i, "bvm"], [/i-gel|igel|intubat/i, "airway"],
-    [/12-lead|12 lead|v4r|v7/i, "twelve"], [/monitor|pads/i, "leads"], [/\bbp\b|blood pressure|vitals|recycle/i, "bpcuff"], [/pulse ox|spo2/i, "pulseox"], [/lung|breath sounds|heart sounds|listen/i, "stethoscope"],
+    [/compressions|cpr/i, "cpr"], [/defibrillat|shock|joules/i, "shock"], [/cardiover/i, "shock"], [/pacing|pace\b/i, "pace"], [/bvm|bag(ging)? (him|her)/i, "bvm"], [/i-gel|igel|intubat/i, "airway"],
+    [/12-lead|12 lead|v4r|v7/i, "twelve"], [/monitor|pads|\b[34]-lead/i, "leads"], [/\bbp\b|blood pressure|vitals|recycle/i, "bpcuff"], [/pulse ox|spo2/i, "pulseox"], [/lung|breath sounds|heart sounds|listen/i, "stethoscope"],
     [/nonrebreather|cannula|oxygen|cpap|neb/i, "o2"], [/\biv\b|\bio\b|spike/i, "iv"], [/milligram|microgram|gram|mg\b|mcg|dose|aspirin|nitro|epinephrine|naloxone|albuterol|saline|bolus|txa/i, "med"],
     [/tourniquet|pressure dressing|chest seal|binder|bandage/i, "bandage"], [/spinal motion|c-?collar/i, "cspine"], [/broselow/i, "tape"], [/blood sugar|glucose/i, "bgl"], [/gurney|stretcher|transport|load/i, "gurney"],
     [/base, this is|notify|radio/i, "radio"], [/pulses|forehead|skin|pupils|palpate|check (the|his|her)|trauma assessment|expose/i, "examine"]];
   const animOf = t => { for (const [re, a] of ANIM) if (re.test(t)) return a; return "talk"; };
   const emtOf = t => { if (!/^(partner|can you set up my iv|get a 12-lead)/i.test(t)) return null; for (const [re, id, label] of EMT_TASKS) if (re.test(t)) return { id, label }; return { id: "task", label: "Hands-on task" }; };
+  // v2.14.4 EMT delegation lines (Adrian hands the idle EMT the next hands-on task; all parse to existing partner orders)
+  const EMT_SAY = { nrb: "Partner, put him on a non-rebreather at 15 liters", nc: "Partner, put him on a nasal cannula at 4 liters", bvm: "Partner, start bagging him with the BVM and put capno on",
+    leads: "Partner, go ahead and get me a 4-lead, then a 12-lead", monitor: "Partner, go ahead and get me a 4-lead", twelve: "Partner, get me a 12-lead", bgl: "Partner, check a blood sugar",
+    temp: "Partner, check a temperature", etco2: "Partner, put capnography on", fowler: "Partner, sit him up, position of comfort" };
+  // engine partner-queue task id -> what Watch shows on the EMT status chip
+  const TASK_LABEL = { bp: "BP", spo2: "SpO2", rr: "resp rate", vitals: "vitals", recheck: "vitals", bgl: "blood sugar", temp: "temperature", monitor: "4-lead", "12lead": "12-lead", etco2: "capnography", pulse: "pulse", pulsecheck: "pulse check",
+    nrb: "NRB O2", nc: "nasal cannula", o2: "oxygen", bvm: "bagging (BVM)", cpap: "CPAP", opa: "airway adjunct", suction: "suction", cpr: "compressions", pads: "pads", bandage: "bleeding control", tourniquet: "tourniquet",
+    fowler: "positioning", supine: "positioning", recovery: "recovery position", smr: "SMR", gurney: "gurney", transport: "packaging", cooling: "cooling", ivsetup: "IV setup", shoulderroll: "shoulder roll", removepatch: "patch", removeheat: "heating pad" };
   const ACK = { vitals: "Copy, getting a set of vitals.", o2: "Copy, oxygen going on.", bgl: "Copy, checking a sugar.", leads: "Copy, placing the electrodes.", ivsetup: "Copy, setting up your IV and spiking a bag.", cpr: "Copy, starting compressions.", bvm: "Copy, bagging.", cspine: "Copy, holding c-spine.", bleed: "Copy, controlling the bleeding.", splint: "Copy, splinting.", broselow: "Copy, running the tape.", gurney: "Copy, bringing in the gurney.", roll: "Copy, padding the shoulders.", airway: "Copy.", temp: "Copy, getting a temp.", task: "Copy." };
 
   async function run(sc, opts) {
@@ -14181,7 +14215,10 @@ const AUTOPILOT = (() => {
     let phase = "scene", quizzes = [];
     try {
       S.start(sc, ui, { curveball: "none" }); S.stop();
-      const snap = () => { const s = st(), tg = s.tg || {}; return { t: s.t, v: Object.assign({}, s.v), rev: { monitor: !!s.rev.monitor, spo2: !!s.rev.spo2, bp: !!s.rev.bp, etco2: !!s.rev.etco2, twelve: s.rev.twelve ? { t: s.rev.twelve.t, info: s.rev.twelve.info } : null }, rhythm: tg.rhythm, rhythmName: tg.rhythmName, pulse: tg.pulse, cpr: !!tg.cpr || !!s.flags.cpr, mental: S.mental ? S.mental() : "", o2: s.flags.o2 || (s.flags.cpap ? "cpap" : null), pads: !!s.flags.pads, iv: !!s.flags.iv, sga: !!s.flags.sga, position: s.flags.position, sev: s.sev, arrest: !!s.x.arrest, mon: opts.monState ? opts.monState() : null }; };
+      const snap = () => { const s = st(), tg = s.tg || {}; return { t: s.t, v: Object.assign({}, s.v), rev: { monitor: !!s.rev.monitor, spo2: !!s.rev.spo2, bp: !!s.rev.bp, etco2: !!s.rev.etco2, twelve: s.rev.twelve ? { t: s.rev.twelve.t, info: s.rev.twelve.info } : null }, rhythm: tg.rhythm, rhythmName: tg.rhythmName, pulse: tg.pulse, cpr: !!tg.cpr || !!s.flags.cpr, mental: S.mental ? S.mental() : "", o2: s.flags.o2 || (s.flags.cpap ? "cpap" : null), pads: !!s.flags.pads, iv: !!s.flags.iv, sga: !!s.flags.sga, position: s.flags.position, sev: s.sev, arrest: !!s.x.arrest, emt: emtState(s), mon: opts.monState ? opts.monState() : null }; };
+      // v2.14.4: what the EMT is doing right now (engine partner queue), so Watch can show the EMT busy while Adrian talks
+      function emtState(s) { const q = (s.pq || []).slice().sort((a, b) => a.due - b.due), hands = s.x.pTask === "bvm" && s.flags.o2 === "bvm" && !s.flags.sga ? "bvm" : s.x.pTask === "cpr" && s.flags.cpr ? "cpr" : null;
+        return { q: q.map(x => x.id), task: q.length ? q[0].id : hands, due: q.length ? q[0].due : null, busy: !!(q.length || hands), hands }; }
       const push = (o) => { const s = Object.assign({ phase, ph: PH[phase] || phase }, o, { snap: snap() }); steps.push(s); if (opts.onStep) opts.onStep(s); return s; };
       const outs = (lines, parent) => lines.forEach(l => { if (!l || !l.text && !l.html) return; push({ actor: l.speaker === "partner" ? "emt" : l.speaker === "me" ? "medic" : l.speaker || "system", text: l.text || String(l.html || "").replace(/<[^>]+>/g, ""), lung: l.lungAudio || l.lung || (typeof LUNGS !== "undefined" && l.speaker !== "me" && /\bLung sounds(?:\s+are|\s*:)/i.test(l.text || "") ? (() => { try { return LUNGS.classify(sc, st(), l.text); } catch (e) { return null; } })() : null), raw: l, reply: true, emt: parent && parent.emt || null }); });
       const flush = () => { if (pend.length) { const l = pend.splice(0); outs(l); } };
@@ -14266,14 +14303,22 @@ const AUTOPILOT = (() => {
     if (by && minor) return push({ actor: "bystander", kind: "consent", text: `Yes, please help ${him}!`, anim: "talk" });
     return push({ actor: "narrator", kind: "consent", text: unresp ? "Implied consent: the patient can't respond." : "Implied consent: the patient can't give informed consent and no family is present.", anim: "talk" });
   }
-  return { run, best, grade, PH, INTRO, OPENING, consent, EMT_TASKS, emtOf, animOf, seeded, setPolicy(p) { POLICY = p; }, get policy() { return POLICY; } };
+  return { run, best, grade, PH, INTRO, OPENING, consent, EMT_TASKS, emtOf, animOf, seeded, EMT_SAY, TASK_LABEL, setPolicy(p) { POLICY = p; }, get policy() { return POLICY; } };
 })();
 
 /* ---------- default policy: Adrian's call flow, driven by the scenario's own checklist ---------- */
 AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
   // every condition change is reassessed right away (HABBO -> ABCs -> BP/SpO2/RR -> rest), the way Adrian's call flow grades it
-  let inReassess = false;
-  async function say(text, meta) { if (!inReassess) await reassessIfChanged(); const r = await say0(text, meta); if (!inReassess) await reassessIfChanged(); return r; }
+  // v2.14.4: the EMT is a parallel worker. Before each of Adrian's lines, an idle EMT is handed the next hands-on task the call
+  // needs (emtDispatch); after each line, a finished monitor / 12-lead is read by Adrian (emtReview). The EMT never interprets.
+  let inReassess = false, emtOn = false, inEmt = false;
+  async function say(text, meta) {
+    if (!inReassess) await reassessIfChanged();
+    if (emtOn && !inEmt && !inReassess && !AUTOPILOT.emtOf(text)) await emtDispatch();
+    const r = await say0(text, meta);
+    if (!inReassess) await reassessIfChanged();
+    if (emtOn && !inEmt && !inReassess) await emtReview();
+    return r; }
   const st = H.st, ev = () => st().events, has = k => !!(st().Done ? st().Done.has(k) : ev()[k]), N = NEXT;
   const phase = H.setPhase, tick = H.tick;
   const T = id => (N.TXSAY[id] || [])[1];
@@ -14360,6 +14405,56 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
   async function v4rRead() { const s = st(), tw = s.rev.twelve && s.rev.twelve.info; if (!tw || !tw.v4r || (s.x.ip && s.x.ip.v4r && s.x.ip.v4r.done)) return; await say(tw.rv ? "ST elevation in V4R, right ventricular infarct" : "No ST elevation in V4R, no RV involvement", { why: "Right-sided lead V4R: ST elevation = RV infarct (preload-dependent, no nitro)", ref: "standard practice*", anim: "twelve" }); }
   async function v789Read() { const s = st(), tw = s.rev.twelve && s.rev.twelve.info; if (!tw || !tw.v789 || (s.x.ip && s.x.ip.v789 && s.x.ip.v789.done)) return; await say(tw.post ? "ST elevation in V7, V8, V9, posterior MI" : "No ST elevation in V7, V8, V9", { why: "ST depression in V1–V4: move V4–V6 to the back as V7–V9 to look for a posterior MI", ref: "standard practice* (instructor standard)", anim: "twelve" }); }
   const waitPartner = async (max) => { const c0 = (st().x.chg || []).length; for (let i = 0; i < (max || 60) && (st().pq || []).length && (st().x.chg || []).length === c0; i++) tick(1); await reassessIfChanged(); };
+  // ---- v2.14.4 EMT task queue (delegation) ----
+  const ES = AUTOPILOT.EMT_SAY, emtAsked = {};
+  const inCl = k => S.checklist().some(c => c.keys.some(x => x.replace(/^!/, "").replace(/#\d+$/, "").replace(/@.*$/, "") === k));
+  const wantK = k => pending().some(c => posKeys(c).includes(k));
+  const queued = id => (st().pq || []).some(q => q.id === id);
+  function emtIdle() { const s = st(); if ((s.pq || []).length || (s.pBusy || 0) > s.t) return false;
+    if (s.x.pTask === "bvm" && s.flags.o2 === "bvm" && !s.flags.sga) return false; // hands tied up on the bag
+    if (s.x.pTask === "cpr" && s.flags.cpr) return false; return !(s.x.arrest && !s.x.rosc); }
+  function abcOk() { const ab = (S.flow().steps || []).find(x => x.id === "abc"); return !ab || ab.na || ab.done; }
+  const bvmFits = () => { const v = st().v, m = mental(), unresp = ["unresponsive", "arrest"].includes(m) || /unrespons/.test(m); return unresp || (v.rr != null && (v.rr < 10 || v.rr > 40)) || (v.spo2 != null && v.spo2 < 85 && altered); };
+  const breathBad = () => { const v = st().v; return (v.rr != null && (v.rr < 10 || v.rr > 40)) || (v.spo2 != null && v.spo2 < 90 && (altered || v.rr < 10)); }; // auto-delegated BVM only for truly inadequate breathing
+  const needMon = () => !st().rev.monitor && !queued("monitor") && (inCl("a:monitor") || inCl("a:12lead") || inCl("a:interp") || /^12(1[0-4]|11)/.test(sc.protocol || ""));
+  const need12 = () => inCl("a:12lead") && !has("a:12lead") && !st().rev.twelve && !queued("12lead");
+  function emtNext() { // the next hands-on task, from the scenario's own checklist + the app's existing rules, life threats first
+    const s = st(), v = s.v, ok = k => !emtAsked[k];
+    // 1) life threats: ventilation / oxygen the checklist calls for, device by the app's own SpO2 / breathing rules
+    if (ok("bvm") && wantK("t:bvm") && !has("t:bvm") && breathBad()) return { k: "bvm", text: ES.bvm, why: "Inadequate breathing: EMT ventilates with the BVM (high-flow O2, capnography) while the medic keeps assessing", ref: "MCG 1302 / TP 1237" };
+    const o2Item = pending().find(c => posKeys(c).some(k => k === "t:o2any" || k === "t:nrb" || k === "t:nc"));
+    if (ok("o2") && o2Item && !s.flags.o2 && !s.flags.cpap && !posKeys(o2Item).includes("t:cpap") && !(posKeys(o2Item).includes("t:bvm") && breathBad())) {
+      const ks = posKeys(o2Item), dev = ks.includes("t:nrb") && !ks.includes("t:nc") ? "nrb" : ks.includes("t:nc") && !ks.includes("t:nrb") && !ks.includes("t:o2any") ? "nc" : txVariant("o2any");
+      return { k: "o2", text: ES[dev], why: dev === "nrb" ? `SpO2 ${Math.round(v.spo2)}%: high-flow O2 by non-rebreather, EMT applies it` : `SpO2 ${Math.round(v.spo2)}%: low-flow O2 by nasal cannula, EMT applies it`, ref: "MCG 1302 / TP 1237" }; }
+    if (!abcOk()) return null; // nothing else is delegated until the ABCs are handled
+    // 2) cardiac monitoring: 4-lead, then the 12-lead (chest pain / cardiac protocols, or the checklist asks for it)
+    if (ok("leads") && needMon()) { const both = need12(); emtAsked.leads = 1; if (both) emtAsked.twelve = 1;
+      return { k: "leads", text: both ? ES.leads : ES.monitor, why: both ? "EMT places the 4-lead, then acquires the 12-lead (time-critical for STEMI) while the medic keeps assessing; the medic interprets" : "EMT places the 4-lead while the medic keeps assessing; the medic reads the rhythm", ref: both ? "TP 1211 / MCG 1308" : "MCG 1308" }; }
+    if (ok("twelve") && s.rev.monitor && need12()) return { k: "twelve", text: ES.twelve, why: "12-lead ECG; the medic interprets it", ref: "TP 1211 / MCG 1308" };
+    // 3) glucose (checklist, or the altered-mental-status workup)
+    const aeI = altered && (S.aeiou().items || []).some(i => /^I/.test(i.id) && !i.done && N.AE_SAY[i.id] && /sugar|glucose/i.test(N.AE_SAY[i.id][1]));
+    if (ok("bgl") && (wantK("a:bgl") || aeI) && !s.rev.bgl && !has("a:bgl") && !queued("bgl")) return { k: "bgl", text: ES.bgl, why: "Blood glucose (EMT skill); the medic acts on the number", ref: "MCG 1302 / TP 1203" };
+    if (ok("temp") && wantK("a:temp") && !has("a:temp") && !queued("temp")) return { k: "temp", text: ES.temp, why: "Temperature (EMT skill)", ref: "standard practice*" };
+    if (ok("etco2") && wantK("a:etco2") && !s.rev.etco2 && !queued("etco2")) return { k: "etco2", text: ES.etco2, why: "Waveform capnography: ventilation / perfusion trend", ref: "MCG 1302" };
+    if (ok("fowler") && wantK("t:fowler") && !has("t:fowler") && v.sbp >= 90) return { k: "fowler", text: ES.fowler, why: "Position of comfort (SBP ≥ 90)", ref: "standard practice*" };
+    return null; }
+  async function emtDispatch() {
+    const ph = H.phaseNow ? H.phaseNow() : null; if (/^(dest|base|done|code)$/.test(ph || "") || !emtIdle()) return;
+    const t = emtNext(); if (!t) return; emtAsked[t.k] = 1;
+    inEmt = true; try { await say0(t.text, { why: t.why, ref: t.ref, dt: 3, task: "emt:" + t.k }); } finally { inEmt = false; } }
+  let readFirst = false, read12First = false;
+  async function emtReview() { // the EMT reports; Adrian (never the EMT) interprets: first rhythm read, then the 12-lead
+    const s = st(); inEmt = true;
+    try {
+      if (!readFirst && s.rev.monitor && !(s.x.ip && s.x.ip.rhythm) && !S.ipKnown()) { readFirst = true; await readRhythm(); }
+      if (!read12First && st().rev.twelve && !(st().x.ip && st().x.ip.tw && st().x.ip.tw.done)) { read12First = true; await read12(); await post12(); }
+    } finally { inEmt = false; } }
+  async function post12() { // posterior / right-sided leads after the 12-lead read (same rules as before)
+    if (st().x.apPost12 || !st().rev.twelve) return; st().x.apPost12 = 1;
+    const stv = (st().tg.twelve || {}).st || {}, dep = ["V1", "V2", "V3", "V4"].filter(l => (stv[l] || 0) <= -0.1).length >= 2;
+    if (dep || inCl("a:v789")) { await say("Partner, move V4, V5, V6 to the back and label them V7, V8, V9", { why: "ST depression in V1–V4: look posterior with V7–V9", ref: "standard practice* (instructor standard)", dt: 6 }); if (!(st().rev.twelve.info || {}).v789) await waitPartner(60); await v789Read(); }
+    const inf = INTERP.actual(st().tg, st().v.hr).terr.includes("inferior");
+    if (inf || inCl("a:v4r")) { await say("Partner, move V4 to V4R", { why: "Inferior STEMI: right-sided V4R for RV involvement before nitro", ref: "TP 1211 / standard practice*", dt: 6 }); if (!(st().rev.twelve.info || {}).v4r) await waitPartner(60); await v4rRead(); } }
   async function reassessIfChanged() {
     const s = st(), all = s.x.chg || [], chg = all[all.length - 1]; if (!chg || chg._ap) return; all.forEach(c => { c._ap = 1; });
     if (s.x.arrest && !s.x.rosc) return; // during CPR the code cycle is the reassessment
@@ -14373,7 +14468,9 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     const s = st(), v = s.v, m = mental(), unresp = ["unresponsive", "arrest"].includes(m) || /unrespons/.test(m);
     const fits = k => k === "t:bvm" ? (unresp || (v.rr != null && (v.rr < 10 || v.rr > 40)) || (v.spo2 != null && v.spo2 < 85 && altered)) : k === "t:cpap" ? (v.sbp >= 90 && ["alert", "anxious", "confused"].includes(m)) : true;
     const doneItems = new Set();
-    for (const k of FIX) { const c = pending().find(c => posKeys(c).includes(k)); if (!c || has(k) || doneItems.has(c.label) || !fits(k)) continue; doneItems.add(c.label); await doKey(k, Object.assign(lbl(c), { dt: 6 })); }
+    const DELEG = { "t:bvm": "bvm", "t:nrb": "nrb", "t:nc": "nc" }; // v2.14.4: the EMT does the O2 / BVM, Adrian keeps going
+    for (const k of FIX) { const c = pending().find(c => posKeys(c).includes(k)); if (!c || has(k) || doneItems.has(c.label) || !fits(k)) continue; doneItems.add(c.label);
+      if (DELEG[k]) { emtAsked[k === "t:bvm" ? "bvm" : "o2"] = 1; await say(ES[DELEG[k]], Object.assign(lbl(c), { dt: 6, task: "emt:" + DELEG[k] })); } else await doKey(k, Object.assign(lbl(c), { dt: 6 })); }
   };
   const histQs = [["q:history", "Any medical history?"], ["q:allergies", "Any allergies?"], ["q:meds", "What medications do you take?"], ["q:lastoral", "When did you last eat?"], ["q:events", "What were you doing when this started?"]];
   const opq = [["q:onset", "When did this start?"], ["q:provocation", "Does anything make it better or worse?"], ["q:quality", "What does it feel like?"], ["q:radiation", "Does it go anywhere?"], ["q:severity", "Rate it 0 to 10"], ["q:time", "How long has it been going on?"]];
@@ -14402,6 +14499,7 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
         if ((ab0 && !ab0.na && !ab0.done) || pending().some(c => posKeys(c).some(k => k === "a:airway" || k === "a:breathing"))) await say("Is his airway clear and is he breathing adequately?", W("abc")); }
       await fixAbc();
       { const ab = (S.flow().steps || []).find(x => x.id === "abc"); if (ab && !ab.na && !ab.done) await waitPartner(40); } // ABC fix lands before A&O
+      emtOn = true; // from here on, an idle EMT is always handed the next task
       phase("ao");
       await say(O.name, W("ao")); await say(O.place, W("ao")); await say(O.year, W("ao"));
       if (pending().some(c => posKeys(c).includes("a:orient4")) || (S.flow().steps || []).some(x => x.id === "ao" && !x.done && !x.na)) await say(O.event, W("ao"));
@@ -14424,6 +14522,7 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
         H.outs(lungR);
         await say("Is his airway clear and is he breathing adequately?", W("abc"));
         await fixAbc();
+        emtOn = true;
         if (canTalk()) { // talks but wasn't tracking/answering: still check A&O and age once the ABCs are handled
           { const ab = (S.flow().steps || []).find(x => x.id === "abc"); if (ab && !ab.na && !ab.done) await waitPartner(40); }
           phase("ao"); await say(O.name, W("ao")); await say(O.place, W("ao")); await say(O.year, W("ao")); await say(O.age, W("age")); }
@@ -14462,7 +14561,7 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
       const neg = Object.keys(ros).filter(k => ros[k] && ros[k].yes === 0 && NM[k]).map(k => NM[k]);
       if (neg.length) H.push({ actor: "medic", kind: "note", text: `Pertinent negatives: denies ${neg.join(", ")}.`, why: WHY.neg[0], ref: WHY.neg[1], anim: "talk", local: true }); }
   }
-  H.ctx = { sayFor, doKey, readRhythm, read12, v4rRead, v789Read, waitPartner, reassessIfChanged, pending, posKeys, lbl, tried, mental, W, has, phase, tick };
+  H.ctx = { sayFor, doKey, readRhythm, read12, v4rRead, v789Read, post12, waitPartner, reassessIfChanged, pending, posKeys, lbl, tried, mental, W, has, phase, tick };
   if (AUTOPILOT.flows && AUTOPILOT.flows.rest) await AUTOPILOT.flows.rest(sc, S, say, H, H.ctx, { arrest, altered, m0 });
 });
 
@@ -14513,15 +14612,13 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   // ---------- monitor / 12-lead ----------
   async function monitorAnd12() {
     phase("exam");
-    if (!st().rev.monitor && (inCl("a:monitor") || inCl("a:12lead") || inCl("a:interp") || /^12(1[0-4]|11)/.test(sc.protocol || ""))) await say("Partner, put him on the monitor", { why: "Cardiac monitor: rhythm and rate", ref: "MCG 1308", dt: 4 });
-    if (inCl("a:12lead") && !has("a:12lead")) { await say("Get a 12-lead", { why: "12-lead ECG for chest pain / ACS equivalents", ref: "TP 1211 / MCG 1308", dt: 6 }); }
+    // v2.14.4: whatever the EMT already did during the history isn't re-ordered or re-read
+    const q = id => (st().pq || []).some(x => x.id === id);
+    if (!st().rev.monitor && !q("monitor") && (inCl("a:monitor") || inCl("a:12lead") || inCl("a:interp") || /^12(1[0-4]|11)/.test(sc.protocol || ""))) await say("Partner, put him on the monitor", { why: "Cardiac monitor: rhythm and rate", ref: "MCG 1308", dt: 4 });
+    if (inCl("a:12lead") && !has("a:12lead") && !st().rev.twelve && !q("12lead")) { await say("Get a 12-lead", { why: "12-lead ECG for chest pain / ACS equivalents", ref: "TP 1211 / MCG 1308", dt: 6 }); }
     await C.waitPartner(90);
-    if (st().rev.monitor) await C.readRhythm();
-    if (st().rev.twelve) { await C.read12(); const info = st().rev.twelve.info || {}, stv = (st().tg.twelve || {}).st || {};
-      const dep = ["V1", "V2", "V3", "V4"].filter(l => (stv[l] || 0) <= -0.1).length >= 2;
-      if (dep || inCl("a:v789")) { await say("Partner, move V4, V5, V6 to the back and label them V7, V8, V9", { why: "ST depression in V1–V4: look posterior with V7–V9", ref: "standard practice* (instructor standard)", dt: 6 }); await C.waitPartner(60); await C.v789Read(); }
-      const inf = INTERP.actual(st().tg, st().v.hr).terr.includes("inferior");
-      if (inf || inCl("a:v4r")) { await say("Partner, move V4 to V4R", { why: "Inferior STEMI: right-sided V4R for RV involvement before nitro", ref: "TP 1211 / standard practice*", dt: 6 }); await C.waitPartner(60); await C.v4rRead(); } }
+    if (st().rev.monitor && !S.ipKnown()) await C.readRhythm();
+    if (st().rev.twelve) { await C.read12(); await C.post12(); }
   }
   // ---------- treatment: the scenario's own checklist, in protocol slot order ----------
   // ---------- device skills (same commands the device tests drive) ----------
@@ -16091,10 +16188,19 @@ const WATCH = (() => {
     set("#wSpO2", v.spo2, r.spo2 && n.pulse !== false); set("#wRR", v.rr, true); set("#wEt", v.etco2, r.etco2);
     $("#wRhythm").textContent = on ? (n.rhythmName || n.rhythm || "") : "leads off";
     monSnap = n.mon || null;
+    emtChip(n);
+  }
+  // v2.14.4: EMT status chip from the engine partner queue (parallel worker): busy with what, plus what's lined up next
+  function emtChip(n) {
+    const e = n.emt, el = $("#wEmt"); if (!el) return; const L = AUTOPILOT.TASK_LABEL || {}, lab = id => L[id] || id;
+    const busy = !!(e && e.busy), next = e && e.q ? [...new Set(e.q.slice(1).map(lab))].filter(x => x !== lab(e.task)) : [];
+    el.dataset.busy = busy ? "1" : "0"; el.dataset.task = busy ? e.task : "";
+    $("#wEmtTxt").textContent = busy ? `${lab(e.task)}…${next.length ? " · next: " + next.join(", ") : ""}` : n.arrest && !n.rosc ? "on the code" : "free";
   }
 
   // ---------------- stage: derive targets from the step ----------------
   const EMT_ANIM = { vitals: "bpcuff", o2: "o2", bgl: "bgl", leads: "leads", ivsetup: "ivsetup", cpr: "cpr", bvm: "bvm", cspine: "cspine", bleed: "bandage", splint: "bandage", broselow: "tape", gurney: "gurney", roll: "examine", airway: "examine", temp: "examine", task: "examine" };
+  const TASK_ANIM = { bp: "bpcuff", spo2: "bpcuff", rr: "bpcuff", vitals: "bpcuff", recheck: "bpcuff", pulse: "bpcuff", monitor: "leads", "12lead": "leads", pads: "leads", nrb: "o2", nc: "o2", o2: "o2", cpap: "o2", bvm: "bvm", cpr: "cpr", bgl: "bgl", ivsetup: "ivsetup", smr: "cspine", bandage: "bandage", tourniquet: "bandage", gurney: "gurney" };
   const PX = 560; // patient x
   function resetWorld() {
     A.amb = { x: -260, tx: 40, lights: true }; A.medic = { x: -60, tx: -60, act: "walk", walk: 0, show: false }; A.emt = { x: -100, tx: -100, act: "walk", walk: 0, show: false };
@@ -16114,6 +16220,8 @@ const WATCH = (() => {
     const o = lastOrder(i);
     if (o && i - o.i <= 4) eAct = EMT_ANIM[o.s.emt.id] || "examine";
     if (n.cpr || n.arrest && !n.rosc) { eAct = "cpr"; if (mAct === "cpr") mAct = "stand"; }
+    // v2.14.4: while the engine says the EMT is working a task, show that task (Adrian keeps assessing in parallel)
+    if (n.emt && n.emt.busy && eAct !== "cpr") eAct = TASK_ANIM[n.emt.task] || eAct;
     if (s.actor === "emt" && !o) eAct = "talk";
     // transport / gurney
     const late = s.phase === "dest" || s.phase === "done";
