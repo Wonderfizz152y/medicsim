@@ -38,6 +38,15 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.3
+- Watch mode, paramedic voice: defaults to the best available **en-US male** system voice (prefers Natural/Neural/Enhanced voices), pitch 0.88 / rate 0.98; the EMT, patient and bystander voices avoid it. On single-voice devices (Android Chrome) the roles are separated by pitch/rate (medic deep, EMT higher/quicker). Voices load asynchronously (`voiceschanged` + polling).
+- New **🎙 Voices** panel in the Watch controls: Paramedic voice + EMT voice pickers (English voices), pitch and rate sliders, Preview, Reset. Saved in localStorage (`medicsim.watch.*`).
+- Medic label is now "Adrian (Paramedic)". Every call opens with exactly "Hi, my name is Adrian, and I'm here to help. Is that okay?", then consent: patient, family/bystander, or implied (unresponsive/arrest).
+- Canonical RESPONSIVE opening: pulse (radial + carotid together) → skin (back of hand on forehead) → EMT BP/SpO2/RR → stethoscope off the neck → "What's bothering you today?" → lungs section by section with "Take a deep breath." → name / place / year (event only if needed) → age.
+- Canonical UNRESPONSIVE / not-tracking opening: intro (no verbal response) → radial + carotid → skin → nail-bed pinch (AVPU P/U) → EMT vitals → lungs section by section (no deep-breath prompts) → airway / ABC fixes → rest per scenario. Pulseless → existing arrest/CPR flow.
+- New Watch animations: two-hand pulse check, back of hand on forehead, nail-bed pinch, stethoscope draped/held ready/moving per lung section.
+- Interactive voice recognizes all script phrases (incl. "I'm going to pinch your nail bed"). Tests: tests/sim_v2143.js, tests/browser/v2143_voice.mjs.
+
 ### 2.14.2
 - Fentanyl / opioid analgesia: removed the blanket "no opioid if altered" rule (engine + Watch mode). MCG 1345 has no AMS contraindication. The A&O / GCS 15 condition applies only to head injury (TP 1244 #25, rev 04-01-25): "For an alert and oriented patient with GCS 15: Fentanyl 50mcg ... CONTACT BASE for additional pain management or for initial orders if patient not alert and oriented with GCS 15." Head injury + not A&O GCS 15 + no Base = "CONTACT BASE for initial pain-medication orders" deviation (fentanyl and morphine); Watch mode contacts Base first.
 - Fentanyl contraindicated in pregnant patients in labor (MCG 1317.19): flagged on ob_delivery, shoulder_dystocia, prolapsed_cord (`inLabor`).
