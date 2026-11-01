@@ -38,6 +38,12 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.6 — trouble breathing first (Adrian: "If I notice the pt is having trouble breathing, I take care of that right away before vitals. Nonrebreather gets delegated immediately.")
+- Engine: trouble breathing on arrival is read once at first sight from the call's existing data (work of breathing: accessory muscles / tripod / retractions / pursed lips / severe distress; airway: stridor / FBAO / hoarse; RR < 10 or slow-shallow / apneic pauses; approach "see" text such as "working hard to breathe", "fast, shallow", "short of breath", wheezing). Calls whose checklist says no NRB (hyperventilation) are excluded. Exposed as SIM.breathTrouble().
+- Watch: on those calls the EMT is handed the non-rebreather right after the intro, before the pulses / skin and before the BP / SpO2 / RR delegation. BVM instead when ventilation is inadequate on arrival and the call has the BVM (existing rule). The rest of the opening, the 2.14.4 EMT queue and the 2.14.5 device rule are unchanged; CO / smoke stay NRB. The EMT figure shows the NRB (or bagging) from that point.
+- Grading: ordering NRB / BVM before vitals was already accepted (no order rule against it); the "SpO2 ≥ 96 high-flow" caution no longer fires on a call with trouble breathing on arrival; the timed debrief times the call's O2 item against the existing 3-minute O2 target on those calls, so early O2 shows "on time".
+- tests/sim_v2146.js.
+
 ### 2.14.5 — one oxygen rule (Adrian: "if a nasal cannula will bring them above 94% or not")
 - One rule shared by the engine and Watch: target SpO2 94% (COPD: the app's existing 88–92% target, so 88). Nasal cannula if the patient's own oxygen-response model, re-run as a what-if with a cannula on, reaches the target; otherwise NRB. BVM for inadequate ventilation is unchanged. Arrest → NRB/BVM.
 - Interactive: "put him on oxygen" with no device named → the rule's device (was: NC if SpO2 ≥ 90). A cannula that can't reach 94 just leaves the patient under 94 until escalated.

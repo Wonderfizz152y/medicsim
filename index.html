@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.14.5 b2b8eefbfd">
+<meta name="medicsim-version" content="2.14.6 e399133f54">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -2884,10 +2884,11 @@ const DEBRIEF = (() => {
   const TARGET = { "t:cpr": 30, "t:defib": 120, "t:tourniquet": 60, "t:bvm": 90, "t:sga": 300, "t:naloxone": 240, "t:epi": 240, "t:pushepi": 300, "t:cpap": 240, "t:pace": 300, "x:ecap": 360, "a:mechcap": 420, "x:margin": 480, "t:cardiovert": 300, "x:converted": 360, "t:adenosine": 300, "t:atropine": 300,
     "t:midaz": 240, "t:diphen": 600, "t:d10": 480, "t:oralglucose": 480, "t:glucagon": 480, "a:bgl": 300, "a:monitor": 240, "a:12lead": 600, "a:v4r": 660, "a:v789": 660, "t:aspirin": 600, "t:notify": 720, "a:lams": 480, "a:stroke": 480, "t:albuterol": 300, "t:nitro": 600, "t:o2": 180, "t:nrb": 180, "t:calcium": 480, "t:removepatch": 300, "t:ns": 600, "t:permhypo": 600, "t:txa": 600, "t:base": 900, "t:transport": 1200 };
   const DEFAULT_CRIT = 600;
-  function timeline(checklist) {
-    const rows = [];
+  function timeline(checklist, st) {
+    const rows = [], bt = !!(st && st.x && st.x.bt0); // v2.14.6 trouble breathing on arrival: the O2 item is timed against the existing O2 target
     checklist.forEach(c => {
       const tk = c.keys.filter(k => TARGET[k] != null).map(k => TARGET[k]);
+      if (bt && !tk.length && c.keys.some(k => /^t:(o2any|nc|ncok)$/.test(k))) tk.push(TARGET["t:nrb"]);
       if (!c.critical && !tk.length) return; if (c.optional && !c.done) return;
       const target = tk.length ? Math.min(...tk) : DEFAULT_CRIT;
       rows.push({ label: c.label, t: c.done ? c.time : null, target, status: !c.done ? "missed" : c.time <= target ? "ontime" : "late", critical: !!c.critical, curveball: !!c.curveball });
@@ -2895,7 +2896,7 @@ const DEBRIEF = (() => {
     return rows.sort((a, b) => (a.t ?? 1e9) - (b.t ?? 1e9));
   }
   function summary(sc, st, checklist, score, piOk) {
-    const tl = timeline(checklist), ip = st.x.ipLog || [], rep = st.x.reports || [], meds = st.medlog || [];
+    const tl = timeline(checklist, st), ip = st.x.ipLog || [], rep = st.x.reports || [], meds = st.medlog || [];
     const cues = (st.log || []).filter(l => l.kind === "find" && /^Reassess: /.test(l.text)).map(l => ({ t: l.t, text: l.text.replace(/^Reassess: /, ""), worse: /worse/.test(l.text) }));
     return { tl, onTime: tl.filter(r => r.status === "ontime").length, nT: tl.length, late: tl.filter(r => r.status === "late").length, missed: tl.filter(r => r.status === "missed").length,
       interp: { first: firstTry(ip), log: ip },
@@ -4378,6 +4379,7 @@ const SIM = (() => {
     if (typeof COURSE !== "undefined") COURSE.plan(st, sc, st.x.mode !== "call" ? "none" : opts && opts.curveball === "auto" ? null : (opts && opts.curveball) || "none");
     computeTargets(true);
     st.x.m0 = mental(); st.x.v0 = Object.assign({}, st.v); st.x.aw0 = String(st.tg.airway || "");
+    st.x.bt0 = breathTrouble0(); // v2.14.6 trouble breathing on arrival (fixed at first sight)
     lastInteraction = 0; lastAmbient = 0;
     log("sys", `Scenario started: ${sc.dispatchTitle || sc.title}`);
     quizPaused = false;
@@ -4521,6 +4523,23 @@ const SIM = (() => {
       tg = szAirway(tg); r = tg.spo2 == null ? null : clamp(tg.spo2, 40, 100); }
     catch (e) { r = null; } finally { st = saved; }
     return r;
+  }
+  /* v2.14.6 (Adrian): "If I notice the pt is having trouble breathing, I take care of that right away before vitals.
+   * Nonrebreather gets delegated immediately." Trouble breathing ON ARRIVAL, from the app's own arrival data only:
+   * the work-of-breathing finding (labored: accessory muscles / tripod / retractions / pursed lips; or inadequate: RR < 10,
+   * slow and shallow, apneic pauses), the airway finding (stridor, foreign-body obstruction, hoarse voice), or the arrival
+   * description (working hard / struggling to breathe, gasping, fast shallow breaths, short of breath, wheezing or stridor heard).
+   * Not in arrest (the code flow owns that), and not where the call's own checklist rules the NRB out (anxiety hyperventilation). */
+  function breathTrouble0() {
+    if (!st || st.x.arrest || st.tg.pulse === false || !st.v.rr) return null;
+    if ((sc.checklist || []).some(c => (c.keys || []).includes("!t:nrb"))) return null;
+    const work = String((typeof EXAM !== "undefined" && EXAM.find("work", sc, st, "", mental())) || ""), aw = String(st.tg.airway || "");
+    const a = sc.approach || {}, see = String(a.see || "") + " " + String(a.track || ""), why = [];
+    if (st.v.rr < 10 || /slow, shallow|apneic pauses/i.test(work + " " + aw)) why.push("inadequate breathing");
+    if (/accessory|tripod|retraction|pursed|severe distress/i.test(work) && !/no accessory/i.test(work)) why.push("labored breathing");
+    if (/stridor|FBAO|foreign.body|hoarse/i.test(aw.replace(/\bno (stridor|hoarse\w*)/gi, ""))) why.push("airway: " + aw.split(/[;.]/)[0].trim());
+    if (/working hard to breathe|struggling to breathe|gasping|fast(,| and) shallow|short of breath|wheez|stridor/i.test(see)) why.push("seen on arrival");
+    return why.length ? { why, inadequate: why[0] === "inadequate breathing" } : null;
   }
   function o2Pick() {
     if (!st || st.x.arrest) return "nrb";
@@ -5150,7 +5169,7 @@ const SIM = (() => {
         const dev_ = id === "o2" ? o2Pick() : id; // v2.14.5 one shared rule: NC only if it brings this patient to >= 94%
         if (dev_ === "nc" && o2Pick() === "nc") rec("t:ncok"); // the cannula was the right device for THIS patient (it brings him to >= 94%)
         st.flags.o2 = dev_; narr = dev_ === "nc" ? "O2 via nasal cannula 4 L/min" : "O2 via non-rebreather 15 L/min";
-        if (st.rev.spo2 && st.v.spo2 >= 96 && !["chf", "anaph"].includes(sc.base) && dev_ === "nrb" && !st.x.arrest) notes.push(dev("High-flow O2 with SpO2 ≥ 96% and no high-flow indication. Titrate to 94-98%.", "MCG 1302", "caution"));
+        if (st.rev.spo2 && st.v.spo2 >= 96 && !["chf", "anaph"].includes(sc.base) && dev_ === "nrb" && !st.x.arrest && !st.x.bt0) notes.push(dev("High-flow O2 with SpO2 ≥ 96% and no high-flow indication. Titrate to 94-98%.", "MCG 1302", "caution"));
         if (sc.copd && st.v.spo2 > 92) notes.push(dev("COPD: target SpO2 88-92%.", "MCG 1302", "caution"));
         rec("t:o2any"); break; }
       case "cpap":
@@ -6085,7 +6104,7 @@ const SIM = (() => {
     st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() };
   }
 
-  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, headInjury, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, o2Pick: () => o2Pick(), spo2On: d => spo2On(d), o2Goal, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
+  return { breathTrouble: () => (st ? st.x.bt0 || null : null), start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, headInjury, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, o2Pick: () => o2Pick(), spo2On: d => spo2On(d), o2Goal, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -14518,6 +14537,13 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     const O = AUTOPILOT.OPENING, greetTxt = (greetR || []).filter(l => l && l.speaker === "patient").map(l => l.text || "").join(" ");
     // responded to the intro with actual words (not just "(mumbles)" / "(picks at the sheets)") -> responsive script
     const responded = canTalk() && /[a-z]{2}/i.test(greetTxt.replace(/\([^)]*\)/g, " ").replace(/\b(mmh?|mm-hm|hmm|uh|huh)\b/gi, " "));
+    // v2.14.6 (Adrian): "If I notice the pt is having trouble breathing, I take care of that right away before vitals.
+    // Nonrebreather gets delegated immediately." Trouble breathing seen on arrival (SIM.breathTrouble: the app's own arrival
+    // findings) -> the EMT is handed the O2 right here, before pulses / skin / the BP-SpO2-RR order. NRB; the BVM instead when
+    // ventilation is inadequate (slow / shallow / apneic pauses on arrival) and the call's checklist has the BVM (existing breathBad rule). The rest of the opening is unchanged.
+    { const bt = S.breathTrouble ? S.breathTrouble() : null, f0 = st().flags;
+      if (bt && !st().x.arrest && !["nrb", "bvm", "cpap"].includes(f0.o2) && !f0.cpap) { const k = bt.inadequate && inCl("t:bvm") && breathBad() ? "bvm" : "nrb"; emtAsked[k === "bvm" ? "bvm" : "o2"] = 1;
+        await say(ES[k], { why: `Trouble breathing on arrival (${bt.why.join("; ")}): ${k === "bvm" ? "the EMT starts bagging" : "the EMT puts on the non-rebreather"} right away, before vitals`, ref: "MCG 1302 / standard practice* (instructor standard: O2 first for trouble breathing)", dt: 3, task: "emt:" + k }); } }
     if (responded) {
       // v2.14.3 Adrian's canonical opening for a responsive patient (AUTOPILOT.OPENING), verbatim and in this order
       await say(O.pulse, Object.assign(W("pulses"), { anim: "pulse2" }));                // radial + carotid at the same time
@@ -16518,7 +16544,7 @@ const WATCH = (() => {
     $("#wSFX").textContent = sfx ? "🔊 SFX on" : "🔇 SFX off"; $("#wSFX").classList.toggle("off", !sfx);
     if (mon) { const want = sfx; if (mon._beep !== want) { mon._beep = want; if (mon.toggleBeep() !== want) mon.toggleBeep(); } }
   }
-  return { _voices: () => voicesFor(), _voiceScore: medicScore, open, load, get steps() { return steps; }, get idx() { return idx; }, get out() { return out; }, get playing() { return playing; }, go, play, pause, next };
+  return { _voices: () => voicesFor(), _voiceScore: medicScore, open, load, get steps() { return steps; }, get idx() { return idx; }, get out() { return out; }, get playing() { return playing; }, get anim() { return { medic: A.medic.act, emt: A.emt.act }; }, go, play, pause, next };
 })();
 
 </script>
