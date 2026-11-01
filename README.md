@@ -38,6 +38,12 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.1
+- **Fentanyl has no blood-pressure limit** (MCG 1317.19, rev 07-01-24). The engine no longer logs "Opioid analgesia with SBP < 90" for fentanyl, and Watch mode no longer withholds fentanyl when SBP < 90. Per 1317.19 the only contraindications are hypersensitivity and pregnant patients in labor; fentanyl does not release histamine and is unlikely to cause hypotension. Morphine keeps its hypotension / poor-perfusion contraindication (MCG 1317.27 / MCG 1345).
+- Med quiz (fentanyl): contraindications are exactly "Hypersensitivity; pregnant patients in labor". The dose, repeat and max answers now include IO, the Base allowance (up to 250 mcg), and the pediatric values (1 mcg/kg IV/IO/IM or 1.5 mcg/kg IN per MCG 1309, repeat x1, 2 doses prior to Base, up to 4 with Base).
+- Watch mode: `ped_vs_auto` (A&O×4, internal bleeding, SBP ~85) now gives fentanyl while keeping permissive hypotension (no aggressive fluids), and grades perfect. Its "known conflict" exception was removed from `tests/sim_v2140.js`, so the target is 109/109.
+- Tests: `tests/sim_v2141.js`.
+
 ### 2.14.0
 - **Watch a call** (home screen ▶ Watch a call): pick any of the 109 scenarios and watch a model paramedic and EMT run it start to finish in an animated 2D scene. It includes the ambulance arriving with lights, the crew walking in, action poses, patient skin tint by perfusion, typewriter speech bubbles, a live monitor HUD (ECG, pleth, EtCO₂), an objective tracker with labeled phases and EMT task tags, and a perfect-call banner with an ideal debrief.
 - The run is not scripted. `src/autopilot.js` drives the real engine (`SIM`) using each scenario's own checklist, dispatch, findings and grading, and follows Adrian's call flow. The paramedic does all assessment and history: scene/BSI, AVPU, ABCs, A&O then age, HPI/SAMPLE, OPQRST, pertinent negatives, then treatment, Base, and a specific destination. The EMT does only delegated hands-on tasks (vitals, O₂, BGL, electrodes, IV setup, CPR, BVM, c-spine, bleeding control, splint, Broselow, gurney), with closed-loop replies.

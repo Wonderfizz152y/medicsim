@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.14.0 f871786046">
+<meta name="medicsim-version" content="2.14.1 5ac1f1ecd4">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1913,7 +1913,7 @@ const DOSING = (() => {
       defaultDose: { v: 50, u: "mcg" },
       defaultRoute: "IV",
       dose: {
-        correct: "50 mcg slow IV/IM/IN",
+        correct: "50 mcg slow IV/IO push or IM/IN (peds: 1 mcg/kg slow IV/IO/IM or 1.5 mcg/kg IN per MCG 1309)",
         distractors: [
           "4 mg slow IV push",
           "50 mg IM injection",
@@ -1921,7 +1921,7 @@ const DOSING = (() => {
         ]
       },
       repeat: {
-        correct: "Every 5 minutes prn",
+        correct: "Every 5 minutes prn (peds: repeat in 5 min prn x1)",
         distractors: [
           "Every 1 minute rapid push",
           "None (single 50 mcg dose only)",
@@ -1929,7 +1929,7 @@ const DOSING = (() => {
         ]
       },
       max: {
-        correct: "150 mcg total prior to Base contact",
+        correct: "150 mcg total prior to Base contact; Base may allow up to 250 mcg (peds: 2 total doses prior to Base, Base may allow up to 4)",
         distractors: [
           "250 mcg total prior to Base contact (the WITH-Base absolute max)",
           "50 mcg (single dose) absolute maximum prior to Base contact",
@@ -1937,11 +1937,11 @@ const DOSING = (() => {
         ]
       },
       contra: {
-        correct: "Hypersensitivity or pregnant patient in labor",
+        correct: "Hypersensitivity; pregnant patients in labor",
         distractors: [
           "Severe isolated extremity fracture pain with BP 138/84",
           "Acute burn pain or chest pain refractory to nitroglycerin",
-          "Heart rate > 90 bpm in an alert patient"
+          "SBP < 90 mmHg"
         ]
       }
     },
@@ -5369,7 +5369,8 @@ const SIM = (() => {
       case "fentanyl": {
         const mcg = doseOf(tx, "mcg"); narr = `Fentanyl ${mcg || 50} mcg ${tx.route || "IV"}`;
         if (mcg && mcg !== 50) notes.push(dev(`Fentanyl adult dose is 50 mcg, repeat q5 min, max 150 mcg before Base (you said ${mcg} mcg).`, "MCG 1317.19", "note"));
-        if (sbp < 90) notes.push(dev("Opioid analgesia with SBP < 90.", "MCG 1345"));
+        // v2.14.1: no SBP gate for fentanyl. MCG 1317.19 (rev 07-01-24) contraindications are hypersensitivity and
+        // pregnant patients in labor only; it does not release histamine and is unlikely to cause hypotension.
         if (!["alert", "anxious"].includes(m)) notes.push(dev("Opioid analgesia in a patient with ALOC.", "MCG 1345"));
         st.x.fentTotal = (st.x.fentTotal || 0) + (mcg || 50); if (st.x.fentTotal > 150 && !st.events["t:base"]) notes.push(dev("Fentanyl > 150 mcg requires Base contact.", "MCG 1317.19"));
         break; }
@@ -14089,7 +14090,7 @@ const NEXT = (() => {
 
 /* ===== autopilot.js ===== */
 /* =====================================================================
- * AUTOPILOT (v2.14.0): the "model medic" for Watch mode.
+ * AUTOPILOT (v2.14.0; v2.14.1 fentanyl fix): the "model medic" for Watch mode.
  * Drives the REAL engine (SIM) through a whole call with the utterances the
  * app already understands (NEXT chips / NLU bank / TXSAY), guided by the
  * scenario's own checklist, PI, destination and Ref. 506 data. No clinical
@@ -14315,15 +14316,20 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     await say("Partner, get BP, SpO2 and resp rate", Object.assign(W("vitals"), { dt: 4 }));
     phase("ao");
     if (canTalk()) { await say("What's your name, where are we, what year is it, and what happened today?", W("ao")); await say("How old are you?", W("age")); }
-    // trauma in pain and getting worse: the medic doesn't let the window close — line + analgesia now (while A&O and SBP >= 90),
-    // the history continues while it runs (TP 1244 #18 / MCG 1345: no opioids once altered or hypotensive)
-    { const pk = ["t:fentanyl", "t:morphine"].find(k => pending().some(c => posKeys(c).includes(k))), okM = () => ["alert", "anxious"].includes(mental());
+    // trauma in pain and getting worse: the medic doesn't let the window close — line + analgesia now (while A&O),
+    // the history continues while it runs (TP 1244 #18 / MCG 1345). v2.14.1: fentanyl has NO SBP limit (MCG 1317.19 rev 07-01-24:
+    // contraindications are hypersensitivity and pregnant patients in labor only; no histamine release, unlikely to cause hypotension).
+    // Morphine keeps its hypotension / poor-perfusion contraindication (MCG 1317.27 / MCG 1345).
+    { const pk = ["t:fentanyl", "t:morphine"].find(k => pending().some(c => posKeys(c).includes(k))), okM = () => ["alert", "anxious"].includes(mental()),
+        opOk = k => okM() && (k !== "t:morphine" || !(st().v.sbp < 90));
       const nsOk = () => pending().some(c => posKeys(c).includes("t:ns")) && st().v.sbp < 90 && !(sc.internalBleed && S.isAO4 && S.isAO4());
-      if (pk && sc.tag === "TRAUMA" && okM() && (sc.drift0 || 0) > 0 && (!(st().v.sbp < 90) || nsOk())) {
+      if (pk && sc.tag === "TRAUMA" && okM() && (sc.drift0 || 0) > 0 && (opOk(pk) || nsOk())) {
         phase("tx");
         if (!st().flags.iv && !st().flags.io) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); await doKey("t:iv", { why: "Vascular access for analgesia / fluids", ref: "MCG 1375", dt: 8 }); }
         if (nsOk()) await doKey("t:ns", { why: "Shock with altered mental status: normal saline to keep SBP > 90 (permissive hypotension is only for A&O×4)", ref: "TP 1244 #15", dt: 8 });
-        if (okM() && !(st().v.sbp < 90)) await doKey(pk, { why: "Pain management early, while the patient is still A&O with SBP ≥ 90 (opioids are contraindicated once altered or hypotensive)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317", dt: 8 }); } }
+        if (opOk(pk)) await doKey(pk, pk === "t:fentanyl"
+          ? { why: "Pain management early, while the patient is still A&O. Fentanyl 50 mcg slow IV: no blood-pressure limit (contraindications are only hypersensitivity and pregnancy in labor); push slowly and monitor respiratory status", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.19", dt: 8 }
+          : { why: "Pain management early, while the patient is still A&O with SBP ≥ 90 (morphine is contraindicated with hypotension or poor perfusion)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.27", dt: 8 }); } }
     if (altered || !S.isAO4 || !S.isAO4()) { phase("why"); const ae = S.aeiou(); for (const i of ae.items) if (!i.done && N.AE_SAY[i.id]) await say(N.AE_SAY[i.id][1], { why: `Altered: AEIOU-TIPS (${i.id.replace("I2", "I")})`, ref: "standard practice*" }); }
     const stroke = (typeof LHABBO !== "undefined" && LHABBO.strokeCall && LHABBO.strokeCall(sc)) || sc.protocol === "1232";
     if (stroke) { phase("why"); await say(N.LHABBO_RUN[1], { why: "L-HABBO in order: Last known well, History of seizure, Age ≥40, Bed/wheelchair bound, Blood glucose 60–400, Obvious asymmetry", ref: "Ref. 521 / TP 1232" });
@@ -14434,7 +14440,8 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   }
   const ok4 = k => { // hold a med the current state contraindicates (it stays on the list and is retried when the patient allows)
     const s = st(), m = mental();
-    if (/^t:(fentanyl|morphine)$/.test(k)) return ["alert", "anxious"].includes(m) && !(s.v.sbp < 90);
+    if (k === "t:fentanyl") return ["alert", "anxious"].includes(m); // MCG 1317.19: no SBP limit
+    if (k === "t:morphine") return ["alert", "anxious"].includes(m) && !(s.v.sbp < 90); // MCG 1317.27: hypotension / poor perfusion
     if (k === "t:nitro") return !(s.v.sbp < 100);
     return true; };
   async function preMed(k) {
@@ -14480,7 +14487,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       }
       if (!did) {
         if ((st().pq || []).length) { await C.waitPartner(60); continue; }
-        // a med the patient can't take yet (e.g. opioid while still altered / hypotensive): keep treating the cause and wait for the response
+        // a med the patient can't take yet (e.g. an opioid while still altered, or morphine while hypotensive): keep treating the cause and wait for the response
         const held = pending().some(c => posKeys(c).some(k => !ok4(k)));
         if (held && (st().x.apHold = (st().x.apHold || 0) + 1) <= 12) { tick(15); continue; }
         return; }
