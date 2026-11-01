@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.13.0 8d658c9ba6">
+<meta name="medicsim-version" content="2.14.0 f871786046">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -653,6 +653,77 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 @keyframes rsPulse{50%{box-shadow:0 0 0 3px rgba(255,138,92,.35)}}
 .next-bar .next-chips button.c-reassess{background:#5a1f12;border-color:#ff8a5c;color:#ffe0d2}
 .lhabbo-panel[hidden],.next-rs[hidden],.next-lh[hidden]{display:none!important}
+/* ===== v2.14.0 Watch mode ===== */
+.watch-cta{display:flex;align-items:center;gap:.8em;flex-wrap:wrap;margin:.6em 0 0;padding:.8em 1em;border-radius:14px;background:linear-gradient(135deg,#10233a,#1f1436);border:1px solid #2c4466}
+.watch-cta button{font-size:1.05em;padding:.6em 1.2em;background:linear-gradient(135deg,#3ea6ff,#7c5cff)}
+.watch-cta span{color:var(--mut);font-size:.9em;flex:1;min-width:200px}
+#watch{height:100%;min-height:100vh}
+.w-head{gap:.5em;flex-wrap:wrap}
+.w-title{flex:1;min-width:140px;display:flex;flex-direction:column;line-height:1.15;overflow:hidden}
+.w-title b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-clock{color:var(--mut);font-size:.8em;font-variant-numeric:tabular-nums}
+#wPick{width:auto;max-width:42vw;padding:.4em .6em}
+.w-main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:.6em;padding:.6em;flex:1;min-height:0}
+.w-stagewrap{position:relative;border-radius:14px;overflow:hidden;background:#0b0f14;border:1px solid var(--line);align-self:start}
+#wStage{display:block;width:100%;height:auto;image-rendering:auto}
+.w-bubbles{position:absolute;left:2%;right:2%;top:2.5%;display:flex;justify-content:center;pointer-events:none}
+.wb{max-width:min(640px,96%);background:rgba(255,255,255,.96);color:#111;border-radius:14px;padding:.5em .8em;box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:.95em;position:relative;animation:wbIn .18s ease-out}
+.wb:after{content:"";position:absolute;bottom:-9px;left:40%;border:9px solid transparent;border-top-color:rgba(255,255,255,.96);border-bottom:0}
+.wb-who{font-size:.72em;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#555;margin-bottom:.1em}
+.wb.medic .wb-who{color:#1d4ed8}.wb.emt .wb-who{color:#0f766e}.wb.patient .wb-who,.wb.bystander .wb-who{color:#9d174d}
+.wb.medic:after{left:30%}.wb.emt:after{left:72%}.wb.patient:after,.wb.bystander:after{left:56%}
+.wb.find,.wb.narrator,.wb.warn{background:rgba(20,28,38,.94);color:#e6edf3;border:1px solid #3a4a5e}.wb.find:after,.wb.narrator:after,.wb.warn:after,.wb.system:after,.wb.medcheck:after{display:none}
+.wb.find .wb-who,.wb.narrator .wb-who{color:#ffd84a}.wb.warn .wb-who{color:#ffa53e}
+.wb.system{background:#3a0d12;color:#fff;border:1px solid #ff4d5e}.wb.system .wb-who{color:#ff9aa4}
+.wb.radio{background:#10233a;color:#e6edf3}.wb.radio .wb-who{color:#38e8ff}
+.wb.medcheck{background:#fffbe6;border:1px solid #e6c34a}
+.wb .emt-tag{text-transform:none;letter-spacing:0}
+@keyframes wbIn{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+.w-why{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(5,10,16,.92) 30%);color:#e6edf3;padding:1.4em .9em .55em;font-size:.88em}
+.w-why b{color:#7cc4ff}.w-why .ref{display:inline-block;margin-left:.4em;padding:0 .45em;border-radius:6px;background:#22303f;color:#ffd84a;font-size:.85em;font-weight:700}
+.w-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(11,15,20,.85);color:var(--mut);font-weight:600;text-align:center;padding:1em}
+.w-loading[hidden],.w-end[hidden],.w-why[hidden]{display:none}
+.w-end{position:absolute;inset:6% 8%;background:rgba(14,20,28,.96);border:1px solid #2c4466;border-radius:16px;padding:1em 1.2em;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.w-banner{font-size:1.5em;font-weight:900;text-align:center;letter-spacing:.06em;padding:.3em;border-radius:12px;margin-bottom:.5em}
+.w-banner.ok{background:linear-gradient(90deg,#14532d,#166534,#14532d);color:#bbf7d0;animation:wGlow 1.6s ease-in-out infinite alternate}
+.w-banner.miss{background:#3a2a10;color:#ffd28a}.w-banner span{margin-left:.4em;color:#fff}
+@keyframes wGlow{from{box-shadow:0 0 0 rgba(43,255,136,0)}to{box-shadow:0 0 22px rgba(43,255,136,.45)}}
+.w-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.4em;margin:.4em 0}
+.w-grade div{background:#18202b;border-radius:10px;padding:.45em .6em;font-size:.9em}
+.w-end-btns{display:flex;gap:.5em;flex-wrap:wrap;margin-top:.7em}
+.w-side{display:flex;flex-direction:column;gap:.6em;min-height:0}
+.w-mon{background:#05080c;border:1px solid #1f2a37;border-radius:12px;padding:.5em}
+.w-vitals{display:grid;grid-template-columns:repeat(5,1fr);gap:.2em;text-align:center}
+.w-vitals small{display:block;font-size:.62em;color:var(--mut);font-weight:700}
+.w-vitals b{font:700 1.2em/1.1 ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.w-vitals .hr b{color:var(--grn)}.w-vitals .bp b{color:var(--wht);font-size:1em}.w-vitals .sp b{color:var(--cyan)}.w-vitals .rr b{color:var(--wht)}.w-vitals .co b{color:var(--yel)}
+.w-rhythm{font-size:.72em;color:var(--grn);margin:.2em 0;min-height:1.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-wave{display:block;width:100%;height:54px}.w-wave.sm{height:30px}
+.w-track{list-style:none;margin:0;padding:.4em;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:52vh;counter-reset:none}
+.w-track li{padding:.35em .4em;border-radius:8px;font-size:.86em;color:var(--mut);display:flex;flex-wrap:wrap;align-items:center;gap:.3em}
+.w-track li .n{display:inline-flex;width:1.5em;height:1.5em;border-radius:50%;align-items:center;justify-content:center;background:#22303f;font-size:.8em;font-weight:800;color:#fff}
+.w-track li.done{color:#9fe0b4}.w-track li.done .n{background:#166534}
+.w-track li.on{background:#13263c;color:#fff}.w-track li.on .n{background:var(--acc)}
+.w-track li b{flex:1;min-width:60%}
+.emt-tag{display:inline-block;font-size:.72em;font-weight:700;padding:.08em .45em;border-radius:6px;background:#0f3d38;color:#7ff3df;border:1px solid #146c63;cursor:pointer}
+.emt-tag.done{background:#0f766e;color:#fff}
+.w-ctrl{position:sticky;bottom:0;display:flex;align-items:center;gap:.4em;flex-wrap:wrap;padding:.5em .7em;background:var(--panel);border-top:1px solid var(--line);z-index:4}
+.w-ctrl #wPlay{min-width:3em;font-size:1.1em}
+.w-ctrl #wScrub{flex:1;min-width:120px;padding:0;accent-color:var(--acc)}
+.w-ctrl select{width:auto;padding:.35em .5em}
+.w-ctrl .off{opacity:.55}
+.w-step{font:600 .8em ui-monospace,monospace;color:var(--mut);min-width:4.5em;text-align:center}
+.w-tg{display:flex;align-items:center;gap:.3em;font-size:.9em}.w-tg input{width:auto}
+@media (max-width:820px){
+  .w-main{grid-template-columns:1fr;padding:.4em}
+  .w-side{flex-direction:column}
+  .w-track{max-height:28vh}
+  .wb{font-size:.82em}
+  .w-why{font-size:.78em;padding-top:1em}
+  #wPick{max-width:100%;flex-basis:100%}
+  .w-ctrl{gap:.3em}.w-ctrl button.sm{padding:.35em .55em}
+}
+@media (max-width:820px){ .w-end{position:fixed;inset:12% 3% auto;max-height:76vh;z-index:30} }
 
 </style>
 </head>
@@ -668,6 +739,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
       <h1>Paramedic Patient Simulator</h1>
       <p class="sub">Talk to your patient, assess, treat. Expected actions follow the <b>Los Angeles County EMS Agency Treatment Protocols (Ref. 1200 series)</b>. For education and practice only. Always follow your current protocols, your preceptor, and Base/medical direction.</p>
       <div id="speechSupport" class="banner"></div>
+      <div class="watch-cta"><button id="btnWatch">▶ Watch a call</button><span>Watch a model paramedic and EMT run any of the scenarios start to finish, with the protocol reasons for each step.</span></div>
       <div class="grid" id="scenarioGrid"></div>
       <p class="fine">Protocol text was pulled from dhs.lacounty.gov / file.lacounty.gov on Oct 20, 2026. Each scenario lists the Ref. No. and revision date it uses. Verify against the current Prehospital Care Manual before relying on it.</p>
     </div>
@@ -776,6 +848,48 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
   </section>
 
   <!-- ============ DEBRIEF ============ -->
+  <!-- ============ WATCH SCREEN ============ -->
+  <section id="watch" class="screen">
+    <header class="sim-head w-head">
+      <button class="ghost sm" id="wExit" title="Back to menu">← Menu</button>
+      <div class="w-title"><b id="wTitle">Watch a call</b><span class="w-clock">⏱ <span id="wClock">00:00</span></span></div>
+      <select id="wPick" aria-label="Scenario"></select>
+    </header>
+    <div class="w-main">
+      <div class="w-stagewrap">
+        <canvas id="wStage" width="960" height="540"></canvas>
+        <div id="wBubbles" class="w-bubbles" aria-live="polite"></div>
+        <div id="wWhy" class="w-why" hidden></div>
+        <div id="wLoading" class="w-loading">Building the call from the scenario engine…</div>
+        <div id="wEnd" class="w-end" hidden></div>
+      </div>
+      <aside class="w-side">
+        <div class="w-mon">
+          <div class="w-vitals">
+            <div class="hr"><small>HR</small><b id="wHR">--</b></div><div class="bp"><small>NIBP</small><b id="wBP">--/--</b></div>
+            <div class="sp"><small>SpO2</small><b id="wSpO2">--</b></div><div class="rr"><small>RR</small><b id="wRR">--</b></div><div class="co"><small>EtCO2</small><b id="wEt">--</b></div>
+          </div>
+          <div class="w-rhythm" id="wRhythm"></div>
+          <canvas id="wECG" class="w-wave"></canvas><canvas id="wPleth" class="w-wave sm"></canvas><canvas id="wCO2" class="w-wave sm"></canvas>
+        </div>
+        <ol id="wTrack" class="w-track"></ol>
+      </aside>
+    </div>
+    <div class="w-ctrl">
+      <button class="ghost sm" id="wRestart" title="Restart">⟲</button>
+      <button class="ghost sm" id="wBack" title="Step back">⏮</button>
+      <button id="wPlay" title="Play">▶</button>
+      <button class="ghost sm" id="wFwd" title="Step forward">⏭</button>
+      <input type="range" id="wScrub" min="0" max="0" value="0" aria-label="Timeline">
+      <span id="wStep" class="w-step">0/0</span>
+      <select id="wSpeed" aria-label="Speed"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1">1×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+      <label class="w-tg"><input type="checkbox" id="wWhyT" checked> Why</label>
+      <button class="ghost sm" id="wTTS">🗣 Voice on</button>
+      <button class="ghost sm" id="wSFX">🔊 SFX on</button>
+      <button class="ghost sm" id="wNext">Next call ▶</button>
+    </div>
+  </section>
+
   <section id="debrief" class="screen">
     <header class="menu-head"><div class="logo">⚕︎ <b>Debrief</b></div>
       <div><button class="ghost" id="btnCopy">Copy report</button> <button class="ghost" id="btnDownload">Download</button> <button id="btnAgain">New scenario</button></div></header>
@@ -3329,7 +3443,7 @@ const NLU = (() => {
     ["io", /\bio\b|intraosseous|\bez ?io\b/],
     ["permhypo", /\bpermissive hypo ?tension\b|\b(keep|maintain|target|hold|leave) (the |his |her |their )?(systolic( bp| blood pressure)?|sbp|bp|blood pressure|pressure) (just )?(above|around|near|at|over|~) ?(70|seventy)\b|\b(target|goal) (sbp|systolic|bp) (of |around |just above )?(70|seventy)\b|\b(don'?t|do not|avoid) (rais(e|ing)|push(ing)?|bring(ing)?|get(ting)?) (the |his |her |their )?(systolic|sbp|bp|blood pressure|pressure)\b[^.]{0,25}\b(above|over|past|to) (90|ninety)\b|\b(don'?t|do not) want to raise (his |her |their |the )?(blood pressure|bp|systolic|pressure)\b|\b(tko|kvo) (line|rate|iv|only)\b|\b(run |keep )?(the |his |her |an? )?(iv|line|fluids?) at (tko|kvo|to keep open)\b|\bto keep (the )?vein open\b|\bhold (the )?(fluid bolus|fluids?|bolus)[^.]{0,40}\b(internal bleed\w*|permissive|a ?(&|and) ?o)\b/],
     ["ns", /normal saline|\bns\b|fluid bolus|\bbolus\b|\bfluids\b|open (the|up the) line|wide open|lactated ringer|\blr\b|(liter|bag) of saline|\bsaline\b(?! lock)/],
-    ["albuterol", /albuterol|\bneb\b|nebuli[sz]|duoneb|breathing treatment|proventil|ventolin/],
+    ["albuterol", /albuterol|duoneb|breathing treatment|proventil|ventolin|(?<!\b(epi|epinephrine|adrenaline)\b[^.]{0,30})(\bneb\b|nebuli[sz])(?![^.]{0,30}\b(epi|epinephrine|adrenaline)\b)/], // v2.14.0: "nebulized epinephrine" is not albuterol
     ["pushepi", /push ?dose/],
     ["epi", /\bepi\b|epinephrine|adrenaline|epipen/],
     ["amio", /amiodarone|\bamio\b/],
@@ -5100,6 +5214,8 @@ const SIM = (() => {
           if (n(st, "epi") >= 3) notes.push(dev("Max epinephrine 3 mg without Base.", "1210"));
           if (route === "IM") notes.push(dev(`In cardiac arrest epinephrine is 1 mg of 0.1 mg/mL IV/IO, not IM${mg ? " " + mg + " mg" : ""} (IM 1 mg/mL is the anaphylaxis dose/route).`, "1210 #10 / MCG 1317.17"));
           narr = route === "IM" ? `Epinephrine ${mg ? mg + " mg " : ""}IM (ordered; arrest dosing is 1 mg 0.1 mg/mL IV/IO)` : `Epinephrine ${mg || 1} mg (0.1 mg/mL) IV/IO`;
+        } else if (/nebuli|\bneb\b|\bhhn\b|racemic/i.test(String(tx.raw || "")) || route === "NEB") { // v2.14.0: nebulized epinephrine (croup stridor at rest, TP 1237-P / MCG 1309)
+          narr = PEDS() ? "Epinephrine nebulized (1 mg/mL, color code dose per MCG 1309)" : "Epinephrine 5 mg (1 mg/mL) nebulized";
         } else {
           if ((route === "IV" || route === "IO") || (mg && mg >= 1)) { st.x.epiOd = true; notes.push(dev(`Epinephrine ${mg ? mg + " mg " : ""}${route === "IV" || route === "IO" ? route + " " : ""}in a patient with a pulse: IM-formulation/arrest-dose epi IV is a 10-fold (or worse) overdose (sudden severe hypertension, possible cerebral hemorrhage). Use 0.5 mg (1 mg/mL) IM, or push-dose epi 1 mL (10 mcg) of 0.01 mg/mL for shock.`, "MCG 1317.17 / 1219 #4", "critical")); }
           else if (mg && mg !== 0.5) notes.push(dev(`Adult IM epinephrine dose is 0.5 mg (0.5 mL of 1 mg/mL) (you said ${mg} mg).`, "1219 #4 / 1237", "note"));
@@ -5231,7 +5347,7 @@ const SIM = (() => {
         } else { // v2.10.5 seizure: TP 1231 #6 (rev 07-01-26), MCG 1317.25 (rev 08-01-26), TP 1217 #18 ⓫
         const ivR = route === "IV" || route === "IO", exp = ivR ? 5 : 10, given = mg || exp, peds = PEDS(), szNow = mental() === "seizing", base = !!st.events["t:base"];
         narr = `Midazolam ${given} mg ${route}${route === "IN" ? " via atomizer (MAD), split between nostrils" : route === "IM" ? " (lateral thigh)" : ""}`;
-        if (!szNow && sc.protocol !== "1217") notes.push(dev(`Not indicated: midazolam is only for an ACTIVE seizure witnessed by EMS (1231 ❶ includes focal seizure with ALOC). This patient is ${mental()}, not seizing: support the airway, O2, check glucose.`, "1231 #5-6 / MCG 1317.25"));
+        if (!szNow && sc.protocol !== "1217" && !(sc.checklist || []).some(c => c.keys.includes("t:midaz"))) notes.push(dev(`Not indicated: midazolam is only for an ACTIVE seizure witnessed by EMS (1231 ❶ includes focal seizure with ALOC). This patient is ${mental()}, not seizing: support the airway, O2, check glucose.`, "1231 #5-6 / MCG 1317.25"));
         if (!peds && mg) { const r = mg / exp;
           if (r >= 10 || r <= 0.1) notes.push(dev(`Midazolam ${mg} mg ${route} is a ${r >= 10 ? Math.round(r) + "-fold overdose" : Math.round(1 / r) + "-fold underdose"}. Seizure dose is 10 mg (2 mL) IM/IN, or 5 mg (1 mL) IV/IO with existing access.`, "1231 #6 / MCG 1317.25", "critical"));
           else if (Math.abs(mg - exp) > 0.01) notes.push(dev(`Wrong midazolam dose: the seizure dose is 10 mg IM/IN or 5 mg IV/IO (you said ${mg} mg ${route}).`, "1231 #6 / MCG 1317.25", "deviation")); }
@@ -13002,7 +13118,7 @@ const PatientEngine = {
 /* =====================================================================
  * MONITOR: sweep-style ECG / pleth / capnography rendering + 12-lead
  * ===================================================================== */
-const Monitor = (() => {
+function makeMonitor() { // factory: the sim screen's monitor plus independent instances (Watch HUD)
   const g = (x, c, w) => Math.exp(-((x - c) * (x - c)) / (2 * w * w));
   let ch = {}, t0 = performance.now() / 1000, simT = 0, lastFrame = 0, beat = { last: -10, next: 0, rr: 1 }, breath = { start: 0, period: 4 };
   let beepOn = false, audio = null, getState = null;
@@ -13168,11 +13284,11 @@ const Monitor = (() => {
     simT += dt;
   }
 
-  function init(stateFn) {
-    getState = stateFn;
-    ch.ecg = setup("cvECG", "#2bff88", [-0.9, 1.4]); ch.ecg.offText = "LEADS OFF: apply the monitor";
-    ch.pleth = setup("cvPleth", "#38e8ff", [-0.1, 1.15]); ch.pleth.offText = "SpO2 probe not applied";
-    ch.co2 = setup("cvCO2", "#ffd84a", [-0.05, 1.3]); ch.co2.offText = "Capnography not applied"; ch.co2.fill = "rgba(255,216,74,.16)"; ch.ecg.lw = 2;
+  function init(stateFn, ids) {
+    getState = stateFn; ids = ids || {};
+    ch.ecg = setup(ids.ecg || "cvECG", "#2bff88", [-0.9, 1.4]); ch.ecg.offText = "LEADS OFF: apply the monitor";
+    ch.pleth = setup(ids.pleth || "cvPleth", "#38e8ff", [-0.1, 1.15]); ch.pleth.offText = "SpO2 probe not applied";
+    ch.co2 = setup(ids.co2 || "cvCO2", "#ffd84a", [-0.05, 1.3]); ch.co2.offText = "Capnography not applied"; ch.co2.fill = "rgba(255,216,74,.16)"; ch.ecg.lw = 2;
     window.addEventListener("resize", () => Object.values(ch).forEach(resize));
     requestAnimationFrame(frame);
   }
@@ -13221,7 +13337,8 @@ const Monitor = (() => {
     ctx.stroke();
   }
   return { init, toggleBeep, draw12, resizeAll };
-})();
+}
+const Monitor = makeMonitor(); Monitor.create = makeMonitor;
 
 /* ===== speech.js ===== */
 /* =====================================================================
@@ -13967,8 +14084,440 @@ const NEXT = (() => {
   }
   function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => ({ label: l, say: pron(s, F) }))]); }
   function aeiouChips() { return AE_SAY; }
-  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS };
+  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS, BASE_ID, BASE_ID2, STROKE_CH, PN_SCRIPT, AE_SAY, pron, hypoAltered, codeChips };
 })();
+
+/* ===== autopilot.js ===== */
+/* =====================================================================
+ * AUTOPILOT (v2.14.0): the "model medic" for Watch mode.
+ * Drives the REAL engine (SIM) through a whole call with the utterances the
+ * app already understands (NEXT chips / NLU bank / TXSAY), guided by the
+ * scenario's own checklist, PI, destination and Ref. 506 data. No clinical
+ * content is invented: every line goes through SIM.handle() exactly as if
+ * Adrian said it, and every reply, vital, finding and grade comes from the
+ * engine. Output: a timeline of steps for the Watch renderer.
+ * ===================================================================== */
+const AUTOPILOT = (() => {
+  function seeded(seed) { let h = 2166136261 >>> 0; for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = (h + 0x6D2B79F5) | 0; let t = Math.imul(h ^ (h >>> 15), 1 | h); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const PH = { scene: "Scene size-up & BSI", avpu: "AVPU", abc: "ABCs", ao: "A&O + age", why: "Why altered? (AEIOU-TIPS)", hx: "History: HPI / SAMPLE", opqrst: "OPQRST", neg: "Pertinent negatives", exam: "Focused exam / monitor", tx: "Treatment", reassess: "Reassess", code: "Resuscitation", dest: "Transport & destination", base: "Base contact", done: "Debrief" };
+  // EMT-scope hands-on tasks (the medic orders, the EMT performs). Matched on the medic's order text.
+  const EMT_TASKS = [
+    [/\b(bp|blood pressure|resp|respirations|pulse ox|spo2|vitals|recycle)\b/i, "vitals", "Vitals"],
+    [/nonrebreather|non-rebreather|nasal cannula|\bnrb\b|oxygen|\bo2\b/i, "o2", "Oxygen"],
+    [/blood sugar|glucose|bgl/i, "bgl", "Blood glucose"],
+    [/monitor|pads|12-lead|12 lead|twelve|v4r|v7|electrod/i, "leads", "Monitor / 12-lead leads"],
+    [/set up my iv|spike a bag/i, "ivsetup", "IV setup (spike a bag)"],
+    [/compressions|cpr/i, "cpr", "CPR compressions"],
+    [/bvm|bag (him|her)|ventilat/i, "bvm", "BVM ventilation"],
+    [/spinal motion|c-?spine|c-?collar|smr/i, "cspine", "C-spine / SMR"],
+    [/tourniquet|direct pressure|pressure dressing|bleeding/i, "bleed", "Bleeding control"],
+    [/splint|traction/i, "splint", "Splint"],
+    [/broselow/i, "broselow", "Broselow tape"],
+    [/gurney|stretcher/i, "gurney", "Gurney"],
+    [/towel under|pad under/i, "roll", "Shoulder roll"],
+    [/suction|opa|npa|recovery position/i, "airway", "Airway adjunct / positioning"],
+    [/temperature/i, "temp", "Temperature"],
+  ];
+  const ANIM = [ // what the medic/EMT visibly does (renderer sprite actions)
+    [/compressions|cpr/i, "cpr"], [/defibrillat|shock|joules/i, "shock"], [/cardiover/i, "shock"], [/pacing|pace\b/i, "pace"], [/bvm|bag (him|her)/i, "bvm"], [/i-gel|igel|intubat/i, "airway"],
+    [/12-lead|12 lead|v4r|v7/i, "twelve"], [/monitor|pads/i, "leads"], [/\bbp\b|blood pressure|vitals|recycle/i, "bpcuff"], [/pulse ox|spo2/i, "pulseox"], [/lung|breath sounds|heart sounds|listen/i, "stethoscope"],
+    [/nonrebreather|cannula|oxygen|cpap|neb/i, "o2"], [/\biv\b|\bio\b|spike/i, "iv"], [/milligram|microgram|gram|mg\b|mcg|dose|aspirin|nitro|epinephrine|naloxone|albuterol|saline|bolus|txa/i, "med"],
+    [/tourniquet|pressure dressing|chest seal|binder|bandage/i, "bandage"], [/spinal motion|c-?collar/i, "cspine"], [/broselow/i, "tape"], [/blood sugar|glucose/i, "bgl"], [/gurney|stretcher|transport|load/i, "gurney"],
+    [/base, this is|notify|radio/i, "radio"], [/pulses|forehead|skin|pupils|palpate|check (the|his|her)|trauma assessment|expose/i, "examine"]];
+  const animOf = t => { for (const [re, a] of ANIM) if (re.test(t)) return a; return "talk"; };
+  const emtOf = t => { if (!/^(partner|can you set up my iv|get a 12-lead)/i.test(t)) return null; for (const [re, id, label] of EMT_TASKS) if (re.test(t)) return { id, label }; return { id: "task", label: "Hands-on task" }; };
+  const ACK = { vitals: "Copy, getting a set of vitals.", o2: "Copy, oxygen going on.", bgl: "Copy, checking a sugar.", leads: "Copy, placing the electrodes.", ivsetup: "Copy, setting up your IV and spiking a bag.", cpr: "Copy, starting compressions.", bvm: "Copy, bagging.", cspine: "Copy, holding c-spine.", bleed: "Copy, controlling the bleeding.", splint: "Copy, splinting.", broselow: "Copy, running the tape.", gurney: "Copy, bringing in the gurney.", roll: "Copy, padding the shoulders.", airway: "Copy.", temp: "Copy, getting a temp.", task: "Copy." };
+
+  async function run(sc, opts) {
+    opts = opts || {};
+    const S = opts.sim || SIM, N = NEXT, F = !!(sc.patient && sc.patient.sex === "F"), P = s => N.pron ? N.pron(s, F) : s;
+    const steps = [], pend = [], realRandom = Math.random; let rnd = seeded("watch|" + sc.id);
+    const ui = { render() {}, say(l) { pend.push(...[].concat(l || [])); }, history: () => [], hints: () => false, drillDone() {} };
+    const st = () => S.state;
+    Math.random = () => rnd();
+    let phase = "scene", quizzes = [];
+    try {
+      S.start(sc, ui, { curveball: "none" }); S.stop();
+      const snap = () => { const s = st(), tg = s.tg || {}; return { t: s.t, v: Object.assign({}, s.v), rev: { monitor: !!s.rev.monitor, spo2: !!s.rev.spo2, bp: !!s.rev.bp, etco2: !!s.rev.etco2, twelve: s.rev.twelve ? { t: s.rev.twelve.t, info: s.rev.twelve.info } : null }, rhythm: tg.rhythm, rhythmName: tg.rhythmName, pulse: tg.pulse, cpr: !!tg.cpr || !!s.flags.cpr, mental: S.mental ? S.mental() : "", o2: s.flags.o2 || (s.flags.cpap ? "cpap" : null), pads: !!s.flags.pads, iv: !!s.flags.iv, sga: !!s.flags.sga, position: s.flags.position, sev: s.sev, arrest: !!s.x.arrest, mon: opts.monState ? opts.monState() : null }; };
+      const push = (o) => { const s = Object.assign({ phase, ph: PH[phase] || phase }, o, { snap: snap() }); steps.push(s); if (opts.onStep) opts.onStep(s); return s; };
+      const outs = (lines, parent) => lines.forEach(l => { if (!l || !l.text && !l.html) return; push({ actor: l.speaker === "partner" ? "emt" : l.speaker === "me" ? "medic" : l.speaker || "system", text: l.text || String(l.html || "").replace(/<[^>]+>/g, ""), lung: l.lungAudio || l.lung || (typeof LUNGS !== "undefined" && l.speaker !== "me" && /\bLung sounds(?:\s+are|\s*:)/i.test(l.text || "") ? (() => { try { return LUNGS.classify(sc, st(), l.text); } catch (e) { return null; } })() : null), raw: l, reply: true, emt: parent && parent.emt || null }); });
+      const flush = () => { if (pend.length) { const l = pend.splice(0); outs(l); } };
+      // a condition change interrupts the wait so the medic reassesses right away (before queued partner reports land)
+      const tick = (n, hard) => { const c0 = (st().x.chg || []).length; for (let i = 0; i < n; i++) { S.tick(1); if (!hard && (st().x.chg || []).length > c0 && !(st().x.arrest && !st().x.rosc)) break; } flush(); };
+      async function say(text, meta) {
+        meta = meta || {}; text = P(text);
+        const emt = meta.noEmt ? null : emtOf(text);
+        // med check (MCG 1317): answered with the engine's own correct options, then the dose/repeat/max/contra is stated
+        let quiz = null; if (S.pendingMedQuiz) { try { quiz = S.pendingMedQuiz(text); } catch (e) { quiz = null; } }
+        if (quiz) { const ans = {}; quiz.questions.forEach(q => { ans[q.id] = q.correctIndex; }); let g = null; try { g = S.gradeMedQuiz(quiz.key, ans, sc, st(), quiz); } catch (e) {}
+          quizzes.push({ key: quiz.key, name: quiz.name, ok: g ? g.score === g.total || g.ok !== false : true, g });
+          const fact = q => q.correctText; push({ actor: "medic", kind: "medcheck", text: `${quiz.name} check: ${quiz.questions.map(q => `${q.label}: ${fact(q)}`).join(". ")}.`, why: `Medication check before giving ${quiz.shortName || quiz.name}: dose, repeat interval, max prior to Base, contraindications`, ref: `MCG ${quiz.ref || "1317"}`, anim: "med" }); }
+        const me = push({ actor: "medic", text, why: meta.why || null, ref: meta.ref || null, anim: meta.anim || animOf(text), emt, order: !!emt, task: meta.task || null });
+        let r = []; try { r = await S.handle(text) || []; } catch (e) { push({ actor: "system", text: "[engine error] " + e.message, error: true }); }
+        // closed loop: the engine's own partner line when it gives one, otherwise a plain acknowledgement
+        if (emt && !r.some(l => l && l.speaker === "partner")) push({ actor: "emt", kind: "ack", text: ACK[emt.id] || "Copy.", emt, anim: "talk" });
+        outs(r, me); flush();
+        tick((meta.dt != null ? meta.dt : 8) + (opts.variant && !meta.noJitter ? (steps.length * 7 + opts.variant) % 3 : 0));
+        return r;
+      }
+      opts.say = say;
+      // ---------------- the call ----------------
+      push({ actor: "system", kind: "dispatch", text: `DISPATCH: ${sc.dispatch}`, anim: "drive" });
+      push({ actor: "medic", text: "Scene safe, BSI: gloves on.", why: "Scene size-up and body substance isolation before patient contact", ref: "standard practice*", anim: "gloves", local: true });
+      outs(S.approach() || []);
+      await POLICY(sc, S, say, { push, tick, flush, setPhase: p => { phase = p; }, phaseNow: () => phase, P, st });
+      phase = "done";
+      const r = S.end(); flush();
+      return { steps, result: r, quizzes, grade: grade(sc, S, r, quizzes) };
+    } finally { Math.random = realRandom; }
+  }
+
+  // ---------------- grading (same rules as the debrief) ----------------
+  function grade(sc, S, r, quizzes) {
+    const st = r.st, cl = r.checklist, req = cl.filter(c => !c.optional), done = req.filter(c => c.done);
+    const piOk = !sc.pi || st.pi === sc.pi.correct, dg = S.destGrade ? S.destGrade(sc, st) : null;
+    const destOk = !dg || (dg.destOk && (!dg.isTrauma || dg.triageOk !== false));
+    const devs = (st.devs || []).filter(d => d.level === "critical" || d.level === "deviation");
+    const fl = S.flow ? S.flow().flags || [] : [];
+    const score = Math.round(100 * done.length / Math.max(1, req.length));
+    const qOk = quizzes.every(q => q.ok);
+    return { score, missing: req.filter(c => !c.done).map(c => `${c.label} [${c.keys.join(",")}]`), piOk, pi: st.pi, piWant: sc.pi && sc.pi.correct, destOk, dest: dg, devs: devs.map(d => `${d.level}: ${d.text}`), cautions: (st.devs || []).filter(d => !devs.includes(d)).map(d => `${d.level}: ${d.text}`), flags: fl, quizOk: qOk,
+      perfect: score === 100 && piOk && destOk && !devs.length && !fl.length && qOk };
+  }
+  let POLICY = null;
+  // the same call replayed with slightly different pacing (seconds between actions) until the grade is perfect;
+  // the clinical content is identical, only the clock timing of partner reports vs. condition changes differs
+  async function best(sc, opts) { let r = null; for (let v = 0; v < 4; v++) { r = await run(sc, Object.assign({}, opts, { variant: v })); r.variant = v; if (r.grade.perfect) return r; } return r; }
+  return { run, best, grade, PH, EMT_TASKS, emtOf, animOf, seeded, setPolicy(p) { POLICY = p; }, get policy() { return POLICY; } };
+})();
+
+/* ---------- default policy: Adrian's call flow, driven by the scenario's own checklist ---------- */
+AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
+  // every condition change is reassessed right away (HABBO -> ABCs -> BP/SpO2/RR -> rest), the way Adrian's call flow grades it
+  let inReassess = false;
+  async function say(text, meta) { if (!inReassess) await reassessIfChanged(); const r = await say0(text, meta); if (!inReassess) await reassessIfChanged(); return r; }
+  const st = H.st, ev = () => st().events, has = k => !!(st().Done ? st().Done.has(k) : ev()[k]), N = NEXT;
+  const phase = H.setPhase, tick = H.tick;
+  const T = id => (N.TXSAY[id] || [])[1];
+  const BANK = {}; (typeof NLU !== "undefined" && NLU.BANK ? (Array.isArray(NLU.BANK) ? NLU.BANK : Object.entries(NLU.BANK)) : []).forEach(([k, v]) => { BANK[k] = v[0]; });
+  // utterances already in the app for keys that have no chip (same wording the NLU is tested on)
+  const EXTRA = {
+    "q:greet": "Hello, my name is Adrian, I'm here to help, is that okay?", "a:pulse": "Checking radial and carotid pulses", "a:skin": "Feeling the forehead, checking skin signs",
+    "a:lungs": "Listen to lung sounds", "a:airway": "Is his airway clear and is he breathing adequately?", "a:monitor": "Partner, put him on the monitor", "a:12lead": "Get a 12-lead",
+    "a:v4r": "Partner, move V4 to V4R", "a:v789": "Partner, move V4, V5, V6 to the back and label them V7, V8, V9", "a:bgl": "Partner, check a blood sugar", "a:temp": "Partner, check a temperature",
+    "a:broselow": "Partner, Broselow him", "a:trauma": "Trauma assessment, head to toe", "a:etco2": "Put capnography on", "a:neuro": "Do a stroke scale, mLAPSS and LAMS", "a:pupils": "Check pupils",
+    "a:abdomen": "Palpate the abdomen", "a:pelvis": "Check the pelvis", "a:explegs": "Expose the legs", "a:expchest": "Expose the chest", "a:jvd": "Check for JVD", "a:trachea": "Check the trachea",
+    "a:caprefill": "Check capillary refill", "a:heart": "Listen to heart sounds", "a:medbottles": "Check for med bottles", "a:smell": "Any smell of alcohol on his breath?", "a:vitals": "Partner, get a full set of vitals",
+    "a:bp": "Partner, get a blood pressure", "a:spo2": "Partner, get a pulse ox", "a:rr": "Partner, count respirations", "a:avpu": "Is he alert?", "a:painresp": "Nail bed pressure",
+    "t:transport": "Let's transport, load and go", "t:notify": "Notify the receiving hospital", "t:base": "Base, this is Medic 12, how copy?", "t:ivsetup": "Can you set up my IV and spike a bag?",
+    "x:reassess": "I'm going to reassess", "q:asa_q": "Before I give you aspirin, are you allergic to aspirin, do you have any stomach ulcers or GI bleeding, or have you taken any aspirin today?",
+    "q:ntg_q": "Before I give you nitro, have you taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension medications in the last 48 hours, or taken any nitro today?",
+    "q:pde5": "Before I give you nitro, have you taken Viagra, Cialis, Levitra, or any erectile dysfunction or pulmonary hypertension medications in the last 48 hours, or taken any nitro today?",
+    "x:ros": N.PN_SCRIPT, "q:consent": "Is it okay if we take you to the hospital?",
+    // OB (the phrases the OB tests drive the engine with)
+    "q:contractions": "How far apart are your contractions?", "q:rom": "Did your water break?", "q:urgepush": "Do you feel like you need to push?", "q:weeks": "How many weeks are you?",
+    "q:gravida": "Is this your first baby?", "q:prenatal": "Any problems with the pregnancy?", "a:crowning": "Check for crowning", "t:obkit": "I'm opening the OB kit",
+    "t:deliver": "I'm supporting the head, deliver the baby", "t:drynewborn": "I'm drying, warming and stimulating the baby", "a:newborn": "Check the baby", "a:apgar": "APGAR",
+    "t:clampcord": "I'm clamping and cutting the cord", "t:skintoskin": "I'm placing the baby skin to skin on mom's chest", "t:fundal": "I'm doing fundal massage",
+    "q:vbleed": "How much are you bleeding?", "a:ebl": "Estimate the blood loss", "q:pregnant": "Any chance you could be pregnant?",
+    // spoken recognition (each matches the scenario's own recognize pattern)
+    "x:cushing": "This is Cushing's triad, rising ICP", "x:tamponade": "Beck's triad, this is cardiac tamponade", "x:tension": "This is a tension pneumothorax",
+    "x:flail": "Flail chest with paradoxical movement", "x:evisc": "Abdominal evisceration, bowel exposed", "x:hemshock": "Hemorrhagic shock, unstable pelvis",
+    "x:intbleed": "Internal bleeding, permissive hypotension", "x:penetrating": "Penetrating trauma, gunshot wound", "x:amp": "Traumatic amputation with arterial bleeding",
+    "x:burn": "Partial thickness burns, rule of nines for TBSA", "x:crush": "Crush injury, risk of hyperkalemia on reperfusion", "x:spine": "Possible spinal cord injury, neurogenic shock",
+    "a:exposed": "Expose the chest and check the back", "t:removeheat": "Remove the heating pad", "t:vector": "Change pad position to anterior posterior", "t:pads": "Partner, apply the pads",
+    "a:extrem": "Check the extremities",
+    "x:shoulderdyst": "Shoulder dystocia: McRoberts maneuver, hyperflex her hips, and suprapubic pressure",
+    "x:prolapse": "Cord prolapse: elevate the presenting part off the cord, knee-chest position",
+  };
+  (N.LHABBO_CH || []).forEach(x => { EXTRA[x[2]] = x[1]; }); (N.STROKE_CH || []).forEach(x => { EXTRA[x[2]] = x[1]; });
+  const AW = typeof AUTOPILOT_WORDS !== "undefined" ? AUTOPILOT_WORDS : {};
+  const TXID = {}; Object.keys(N.TXSAY).forEach(id => { const b = (N.BASE_ID[id] || N.BASE_ID2[id] || id); (TXID[b] = TXID[b] || []).push(id); });
+  function txVariant(base, label) { // pick the route variant that fits the current state (same chips the app offers)
+    const ids = TXID[base] || [], s = st(), arr = !!s.x.arrest && !s.x.rosc;
+    if (base === "o2any") return (s.v.spo2 < 94 || /high.?flow|nrb|non.?rebreather/i.test(label || "")) ? "nrb" : "nc";
+    if (!ids.length) return null;
+    if (base === "epi") { if (arr) return sc.peds ? "epi_peds" : "@Epinephrine 1 milligram IV push";
+      if (/nebuli/i.test(label || "")) return sc.peds ? "@Nebulized epinephrine, color code dose" : "@Epinephrine 5 milligrams nebulized";
+      return sc.peds && ids.includes("epi_im_peds") ? "epi_im_peds" : "epi"; }
+    if (base === "o2any") return (s.v.spo2 < 94 || /high.?flow|nrb|non.?rebreather/i.test(label || "")) ? "nrb" : "nc";
+    if (base === "albuterol") { if (s.flags.o2 === "bvm" && ids.includes("alb_bvm")) return "alb_bvm"; if (s.flags.cpap && ids.includes("alb_cpap")) return "alb_cpap"; }
+    if (sc.peds) { const p = ids.find(i => /_peds$/.test(i)); if (p) return p; }
+    return ids.includes(base) ? base : ids[0]; }
+  function sayFor(key, label) {
+    const k = key.replace(/#\d+$/, "").replace(/@.*$/, "");
+    if (AW[k]) return typeof AW[k] === "function" ? AW[k](S, sc) : AW[k];
+    if (EXTRA[k]) return EXTRA[k];
+    const rp = k.match(/^t:removepatch:(\w+)$/); if (rp) return T("removepatch") || "Remove the patch";
+    if (k === "t:o2any") return T(txVariant("o2any", label));
+    const m = k.match(/^t:(\w+)$/); if (m) { const id = txVariant(m[1], label); if (id) return id[0] === "@" ? id.slice(1) : T(id); }
+    if (BANK[k]) return BANK[k];
+    return null; }
+  const tried = {};
+  async function doKey(key, meta) { const s = sayFor(key, meta && meta.why); if (!s) return false; tried[key] = (tried[key] || 0) + 1; await say(s, meta); return true; }
+  const lbl = c => ({ why: c.label, ref: c.ref ? "LA County Ref. " + c.ref : null });
+  const pending = () => S.checklist().filter(c => !c.done && !c.optional);
+  const posKeys = c => c.keys.filter(k => !k.startsWith("!"));
+  const mental = () => S.mental ? S.mental() : "alert";
+  const m0 = mental(), arrest = !!st().x.arrest || m0 === "arrest";
+  const altered = !["alert", "anxious"].includes(m0);
+  const flowStep = id => (S.flow().steps || []).find(s => s.id === id) || {};
+  const WHY = { // flow step captions (the same labels the debrief Call-flow box uses)
+    intro: ["Introduce yourself and get consent", "standard practice*"], pulses: ["Radial + carotid pulses: perfusion at a glance", "standard practice*"], skin: ["Skin signs: temperature, moisture, color", "standard practice*"],
+    vitals: ["Delegate BP, SpO2 and RR to the EMT while you keep assessing", "standard practice*"], cc: ["Chief complaint", "standard practice*"], avpu: ["AVPU level of consciousness", "MCG 1302 / standard practice*"],
+    abc: ["ABCs: airway clear, breathing adequate, lung sounds", "MCG 1302"], ao: ["A&O ×4: person, place, time, event", "standard practice*"], age: ["Age right after A&O (drives protocol & dosing)", "MCG 1309 / standard practice*"],
+    hx: ["SAMPLE history: signs/symptoms, allergies, meds, past history, last oral intake, events", "standard practice*"], opqrst: ["OPQRST: onset, provocation, quality, radiation, severity, time", "standard practice*"],
+    neg: ["Pertinent negatives, asked yes/no and stated explicitly", "standard practice*"] };
+  const W = id => ({ why: WHY[id][0], ref: WHY[id][1] });
+  // ---- interpretation (the medic reads the strip; the engine's truth is what it is graded on) ----
+  const RNAME = { nsr: "normal sinus rhythm", stach: "sinus tachycardia", sbrady: "sinus bradycardia", afib: "atrial fibrillation", svt: "SVT, narrow complex tachycardia", vt: "ventricular tachycardia", pvt: "polymorphic VT, torsades de pointes", wci: "wide complex irregular tachycardia, pre-excited afib", vf: "v fib", asystole: "asystole", pea: "PEA, pulseless electrical activity", chb: "third degree heart block", avb2: "second degree heart block", paced: "paced rhythm" };
+  async function readRhythm() {
+    if (!st().rev.monitor) return; const a = INTERP.actual(st().tg, st().v.hr); let cls = a.cls, txt = RNAME[cls];
+    if (cls === "afib" && a.wide) txt = RNAME.wci; if (cls === "avb2") txt = a.type2 ? "second degree type 2, Mobitz 2" : "second degree type 1, Wenckebach"; if (cls === "paced" && a.ftc) txt = "paced rhythm with failure to capture";
+    if (/rvr/i.test(a.name) && cls === "afib") txt += " with RVR";
+    await say(`It's ${txt}`, { why: "Rhythm interpretation: rate, regularity, P waves, QRS width", ref: "MCG 1308 / standard practice*", anim: "monitor" }); }
+  async function read12() {
+    const s = st(); if (!s.rev.twelve) return; const a = INTERP.actual(s.tg, s.v.hr), info = s.rev.twelve.info || {};
+    if (!(s.x.ip && s.x.ip.tw && s.x.ip.tw.done)) await say(a.stemi ? `12-lead shows STEMI, ST elevation, ${a.terr.filter(t => t !== "posterior").join(" and ") || "posterior"} wall MI` : "12-lead shows no STEMI", { why: "12-lead read: ST elevation in 2 contiguous leads = STEMI", ref: "TP 1211 / MCG 1308", anim: "twelve" }); }
+  async function v4rRead() { const s = st(), tw = s.rev.twelve && s.rev.twelve.info; if (!tw || !tw.v4r || (s.x.ip && s.x.ip.v4r && s.x.ip.v4r.done)) return; await say(tw.rv ? "ST elevation in V4R, right ventricular infarct" : "No ST elevation in V4R, no RV involvement", { why: "Right-sided lead V4R: ST elevation = RV infarct (preload-dependent, no nitro)", ref: "standard practice*", anim: "twelve" }); }
+  async function v789Read() { const s = st(), tw = s.rev.twelve && s.rev.twelve.info; if (!tw || !tw.v789 || (s.x.ip && s.x.ip.v789 && s.x.ip.v789.done)) return; await say(tw.post ? "ST elevation in V7, V8, V9, posterior MI" : "No ST elevation in V7, V8, V9", { why: "ST depression in V1–V4: move V4–V6 to the back as V7–V9 to look for a posterior MI", ref: "standard practice* (instructor standard)", anim: "twelve" }); }
+  const waitPartner = async (max) => { const c0 = (st().x.chg || []).length; for (let i = 0; i < (max || 60) && (st().pq || []).length && (st().x.chg || []).length === c0; i++) tick(1); await reassessIfChanged(); };
+  async function reassessIfChanged() {
+    const s = st(), all = s.x.chg || [], chg = all[all.length - 1]; if (!chg || chg._ap) return; all.forEach(c => { c._ap = 1; });
+    if (s.x.arrest && !s.x.rosc) return; // during CPR the code cycle is the reassessment
+    const ph = H.phaseNow ? H.phaseNow() : null; phase("reassess"); inReassess = true;
+    try { await say0("I'm going to reassess", { why: "Condition change: reassess HABBO, then ABCs, then BP, SpO2, RR, then the rest", ref: "standard practice* (v2.13 call flow)", anim: "examine" }); } finally { inReassess = false; }
+    if (ph) phase(ph);
+  }
+  // ================= the call =================
+  const fixAbc = async () => { // ABC / life-threat fixes the scenario's checklist calls for (order: bleeding, airway, breathing)
+    const FIX = ["t:tourniquet", "t:bandage", "t:suction", "t:opa", "t:npa", "t:recovery", "t:bvm", "t:nrb", "t:nc", "t:needle", "t:chestseal", "t:cpap", "t:smr"];
+    const s = st(), v = s.v, m = mental(), unresp = ["unresponsive", "arrest"].includes(m) || /unrespons/.test(m);
+    const fits = k => k === "t:bvm" ? (unresp || (v.rr != null && (v.rr < 10 || v.rr > 40)) || (v.spo2 != null && v.spo2 < 85 && altered)) : k === "t:cpap" ? (v.sbp >= 90 && ["alert", "anxious", "confused"].includes(m)) : true;
+    const doneItems = new Set();
+    for (const k of FIX) { const c = pending().find(c => posKeys(c).includes(k)); if (!c || has(k) || doneItems.has(c.label) || !fits(k)) continue; doneItems.add(c.label); await doKey(k, Object.assign(lbl(c), { dt: 6 })); }
+  };
+  const histQs = [["q:history", "Any medical history?"], ["q:allergies", "Any allergies?"], ["q:meds", "What medications do you take?"], ["q:lastoral", "When did you last eat?"], ["q:events", "What were you doing when this started?"]];
+  const opq = [["q:onset", "When did this start?"], ["q:provocation", "Does anything make it better or worse?"], ["q:quality", "What does it feel like?"], ["q:radiation", "Does it go anywhere?"], ["q:severity", "Rate it 0 to 10"], ["q:time", "How long has it been going on?"]];
+  const canTalk = () => !["unresponsive", "arrest", "seizing"].includes(mental()) && !/unrespons|nonverbal|unconscious/i.test(mental());
+  if (!arrest) {
+    await say("Hello, my name is Adrian, I'm here to help, is that okay?", W("intro"));
+    phase("avpu");
+    if (altered && !st().x.avpuAuto) { await say("Can you hear me? Open your eyes", W("avpu")); if (!has("a:avpu")) await say("Nail bed pressure", W("avpu")); }
+    if (!has("a:avpu")) await say("Is he alert?", W("avpu"));
+    phase("abc");
+    await say("Is his airway clear and is he breathing adequately?", W("abc"));
+    await say("Listen to lung sounds", W("abc"));
+    await say("Checking radial and carotid pulses", W("pulses"));
+    await say("Feeling the forehead, checking skin signs", W("skin"));
+    await fixAbc();
+    if (sc.peds && !has("a:broselow")) await say("Partner, Broselow him", { why: "Pediatric: length-based tape gives the color zone and kg for every dose", ref: "MCG 1309" });
+    await say("Partner, get BP, SpO2 and resp rate", Object.assign(W("vitals"), { dt: 4 }));
+    phase("ao");
+    if (canTalk()) { await say("What's your name, where are we, what year is it, and what happened today?", W("ao")); await say("How old are you?", W("age")); }
+    // trauma in pain and getting worse: the medic doesn't let the window close — line + analgesia now (while A&O and SBP >= 90),
+    // the history continues while it runs (TP 1244 #18 / MCG 1345: no opioids once altered or hypotensive)
+    { const pk = ["t:fentanyl", "t:morphine"].find(k => pending().some(c => posKeys(c).includes(k))), okM = () => ["alert", "anxious"].includes(mental());
+      const nsOk = () => pending().some(c => posKeys(c).includes("t:ns")) && st().v.sbp < 90 && !(sc.internalBleed && S.isAO4 && S.isAO4());
+      if (pk && sc.tag === "TRAUMA" && okM() && (sc.drift0 || 0) > 0 && (!(st().v.sbp < 90) || nsOk())) {
+        phase("tx");
+        if (!st().flags.iv && !st().flags.io) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); await doKey("t:iv", { why: "Vascular access for analgesia / fluids", ref: "MCG 1375", dt: 8 }); }
+        if (nsOk()) await doKey("t:ns", { why: "Shock with altered mental status: normal saline to keep SBP > 90 (permissive hypotension is only for A&O×4)", ref: "TP 1244 #15", dt: 8 });
+        if (okM() && !(st().v.sbp < 90)) await doKey(pk, { why: "Pain management early, while the patient is still A&O with SBP ≥ 90 (opioids are contraindicated once altered or hypotensive)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317", dt: 8 }); } }
+    if (altered || !S.isAO4 || !S.isAO4()) { phase("why"); const ae = S.aeiou(); for (const i of ae.items) if (!i.done && N.AE_SAY[i.id]) await say(N.AE_SAY[i.id][1], { why: `Altered: AEIOU-TIPS (${i.id.replace("I2", "I")})`, ref: "standard practice*" }); }
+    const stroke = (typeof LHABBO !== "undefined" && LHABBO.strokeCall && LHABBO.strokeCall(sc)) || sc.protocol === "1232";
+    if (stroke) { phase("why"); await say(N.LHABBO_RUN[1], { why: "L-HABBO in order: Last known well, History of seizure, Age ≥40, Bed/wheelchair bound, Blood glucose 60–400, Obvious asymmetry", ref: "Ref. 521 / TP 1232" });
+      for (const x of N.LHABBO_CH) if (!has(x[2])) await say(x[1], { why: "L-HABBO: " + x[0], ref: "Ref. 521" });
+      for (const x of N.STROKE_CH) if (!has(x[2])) await say(x[1], { why: "LAMS: " + x[0], ref: "Ref. 521 / TP 1232" }); }
+    phase("hx");
+    const who = canTalk();
+    if (who && !has("q:cc")) await say("What's bothering you today?", W("cc"));
+    for (const [k, q] of histQs) if (!has(k) && (k !== "q:lastoral" && k !== "q:events" || pending().some(c => posKeys(c).includes(k)))) await say(q, W("hx"));
+    if (who) { phase("opqrst"); for (const [k, q] of opq) if (!has(k)) await say(q, W("opqrst"));
+      phase("neg"); await say(N.PN_SCRIPT, W("neg"));
+      const ros = st().x.ros || {}, NM = { headache: "headache", vision: "blurred vision", tinnitus: "ringing in the ears", dizzy: "dizziness", weakness: "weakness", nausea: "nausea", diarrhea: "diarrhea", vomiting: "vomiting", chestpain: "chest pain", sob: "shortness of breath" };
+      const neg = Object.keys(ros).filter(k => ros[k] && ros[k].yes === 0 && NM[k]).map(k => NM[k]);
+      if (neg.length) H.push({ actor: "medic", kind: "note", text: `Pertinent negatives: denies ${neg.join(", ")}.`, why: WHY.neg[0], ref: WHY.neg[1], anim: "talk", local: true }); }
+  }
+  H.ctx = { sayFor, doKey, readRhythm, read12, v4rRead, v789Read, waitPartner, reassessIfChanged, pending, posKeys, lbl, tried, mental, W, has, phase, tick };
+  if (AUTOPILOT.flows && AUTOPILOT.flows.rest) await AUTOPILOT.flows.rest(sc, S, say, H, H.ctx, { arrest, altered, m0 });
+});
+
+/* ---------- second half: monitor/12-lead, code, treatment, impression, destination, Base, transport ---------- */
+AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
+  const st = H.st, N = NEXT, { pending, posKeys, lbl, has, phase, tick, doKey, tried, mental } = C;
+  const want = k => pending().some(c => posKeys(c).some(x => x.replace(/#\d+$/, "").replace(/@.*$/, "") === k));
+  const inCl = k => S.checklist().some(c => c.keys.some(x => x.replace(/^!/, "").replace(/#\d+$/, "").replace(/@.*$/, "") === k));
+  const SHOCK = ["vf", "vt", "pvt"];
+  const LATE = /^(t:transport|t:base|t:notify|d:|tr:|x:destOk|a:radio|a:handoff|x:baseorder|x:traumactr)/;
+  // ---------- cardiac arrest ----------
+  async function codeFlow() {
+    phase("code"); const peds = !!sc.peds, young = peds && sc.patient.age < 3;
+    const cpr = st().x.byCpr ? "Partner, take over compressions" : peds ? "Partner, start compressions, 15 to 2" : "Partner, start compressions";
+    await say(cpr, { why: "Pulseless and apneic: high-quality CPR immediately (EMT on the chest)", ref: peds ? "TP 1210-P #3" : "TP 1210 #3", dt: 3 });
+    if (peds && !has("a:broselow")) await say("Broselow tape, what color are they?", { why: "Length-based tape: color zone + kg for every dose", ref: "MCG 1309", dt: 4 });
+    await say("Partner, apply the pads and put him on the monitor", { why: "Pads on for rhythm analysis during compressions", ref: peds ? "TP 1210-P" : "TP 1210 #6", dt: 6 });
+    await say("Partner, bag him with the BVM and put capno on", { why: "BVM with high-flow O2 and waveform capnography", ref: peds ? "TP 1210-P / MCG 1302" : "TP 1210 #4-5", dt: 4 });
+    if (young && !st().x.roll) await say(sc.neutralAlign ? "Partner, pad under his shoulders, keep him neutral" : "Partner, put a towel under his shoulders", { why: "Under 3: large occiput flexes the airway; pad under the shoulders for neutral alignment", ref: "MCG 1302", dt: 3 });
+    await C.waitPartner(30);
+    await rhythmCheck();
+    if (peds && !has("x:traumacpr")) await say("Trauma assessment, head to toe", { why: "Pediatric arrest: look for trauma / non-accidental injury during CPR", ref: "TP 1210-P", dt: 6 });
+    st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag while the medic gets access", ref: "standard practice*", dt: 3 });
+    if (!has("t:iv") && !has("t:io")) await say("Start an IO", { why: "Vascular access: IO if any delay", ref: peds ? "TP 1210-P" : "TP 1210 #9", dt: 10 });
+    for (let guard = 0; guard < 14 && !st().x.rosc && !st().x.terminated; guard++) {
+      const cs = S.code() || {}, a = INTERP.actual(st().tg, st().v.hr), shockable = SHOCK.includes(a.cls);
+      if ((cs.epiLast == null || cs.epiLast >= 240) && (!shockable || (cs.shocks || []).length >= 2) && (cs.epiN || 0) < (peds ? 9 : 3)) await say(peds ? "Epinephrine IO, color code dose" : "Epinephrine 1 milligram IV push", { why: shockable ? "Shockable: epi after the 2nd shock, then every 3–5 min" : "Non-shockable: epinephrine as early as possible, then every 3–5 min", ref: peds ? "TP 1210-P / MCG 1309" : "TP 1210 #13", dt: 4 });
+      if (shockable && (cs.shocks || []).length >= 3 && (cs.amioN || 0) < 2 && want("t:amio")) await say((cs.amioN || st().count.amio) ? "Amiodarone 150 milligrams IV push" : "Amiodarone 300 milligrams IV push", { why: "Refractory VF/pVT after 3 shocks: amiodarone 300 mg, then 150 mg", ref: "TP 1210 #12", dt: 4 });
+      await treatLoop(4, true);
+      const cyc = (S.code() || {}).cycle; if (cyc != null && cyc < 118) tick(118 - cyc);
+      await rhythmCheck();
+    }
+  }
+  async function defib() {
+    const peds = !!sc.peds, nS = st().count.defib || 0, kg = (st().x.bros && st().x.bros.measKg) || sc.patient.weightKg || 20;
+    const J = peds ? Math.round((nS ? 4 : 2) * kg) : 200, R = { ref: peds ? "TP 1210-P / MCG 1309" : "TP 1210 #7", anim: "defib" };
+    await say(`Charge to ${J}`, Object.assign({ why: peds ? `Shockable rhythm: charge ${nS ? "4" : "2"} J/kg (${J} J), compressions continue while charging` : "Shockable rhythm: charge 200 J biphasic, compressions continue while charging", dt: 4 }, R));
+    await say("Everyone clear", Object.assign({ why: "Clear call: nobody touching the patient, O2 away", dt: 1 }, R));
+    await say("Shock", Object.assign({ why: "Defibrillate, then resume CPR immediately", dt: 2 }, R));
+  }
+  async function rhythmCheck() {
+    await say("Rhythm check", { why: "2-minute cycle: pause < 10 s for rhythm check", ref: "TP 1210 #6", dt: 1 });
+    await C.readRhythm();
+    const a = INTERP.actual(st().tg, st().v.hr);
+    if (SHOCK.includes(a.cls) && st().tg.pulse === false) await defib();
+    else if (!["asystole", "vf", "vt", "pvt"].includes(a.cls) && (st().v.etco2 >= 35 || st().tg.pulse)) await say("Pulse check", { why: "Organized rhythm with signs of ROSC (EtCO2 jump): pulse check", ref: "TP 1210 #6", dt: 2 });
+  }
+  // ---------- monitor / 12-lead ----------
+  async function monitorAnd12() {
+    phase("exam");
+    if (!st().rev.monitor && (inCl("a:monitor") || inCl("a:12lead") || inCl("a:interp") || /^12(1[0-4]|11)/.test(sc.protocol || ""))) await say("Partner, put him on the monitor", { why: "Cardiac monitor: rhythm and rate", ref: "MCG 1308", dt: 4 });
+    if (inCl("a:12lead") && !has("a:12lead")) { await say("Get a 12-lead", { why: "12-lead ECG for chest pain / ACS equivalents", ref: "TP 1211 / MCG 1308", dt: 6 }); }
+    await C.waitPartner(90);
+    if (st().rev.monitor) await C.readRhythm();
+    if (st().rev.twelve) { await C.read12(); const info = st().rev.twelve.info || {}, stv = (st().tg.twelve || {}).st || {};
+      const dep = ["V1", "V2", "V3", "V4"].filter(l => (stv[l] || 0) <= -0.1).length >= 2;
+      if (dep || inCl("a:v789")) { await say("Partner, move V4, V5, V6 to the back and label them V7, V8, V9", { why: "ST depression in V1–V4: look posterior with V7–V9", ref: "standard practice* (instructor standard)", dt: 6 }); await C.waitPartner(60); await C.v789Read(); }
+      const inf = INTERP.actual(st().tg, st().v.hr).terr.includes("inferior");
+      if (inf || inCl("a:v4r")) { await say("Partner, move V4 to V4R", { why: "Inferior STEMI: right-sided V4R for RV involvement before nitro", ref: "TP 1211 / standard practice*", dt: 6 }); await C.waitPartner(60); await C.v4rRead(); } }
+  }
+  // ---------- treatment: the scenario's own checklist, in protocol slot order ----------
+  // ---------- device skills (same commands the device tests drive) ----------
+  const dv = () => st().x.dv;
+  async function padsOn() { if (!st().flags.pads) { await say("Partner, apply the pads", { why: "Pads on before pacing / cardioversion", ref: "MCG 1365 / TP 1213", dt: 4 }); await C.waitPartner(40); } }
+  async function baseFirst(ask) {
+    if (has("t:base")) return; phase("base");
+    const ed = S.expectedDest ? S.expectedDest() : {}, D = (PROTOCOLS.DESTINATIONS || []).find(d => d.id === ed.primary);
+    await baseReport(D, ask); phase("tx"); }
+  const BASE_FIRST = k => /^t:(pace|cardiovert)$/.test(k) || (/^t:(calcium|bicarb)$/.test(k) && sc.allow && sc.allow[k.slice(2)] === "base") || (k === "t:diphen" && sc.protocol === "1239");
+  async function pace(c) {
+    await padsOn(); await baseFirst("initiating transcutaneous pacing"); const R = { why: c.label, ref: "TP 1212 / MCG 1365" };
+    await say("Start pacing at 70", Object.assign({}, R, { anim: "monitor", dt: 2 }));
+    await say("Start at 40 milliamps", Object.assign({}, R, { anim: "monitor", dt: 3 }));
+    for (let i = 0; i < 16 && DEVICE.capture(st(), sc) !== "mech"; i++) {
+      if (DEVICE.capture(st(), sc) === "elec" && !has("a:ecapread")) await say("I have electrical capture", { why: "Electrical capture: every pacer spike followed by a wide QRS", ref: "MCG 1365", anim: "monitor", dt: 2 });
+      await say("Go up by 10 milliamps", { why: "Titrate the current up until capture", ref: "MCG 1365 #5", anim: "monitor", dt: 3 }); }
+    if (!has("a:ecapread")) await say("I have electrical capture", { why: "Electrical capture: every pacer spike followed by a wide QRS", ref: "MCG 1365", anim: "monitor", dt: 2 });
+    tick(15);
+    await say("Check a carotid pulse", { why: "Mechanical capture: the pulse must match the paced rate", ref: "MCG 1365", dt: 3 });
+    const mA = dv() && dv().pace ? dv().pace.mA : 80;
+    await say(`Set the mA to ${mA + 10}`, { why: "Safety margin: 10 mA above the capture threshold", ref: "MCG 1365", anim: "monitor", dt: 4 });
+  }
+  async function cardiovert(c) {
+    await padsOn();
+    await baseFirst("requesting an order for synchronized cardioversion");
+    for (const J of [120, 150, 200]) {
+      if (dv() && dv().convT != null) break;
+      await say(`Cardiovert at ${J} joules`, { why: c.label + (J > 120 ? " (escalate, SYNC re-enabled)" : ""), ref: "TP 1213 #12 / MCG 1375", anim: "monitor", dt: 3 });
+      await say("All clear", { why: "Call CLEAR before every shock", ref: "MCG 1375", anim: "defib", dt: 1 });
+      await say("Shock", { why: "Synchronized shock delivered", ref: "TP 1213", anim: "defib", dt: 10 });
+    }
+  }
+  const ok4 = k => { // hold a med the current state contraindicates (it stays on the list and is retried when the patient allows)
+    const s = st(), m = mental();
+    if (/^t:(fentanyl|morphine)$/.test(k)) return ["alert", "anxious"].includes(m) && !(s.v.sbp < 90);
+    if (k === "t:nitro") return !(s.v.sbp < 100);
+    return true; };
+  async function preMed(k) {
+    const s = st();
+    if (k === "t:aspirin" && !has("q:asa_q")) await say(C.sayFor("q:asa_q"), { why: "Aspirin screen: allergy, GI bleed/ulcers, aspirin already taken today", ref: "TP 1211 / MCG 1317.7" });
+    if (k === "t:nitro") {
+      if (!has("q:ntg_q") && !has("q:pde5")) await say(C.sayFor("q:ntg_q"), { why: "Nitro screen: ED / pulmonary-hypertension meds (PDE5) within 48 h, nitro already taken", ref: "TP 1211 #6 / MCG 1317.31" });
+      if (!s.rev.bp || s.t - s.rev.bp.t >= 240) { await say("Partner, get a blood pressure", { why: "BP before every nitro dose", ref: "TP 1211 #6 / 1214 #8", dt: 4 }); await C.waitPartner(40); }
+    }
+  }
+  function medSay(k) {
+    if (k === "t:adenosine") return "Adenosine 12 milligrams rapid IV push";
+    if (k === "t:nitro" && (sc.protocol === "1214" || sc.base === "chf")) { const sbp = st().v.sbp, mg = sbp >= 200 ? "1.2" : sbp >= 150 ? "0.8" : "0.4"; return `Nitroglycerin ${mg} milligrams sublingual`; }
+    return null; }
+  // ---------- treatment: the scenario's own checklist, in protocol slot order ----------
+  const lastTry = {}, IVMED = /^t:(ns|txa|fentanyl|morphine|d10|amio|adenosine|calcium|bicarb|ondansetron|ketorolac|diltiazem|lidocaine|mag|atropine)(#\d+)?$/;
+  async function treatLoop(maxN, inCode) {
+    for (let n = 0; n < (maxN || 40); n++) {
+      await C.reassessIfChanged();
+      const P = pending().slice().sort((x, y) => (posKeys(y).includes("t:fowler") && st().v.sbp >= 90) - (posKeys(x).includes("t:fowler") && st().v.sbp >= 90)), nDone = Object.keys(st().events).length; let did = false;
+      for (const c of P) {
+        const keys = posKeys(c).filter(k => !LATE.test(k) && !k.startsWith("lh:") && ok4(k) && ((tried[k] || 0) < 2 || ((tried[k] || 0) < 4 && lastTry[k] != null && nDone > lastTry[k])));
+        let k = keys.find(k => k === "t:pace" || k === "t:cardiovert" || C.sayFor(k, c.label));
+        if (!k) continue;
+        if (inCode && /^t:(epi|amio|defib)/.test(k)) continue; // arrest epinephrine / amiodarone / shocks run on the code clock
+        if (k === "t:vector" && ((st().x.code && st().x.code.shockLog.length) || 0) < 3) continue; // vector change only after 3 shocks
+        if (tried[k]) { await C.waitPartner(60); if (!pending().includes(c) && !pending().some(x => x.label === c.label)) { did = true; break; } }
+        if (/#\d+$/.test(k)) { const m = k.match(/^(.*)#(\d+)$/), base = m[1]; const last = (st().events[base] || []).slice(-1)[0]; const gap = (typeof DOSING !== "undefined" && DOSING.TABLE[base.slice(2)] && DOSING.TABLE[base.slice(2)].repeatMin || 3) * 60; if (last != null && st().t - last < gap) tick(gap - (st().t - last)); }
+        phase(inCode ? "code" : "tx");
+        tried[k] = (tried[k] || 0) + 1; lastTry[k] = Object.keys(st().events).length;
+        if (k === "t:pace") { await pace(c); did = true; break; }
+        if (k === "t:cardiovert") { await cardiovert(c); did = true; break; }
+        if ((IVMED.test(k) || (k === "t:diphen" && !sc.dystonic)) && !st().flags.iv && !st().flags.io) { if (!st().x.apIvSetup) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); } await doKey("t:iv", { why: "Vascular access before IV medications / fluids", ref: "MCG 1375", dt: 10 }); }
+        if ((k === "t:iv" || k === "t:io") && !st().x.apIvSetup) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); }
+        if (/^t:removepatch/.test(k) && !has("a:exposed")) await say(C.sayFor("a:exposed") || "Expose the chest and check the back", { why: "Expose and look for medication patches (chest, back, arms, legs) before removing one", ref: "TP 1214 / MCG 1317.31", dt: 6 });
+        if (k === "t:clampcord" && st().x.born != null && st().t - st().x.born < 62) tick(62 - (st().t - st().x.born), true); // delayed cord clamping ~60 s (TP 1215)
+        if (k === "t:fundal" && st().x.born != null) { for (let g = 0; g < 30 && !st().x.placT; g++) tick(10, true); await say("The placenta delivered on its own, I'm bagging it to bring in", { why: "Never pull the cord: wait for the placenta to deliver spontaneously, then fundal massage", ref: "TP 1215 #10", dt: 2 }); }
+        if (BASE_FIRST(k.replace(/#\d+$/, ""))) await baseFirst(k === "t:diphen" ? "requesting confirmation of a dystonic reaction and an order for diphenhydramine" : "requesting orders");
+        await preMed(k.replace(/#\d+$/, ""));
+        const ms = medSay(k.replace(/#\d+$/, "")), meta = Object.assign(lbl(c), { dt: 8 });
+        if (ms) await say(ms, meta); else { tried[k]--; await doKey(k, meta); }
+        did = true; break;
+      }
+      if (!did) {
+        if ((st().pq || []).length) { await C.waitPartner(60); continue; }
+        // a med the patient can't take yet (e.g. opioid while still altered / hypotensive): keep treating the cause and wait for the response
+        const held = pending().some(c => posKeys(c).some(k => !ok4(k)));
+        if (held && (st().x.apHold = (st().x.apHold || 0) + 1) <= 12) { tick(15); continue; }
+        return; }
+    }
+  }
+  if (o.arrest) await codeFlow(); else { await monitorAnd12(); phase("tx"); await treatLoop(40); }
+  if (st().x.rosc) { phase("tx"); await treatLoop(20); }
+  await C.reassessIfChanged();
+  // ---------- impression, destination, Base, transport ----------
+  phase("dest");
+  if (sc.pi && sc.pi.correct) { S.setPI(sc.pi.correct); const nm = (typeof PROVIDER_IMPRESSIONS !== "undefined" && PROVIDER_IMPRESSIONS[sc.pi.correct] || [sc.pi.correct])[0]; H.push({ actor: "medic", kind: "pi", text: `Provider impression: ${nm} (${sc.pi.correct}).`, why: (sc.pi.clues && sc.pi.clues[sc.pi.correct]) || "Provider impression", ref: "Ref. 1200.2 PI list", anim: "talk", local: true }); }
+  const ed = S.expectedDest(), D = (PROTOCOLS.DESTINATIONS || []).find(d => d.id === ed.primary);
+  const tt = S.expectedTraumaTriage();
+  if (tt) for (const id of tt.primary) S.toggleTraumaTriage(id, true);
+  const tri = tt ? tt.primary.map(id => ((PROTOCOLS.TRAUMA_TRIAGE || []).find(t => t.id === id) || { label: id }).label) : [];
+  const r = S.selectDest(ed.primary, true);
+  H.push({ actor: "medic", kind: "dest", text: `Destination: ${D ? D.label : ed.primary}.${tri.length ? " Ref. 506 criteria: " + tri.join("; ") + "." : ""}`, why: ed.reason, ref: tt ? tt.explain : ed.ref, anim: "talk", local: true });
+  if (r) H.push({ actor: r.speaker, text: r.text });
+  if ((inCl("t:base") || sc.baseOrder || (st().devs || []).some(d => /base/i.test(d.text))) && !has("a:radio")) { phase("base"); await baseReport(D); }
+  phase("dest");
+  if (inCl("t:notify") || !inCl("t:base")) await say("Notify the receiving hospital", { why: "Pre-alert the receiving facility", ref: "Ref. 502 / standard practice*", dt: 4 });
+  await say("Partner, bring in the gurney", { why: "EMT preps the gurney for packaging", ref: "standard practice*", dt: 6 });
+  await say("Let's transport, load and go", { why: `Transport to ${D ? D.label : ed.primary}: ${ed.ref}`, ref: ed.ref, dt: 4, anim: "gurney" });
+  async function baseReport(D, ask) {
+    const s = st(), p = sc.patient, v = s.v, sex = p.sex === "F" ? "female" : "male";
+    const nm = sc.pi ? ((typeof PROVIDER_IMPRESSIONS !== "undefined" && PROVIDER_IMPRESSIONS[sc.pi.correct] || [""])[0]) : "";
+    const ms = s.x.arrest && !s.x.rosc ? "unresponsive, pulseless and apneic, CPR in progress" : S.isAO4 && S.isAO4() ? "alert and oriented times 4" : "altered, " + (S.mental() || "");
+    const vit = s.tg && s.tg.pulse === false ? "no vitals, pulseless, CPR in progress" : `blood pressure ${Math.round(v.sbp)} over ${Math.round(v.dbp)}, heart rate ${Math.round(v.hr)}, resp rate ${Math.round(v.rr)}, sat ${Math.round(v.spo2)} percent`;
+    const a = s.rev.monitor ? INTERP.actual(s.tg, v.hr) : null;
+    const find = [a ? "rhythm " + (INTERP.NAMES && INTERP.NAMES[a.cls] || a.cls) : "", s.rev.twelve ? (a && a.stemi ? "12-lead shows STEMI" : "12-lead no STEMI") : "", s.rev.bgl ? `blood glucose ${Math.round(v.bgl)}` : "", s.x.lams && s.x.lams.total != null ? `LAMS ${s.x.lams.total}` : "", s.x.bros ? `${s.x.bros.color}, ${s.x.bros.measKg || s.x.bros.kg[0]} kg` : ""].filter(Boolean).join(", ");
+    const given = Object.keys(s.events).filter(k => /^t:/.test(k) && !/^t:(base|notify|transport)/.test(k)).map(k => k.slice(2));
+    const neg = s.x.ros ? Object.keys(s.x.ros).filter(k => s.x.ros[k].yes === 0) : [];
+    const resp = s.x.rosc ? "ROSC achieved" : (s.sev < (s.x.sev0 || 99) ? "patient improved" : "patient now unchanged");
+    const txt = `Base, this is Medic 12. We have a ${p.age} year old ${sex}, ${nm}, ${ms}. Vitals ${vit}. Findings: ${find || "as above"}${neg.length ? ", denies " + neg.join(", ") : ""}${s.x.traumacpr ? ", trauma assessment completed" : ""}. History ${s.events["q:history"] ? "obtained" : "unknown"}, meds and allergies reviewed. We gave ${given.join(", ") || "no treatments yet"}, ${resp}. ETA 10 minutes to ${D ? D.label : "the receiving hospital"}, ${ask || "requesting orders"}, over.`;
+    await say(txt, { why: "Base contact: concise report (age/sex, CC, mental status, vitals, findings, treatment + response, ETA, request)", ref: "Ref. 1200.2 / Ref. 808", dt: 25, anim: "radio" });
+  }
+} };
 
 /* ===== ui.js ===== */
 /* =====================================================================
@@ -14831,6 +15380,7 @@ const NEXT = (() => {
     if (st.pi) chips.unshift(`<span class="chip" style="border-color:#3ea6ff">PI: ${st.pi}</span>`);
     $("#txStrip").innerHTML = chips.join("");
   }
+  window.MedicUI = { monState: () => monState(), renderDebrief: r => { currentDebrief = r; renderDebrief(r); }, show: id => show(id), pickVoice: (a, b, c) => pickVoice(a, b, c), partnerVoice: (a, b, c) => partnerVoice(a, b, c), instructorVoice: (a, b) => instructorVoice(a, b), voices: () => { if (!voices.length) loadVoices(); return voices; }, spokenFinding: t => spokenFinding(t), settings: () => settings };
   function monState() {
     const st = SIM.state; if (!st || !st.tg) return null;
     const tg = st.tg, v = st.v;
@@ -15052,6 +15602,7 @@ const NEXT = (() => {
     $("#btnTestPartner").onclick = () => testVoice("partner"); $("#btnTestPt").onclick = () => testVoice("pt"); $("#btnTestInstr").onclick = () => testVoice("instr"); bindVoiceControls();
     PatientEngine.config = { key: settings.key, endpoint: settings.endpoint, model: settings.model };
     Monitor.init(monState);
+    { const bw = $("#btnWatch"); if (bw) bw.onclick = () => { if (typeof WATCH !== "undefined") WATCH.open(); }; }
     $("#form").addEventListener("submit", e => { e.preventDefault(); const t = $("#txt").value; $("#txt").value = ""; submit(t); });
     $("#btnEnd").onclick = () => endScenario(false);
     $("#btnMenu").onclick = () => { if (confirm("Leave this scenario? Progress will be lost.")) { SIM.stop(); stopAllInput(); skipSpeech(); show("menu"); } };
@@ -15152,6 +15703,463 @@ const NEXT = (() => {
     $("#allTabs").onclick = e => { const b = e.target.closest("button[data-i]"); if (!b) return; allCat = +b.dataset.i; $$("#allTabs button").forEach(x => x.classList.toggle("on", x === b)); const sec = $(`#allBody section[data-i="${allCat}"]`); if (sec) sec.scrollIntoView({ block: "start", behavior: "smooth" }); };
     $("#allBody").onclick = e => { const b = e.target.closest("button[data-say]"); if (!b) return; $("#modalAll").classList.remove("open"); submit(b.dataset.say, true); };
   });
+})();
+
+/* ===== watch.js ===== */
+/* =====================================================================
+ * WATCH MODE (v2.14.0): watch a model paramedic run any call.
+ * The run itself comes from AUTOPILOT (the real engine + scenario data);
+ * this file only renders it: a code-drawn 2D scene (no image assets),
+ * speech bubbles, live monitor HUD, phase tracker with EMT tags, SFX,
+ * TTS with distinct medic / EMT / patient / instructor voices,
+ * playback controls, "why" captions and the ideal debrief.
+ * ===================================================================== */
+const WATCH = (() => {
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const W = 960, H = 540, FLOOR = 430;
+  let sc = null, out = null, steps = [], idx = -1, playing = false, speed = 1, showWhy = true, tts = true, sfx = true, tok = 0, timer = null;
+  let mon = null, monSnap = null, cv = null, ctx = null, raf = 0, stepStart = 0, last = 0, setting = "home", seed = 1, built = false;
+  // world state (smoothly animated toward targets derived from the current step)
+  const A = { amb: { x: -260, lights: true, door: 0 }, medic: { x: -200, tx: -200, act: "walk", walk: 0 }, emt: { x: -240, tx: -240, act: "walk", walk: 0 }, pt: { pose: "sit", onGurney: false }, gurney: { x: -300, tx: -300, show: false }, fx: [], driveOff: 0 };
+  const sfxCtx = { ac: null };
+  const lsGet = (k, d) => { try { const v = localStorage.getItem("medicsim.watch." + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem("medicsim.watch." + k, JSON.stringify(v)); } catch (e) {} };
+
+  // ---------------- run generation (real engine) ----------------
+  async function load(id) {
+    stop(); const my = ++tok;
+    sc = SCENARIOS.find(s => s.id === id) || SCENARIOS[0];
+    $("#wPick").value = sc.id; $("#wTitle").textContent = sc.dispatchTitle || sc.id;
+    $("#wLoading").hidden = false; $("#wEnd").hidden = true; $("#wBubbles").innerHTML = ""; $("#wWhy").hidden = true;
+    await new Promise(r => setTimeout(r, 30));
+    let res = null;
+    try { res = await AUTOPILOT.best(sc, { monState: () => (window.MedicUI ? MedicUI.monState() : null) }); }
+    catch (e) { console.error(e); $("#wLoading").textContent = "Couldn't build this call: " + e.message; return; }
+    if (my !== tok) return;
+    out = res; steps = res.steps.filter(s => s.text && !(s.actor === "warn" && /^\s*$/.test(s.text)));
+    lsSet("last", sc.id);
+    setting = settingOf(sc); seed = hash(sc.id);
+    $("#wLoading").hidden = true; $("#wScrub").max = steps.length - 1;
+    buildTracker(); resetWorld(); idx = -1; go(0, true); play();
+  }
+  const hash = s => { let h = 7; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+  function settingOf(sc) {
+    const t = [sc.dispatch, sc.scene, sc.approach && sc.approach.see].join(" ").toLowerCase();
+    if (/freeway|highway|intersection|crosswalk|roadway|street|boulevard|blvd|\bave\b|sidewalk|vehicle|\bcar\b|motorcycle|bicycle|bike|collision|parking lot|bus stop/.test(t) && !/kitchen|bedroom|living room|bathroom|apartment|home\b|house/.test(t)) return "road";
+    if (/park\b|beach|trail|field|backyard|pool|hiking|campground|soccer|lawn|garden/.test(t)) return "outdoor";
+    if (/warehouse|store|gym|office|school|restaurant|church|mall|construction|factory|clinic|bar\b|club|hotel|airport|market|shop|facility|nursing|stadium|work/.test(t)) return "work";
+    return "home";
+  }
+  function initialPose(sc) {
+    const t = [sc.scene, sc.approach && sc.approach.see].join(" ").toLowerCase();
+    if (/unresponsive|pulseless|cpr in progress|apneic/.test(t)) return "supine";
+    if (/sitting|seated|chair|leaning forward|tripod|on the edge|couch|bench|stool|standing/.test(t)) return "sit";
+    if (/lying|floor|ground|supine|on (his|her) (back|side)|bed|pinned|prone/.test(t)) return "supine";
+    return "sit";
+  }
+
+  // ---------------- tracker ----------------
+  const PH_ORDER = ["scene", "avpu", "abc", "ao", "why", "hx", "opqrst", "neg", "exam", "tx", "code", "reassess", "base", "dest", "done"];
+  function buildTracker() {
+    const seen = []; steps.forEach(s => { if (s.phase && !seen.includes(s.phase) && s.phase !== "done") seen.push(s.phase); });
+    seen.sort((a, b) => PH_ORDER.indexOf(a) - PH_ORDER.indexOf(b));
+    const tags = {}; steps.forEach((s, i) => { if (s.order && s.emt) { const k = s.phase; (tags[k] = tags[k] || []); if (!tags[k].some(x => x.label === s.emt.label)) tags[k].push({ label: s.emt.label, i }); } });
+    $("#wTrack").innerHTML = seen.map((p, n) => `<li data-ph="${p}"><span class="n">${n + 1}</span><b>${esc(AUTOPILOT.PH[p] || p)}</b>${(tags[p] || []).map(t => `<span class="emt-tag" data-i="${t.i}">EMT · ${esc(t.label)}</span>`).join("")}</li>`).join("");
+  }
+  function updateTracker(s) {
+    const cur = s && s.phase; let passed = true;
+    const order = [...$("#wTrack").children].map(li => li.dataset.ph), ci = order.indexOf(cur);
+    [...$("#wTrack").children].forEach((li, n) => { li.classList.toggle("on", li.dataset.ph === cur); li.classList.toggle("done", ci >= 0 ? n < ci : idx >= steps.length - 1); });
+    $$("#wTrack .emt-tag").forEach(t => t.classList.toggle("done", +t.dataset.i <= idx));
+    const li = $("#wTrack li.on"); if (li && li.scrollIntoView && $("#wTrack").scrollHeight > $("#wTrack").clientHeight) li.scrollIntoView({ block: "nearest" });
+    void passed;
+  }
+  const $$ = s => [...document.querySelectorAll(s)];
+
+  // ---------------- playback ----------------
+  function stop() { playing = false; clearTimeout(timer); timer = null; try { speechSynthesis.cancel(); } catch (e) {} if (typeof LUNGS !== "undefined") try { LUNGS.stop(); } catch (e) {} syncBtns(); }
+  function play() { if (!steps.length) return; if (idx >= steps.length - 1) go(0, true); playing = true; syncBtns(); schedule(0); }
+  function pause() { playing = false; clearTimeout(timer); try { speechSynthesis.cancel(); } catch (e) {} syncBtns(); }
+  function syncBtns() { const b = $("#wPlay"); if (b) { b.textContent = playing ? "⏸" : "▶"; b.title = playing ? "Pause" : "Play"; } }
+  function schedule(ms) { clearTimeout(timer); const my = tok; timer = setTimeout(() => { if (my === tok && playing) advance(); }, ms); }
+  async function advance() {
+    if (idx >= steps.length - 1) { playing = false; syncBtns(); showEnd(); return; }
+    go(idx + 1); const s = steps[idx], my = tok, myIdx = idx;
+    const typeMs = Math.min(5200, 650 + s.text.length * 26) / speed;
+    const waits = [new Promise(r => setTimeout(r, typeMs))];
+    if (tts) waits.push(speak(s));
+    if (s.lung && (tts || sfx) && typeof LUNGS !== "undefined") waits.push(new Promise(r => { let done = false; const fin = () => { if (!done) { done = true; r(); } }; try { LUNGS.play(s.lung, { durationSec: 5, onEnd: fin }); setTimeout(fin, 7000); } catch (e) { fin(); } }));
+    await Promise.all(waits);
+    if (my !== tok || myIdx !== idx || !playing) return;
+    schedule((s.actor === "medic" ? 260 : 180) / speed);
+  }
+  function go(i, quiet) {
+    i = Math.max(0, Math.min(steps.length - 1, i)); const back = i < idx; idx = i; const s = steps[i]; if (!s) return;
+    stepStart = performance.now(); if (back) { try { speechSynthesis.cancel(); } catch (e) {} }
+    $("#wScrub").value = i; $("#wStep").textContent = `${i + 1}/${steps.length}`;
+    $("#wClock").textContent = fmt(s.snap.t);
+    bubble(s, quiet); why(s); hud(s); updateTracker(s); stageFor(s, back || quiet); sfxFor(s, quiet || back);
+    if (i < steps.length - 1) $("#wEnd").hidden = true;
+  }
+  const fmt = t => `${String(Math.floor((t || 0) / 60)).padStart(2, "0")}:${String(Math.floor((t || 0) % 60)).padStart(2, "0")}`;
+
+  // ---------------- bubbles / captions ----------------
+  const WHO = { medic: "Paramedic", emt: "EMT", patient: "Patient", bystander: "Bystander", find: "Finding", narrator: "Instructor", system: "Dispatch", radio: "Base", warn: "Instructor note" };
+  let typeTimer = null;
+  function bubble(s, instant) {
+    const box = $("#wBubbles"); clearInterval(typeTimer);
+    const who = s.actor === "bystander" && sc.bystander ? `${sc.bystander.name || "Bystander"} (${sc.bystander.role || "bystander"})` : s.actor === "patient" ? (sc.patient.name || "Patient") : WHO[s.actor] || s.actor;
+    const cls = s.kind === "medcheck" ? "medcheck" : s.actor;
+    const el = document.createElement("div"); el.className = "wb " + cls;
+    el.innerHTML = `<div class="wb-who">${esc(who)}${s.emt && s.actor === "medic" ? ` <span class="emt-tag">→ EMT · ${esc(s.emt.label)}</span>` : ""}</div><div class="wb-txt"></div>`;
+    box.innerHTML = ""; box.appendChild(el); const tx = el.querySelector(".wb-txt");
+    if (instant || !playing) { tx.textContent = s.text; return; }
+    let n = 0; const cps = 38 * speed, step = Math.max(1, Math.round(cps / 30));
+    typeTimer = setInterval(() => { n = Math.min(s.text.length, n + step); tx.textContent = s.text.slice(0, n); if (n >= s.text.length) clearInterval(typeTimer); }, 33);
+  }
+  function why(s) {
+    const w = $("#wWhy"); if (!showWhy) { w.hidden = true; return; }
+    if (s.actor === "medic" && s.why) { w.hidden = false; w.innerHTML = `<b>Why:</b> ${esc(s.why)}${s.ref ? ` <span class="ref">${esc(s.ref)}</span>` : ""}`; }
+    else if (s.actor === "medic" && !s.why) w.hidden = true;
+  }
+
+  // ---------------- TTS ----------------
+  let V = null;
+  function voicesFor() {
+    if (V && V.sc === sc.id) return V;
+    const U = window.MedicUI; if (!U || !window.speechSynthesis) return null;
+    const pv = U.pickVoice(sc.patient.sex, null, sc.patient.age), bv = sc.bystander ? U.pickVoice(sc.bystander.sex, pv, 45) : null;
+    const iv = U.instructorVoice(pv, bv), ev = U.partnerVoice(pv, bv, iv.voice);
+    const all = U.voices(), used = [pv, bv, iv.voice, ev.voice];
+    const free = all.filter(v => !used.includes(v)), off = !navigator.onLine;
+    const mv = free.find(v => v.localService && /en-US/i.test(v.lang) && /male|daniel|alex|david|mark|guy|tom|aaron|fred|ryan|eric|brian|matthew/i.test(v.name) && !/female/i.test(v.name)) || free.find(v => (!off || v.localService) && /en-US/i.test(v.lang)) || free.find(v => !off || v.localService) || null;
+    V = { sc: sc.id, pv, bv, iv: iv.voice, ev: ev.voice, evPitch: ev.distinct ? ev.pitch : 0.7, evRate: ev.distinct ? ev.rate : 1.2, mv: mv || pv, mvPitch: mv ? 1 : (sc.patient.sex === "F" ? 0.75 : 1.3) };
+    return V;
+  }
+  function speak(s) {
+    return new Promise(res => {
+      const v = voicesFor(); if (!v) return res();
+      const U = window.MedicUI, set = U.settings();
+      let text = s.kind === "medcheck" ? s.text.split(":")[0] + ": dose, repeat, max before Base and contraindications confirmed." : s.text;
+      text = U.spokenFinding(text.replace(/\*[^*]*\*/g, " ").replace(/\([^)]*\)/g, " ")); if (!text) return res();
+      let voice = v.iv, pitch = 1, rate = 1.08;
+      if (s.actor === "medic") { voice = v.mv; pitch = v.mvPitch; rate = 1.05; }
+      else if (s.actor === "emt") { voice = v.ev; pitch = v.evPitch; rate = v.evRate; }
+      else if (s.actor === "patient") { voice = v.pv; pitch = (sc.patient.sex === "F" ? 1.1 : 0.9) - (sc.patient.age > 65 ? 0.12 : 0) + (sc.patient.age < 14 ? 0.35 : 0); rate = sc.patient.age > 70 ? 0.9 : 1; }
+      else if (s.actor === "bystander") { voice = v.bv || v.pv; pitch = 1.05; }
+      else if (s.actor === "radio") { pitch = 0.85; }
+      const u = new SpeechSynthesisUtterance(text); if (voice) { u.voice = voice; u.lang = voice.lang; }
+      u.pitch = Math.max(0.1, Math.min(2, pitch)); u.rate = Math.max(0.5, Math.min(2, rate * (set.rate || 1) * speed));
+      let done = false; const fin = () => { if (!done) { done = true; res(); } };
+      u.onend = fin; u.onerror = fin; setTimeout(fin, 2500 + text.length * 110 / speed);
+      try { speechSynthesis.speak(u); } catch (e) { fin(); }
+    });
+  }
+
+  // ---------------- SFX (WebAudio, generated) ----------------
+  function ac() { if (!sfx) return null; try { sfxCtx.ac = sfxCtx.ac || new (window.AudioContext || window.webkitAudioContext)(); sfxCtx.ac.resume(); return sfxCtx.ac; } catch (e) { return null; } }
+  function tone(f0, f1, dur, type, vol, delay) { const a = ac(); if (!a) return; const t = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain(); o.type = type || "sine"; o.frequency.setValueAtTime(f0, t); o.frequency.linearRampToValueAtTime(f1, t + dur); g.gain.setValueAtTime(vol || 0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02); }
+  const SFX = {
+    siren() { for (let k = 0; k < 4; k++) { tone(650, 1250, 0.45, "sawtooth", 0.025, k * 0.9); tone(1250, 650, 0.45, "sawtooth", 0.025, k * 0.9 + 0.45); } },
+    charge() { tone(300, 2400, 1.6, "sine", 0.04); },
+    shock() { tone(140, 40, 0.35, "square", 0.09); },
+    beep() { tone(880, 880, 0.1, "sine", 0.05); },
+    ok() { tone(660, 660, 0.12, "triangle", 0.05); tone(990, 990, 0.25, "triangle", 0.05, 0.13); },
+  };
+  function sfxFor(s, quiet) {
+    if (quiet || !sfx) return; const t = s.text || "";
+    if (s.kind === "dispatch") SFX.siren();
+    else if (s.actor === "medic" && /^charge|cardiovert at|charging/i.test(t)) SFX.charge();
+    else if (s.actor === "medic" && /^shock\b|delivering shock/i.test(t)) SFX.shock();
+    else if (s.actor === "medic" && /transport|let's go|load (him|her|the patient)/i.test(t) && s.phase === "dest") SFX.siren();
+    else if (s.actor === "narrator" && /^✓/.test(t)) { /* silent: the bubble is the cue */ }
+  }
+
+  // ---------------- HUD (vitals + live monitor) ----------------
+  function hud(s) {
+    const n = s.snap, v = n.v || {}, r = n.rev || {}, on = r.monitor;
+    const set = (id, val, ok) => { const e = $(id); e.textContent = ok && val != null && !isNaN(val) ? Math.round(val) : "--"; };
+    set("#wHR", n.pulse === false ? 0 : v.hr, on || r.spo2);
+    $("#wBP").textContent = r.bp && v.sbp ? `${Math.round(v.sbp)}/${Math.round(v.dbp)}` : "--/--";
+    set("#wSpO2", v.spo2, r.spo2 && n.pulse !== false); set("#wRR", v.rr, true); set("#wEt", v.etco2, r.etco2);
+    $("#wRhythm").textContent = on ? (n.rhythmName || n.rhythm || "") : "leads off";
+    monSnap = n.mon || null;
+  }
+
+  // ---------------- stage: derive targets from the step ----------------
+  const EMT_ANIM = { vitals: "bpcuff", o2: "o2", bgl: "bgl", leads: "leads", ivsetup: "ivsetup", cpr: "cpr", bvm: "bvm", cspine: "cspine", bleed: "bandage", splint: "bandage", broselow: "tape", gurney: "gurney", roll: "examine", airway: "examine", temp: "examine", task: "examine" };
+  const PX = 560; // patient x
+  function resetWorld() {
+    A.amb = { x: -260, tx: 40, lights: true }; A.medic = { x: -60, tx: -60, act: "walk", walk: 0, show: false }; A.emt = { x: -100, tx: -100, act: "walk", walk: 0, show: false };
+    A.pt = { pose: initialPose(sc), onGurney: false }; A.gurney = { x: 210, tx: 210, show: false }; A.fx = []; A.driveOff = 0; A.cc = false; A.emtTask = null; A.emtTaskUntil = -1;
+  }
+  function stageFor(s, snapTo) {
+    const n = s.snap, i = idx;
+    // arrival: ambulance first, crew walks in after the dispatch step
+    A.amb.tx = 40; A.medic.show = A.emt.show = i >= 1;
+    const atPt = i >= 2;
+    let mAct = "stand", eAct = "stand";
+    // medic action
+    if (s.actor === "medic") mAct = s.anim === "gloves" ? "gloves" : s.order ? "point" : (s.anim || "talk");
+    else if (s.actor === "find" || s.actor === "narrator") { const prev = prevMedic(i); mAct = prev ? (prev.order ? "stand" : prev.anim || "examine") : "stand"; }
+    // EMT task: from the last order until its report lands (or 4 steps), and CPR / BVM persist while active
+    const o = lastOrder(i);
+    if (o && i - o.i <= 4) eAct = EMT_ANIM[o.s.emt.id] || "examine";
+    if (n.cpr || n.arrest && !n.rosc) { eAct = "cpr"; if (mAct === "cpr") mAct = "stand"; }
+    if (s.actor === "emt" && !o) eAct = "talk";
+    // transport / gurney
+    const late = s.phase === "dest" || s.phase === "done";
+    const loadAt = loadIdx();
+    A.gurney.show = late || eAct === "gurney" || (loadAt >= 0 && i >= loadAt - 3);
+    A.gurney.tx = A.gurney.show ? PX - 10 : 210;
+    A.pt.onGurney = loadAt >= 0 && i >= loadAt;
+    const leaving = loadAt >= 0 && i >= steps.length - 2;
+    A.driveOff = leaving ? 1 : 0;
+    if (mAct === "radio") A.medic.tx = PX - 210; else A.medic.tx = atPt ? PX - 95 : 120;
+    A.emt.tx = atPt ? PX + 95 : 80;
+    if (A.pt.onGurney && leaving) { A.medic.tx = 150; A.emt.tx = 110; A.gurney.tx = 150; }
+    A.medic.act = mAct; A.emt.act = eAct;
+    // patient pose from engine state
+    if (n.arrest || /unresponsive/.test(n.mental || "") || n.position === "supine" || n.cpr) A.pt.pose = "supine";
+    else if (n.position === "recovery") A.pt.pose = "recovery";
+    else if (/fowler|sit|upright|semi/.test(n.position || "")) A.pt.pose = "sit";
+    else if (i === 0) A.pt.pose = initialPose(sc);
+    if (s.actor === "medic" && /^shock\b/i.test(s.text)) A.fx.push({ k: "zap", t: performance.now() });
+    if (s.actor === "medic" && /^charge/i.test(s.text)) A.fx.push({ k: "charge", t: performance.now() });
+    if (snapTo) { A.medic.x = A.medic.tx; A.emt.x = A.emt.tx; A.gurney.x = A.gurney.tx; A.amb.x = A.amb.tx; }
+  }
+  function prevMedic(i) { for (let k = i - 1; k >= 0 && k > i - 4; k--) if (steps[k].actor === "medic") return steps[k]; return null; }
+  function lastOrder(i) { for (let k = i; k >= 0 && k > i - 6; k--) if (steps[k].order && steps[k].emt) return { s: steps[k], i: k }; return null; }
+  let _load = null;
+  function loadIdx() { if (_load && _load.sc === sc.id && _load.n === steps.length) return _load.v; let v = -1; for (let k = 0; k < steps.length; k++) if (steps[k].phase === "dest" && steps[k].actor === "medic" && /transport|gurney|load|let's go|en route|moving/i.test(steps[k].text)) { v = k; break; } if (v < 0) v = steps.findIndex(s => s.phase === "dest"); _load = { sc: sc.id, n: steps.length, v }; return v; }
+
+  // ---------------- drawing ----------------
+  function frame(now) {
+    raf = requestAnimationFrame(frame);
+    if (!cv || !$("#watch").classList.contains("active")) return;
+    const dt = Math.min(0.05, (now - (last || now)) / 1000) * speed; last = now;
+    const lerp = (o, k, sp) => { const d = o.tx - o.x, st = Math.sign(d) * Math.min(Math.abs(d), sp * dt); o.x += st; return Math.abs(d) > 1; };
+    A.amb.x += (A.amb.tx - A.amb.x) * Math.min(1, dt * 2.2);
+    if (A.driveOff) A.amb.off = (A.amb.off || 0) + dt * 260; else A.amb.off = 0;
+    for (const p of [A.medic, A.emt]) { p.moving = lerp(p, "x", 170); if (p.moving) p.walk += dt * 9; }
+    lerp(A.gurney, "x", 170);
+    draw(now / 1000);
+  }
+  function resize() {
+    if (!cv) return; const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.max(200, Math.round(r.width)), h = Math.round(w * H / W);
+    cv.style.height = h + "px"; cv.width = w * dpr; cv.height = h * dpr; ctx.setTransform(w * dpr / W, 0, 0, h * dpr / H, 0, 0);
+  }
+  const rnd = k => { const x = Math.sin(seed * 9.13 + k * 77.7) * 43758.5453; return x - Math.floor(x); };
+  function bg(t) {
+    const g = ctx;
+    if (setting === "road" || setting === "outdoor") {
+      const sky = g.createLinearGradient(0, 0, 0, FLOOR); sky.addColorStop(0, "#5d9bd6"); sky.addColorStop(1, "#bfe0f5"); g.fillStyle = sky; g.fillRect(0, 0, W, FLOOR);
+      g.fillStyle = "rgba(255,255,255,.85)"; for (let k = 0; k < 4; k++) { const cx = (rnd(k) * W + t * 6 * (k + 1)) % (W + 200) - 100, cy = 50 + rnd(k + 9) * 90; g.beginPath(); g.ellipse(cx, cy, 60, 18, 0, 0, 7); g.ellipse(cx + 35, cy - 10, 40, 16, 0, 0, 7); g.fill(); }
+      if (setting === "road") {
+        for (let k = 0; k < 7; k++) { const bw = 90 + rnd(k) * 60, bh = 120 + rnd(k + 3) * 170, bx = k * 150 - 20; g.fillStyle = ["#7b8794", "#8e7f74", "#6f7d8c", "#9a8f85"][k % 4]; g.fillRect(bx, FLOOR - 70 - bh, bw, bh); g.fillStyle = "rgba(255,240,180,.55)"; for (let yy = FLOOR - 60 - bh; yy < FLOOR - 90; yy += 26) for (let xx = bx + 10; xx < bx + bw - 14; xx += 22) g.fillRect(xx, yy, 10, 14); }
+        g.fillStyle = "#c9c4bb"; g.fillRect(0, FLOOR - 70, W, 70); g.fillStyle = "#3b3f45"; g.fillRect(0, FLOOR, W, H - FLOOR);
+        g.fillStyle = "#e9d34b"; for (let x = 0; x < W; x += 80) g.fillRect(x, FLOOR + 62, 44, 6);
+        if (/collision|vs auto|car|vehicle|mvc|motorcycle/.test((sc.dispatch + " " + sc.scene).toLowerCase())) car(760, FLOOR + 10);
+      } else {
+        g.fillStyle = "#4f8f3f"; g.fillRect(0, FLOOR - 120, W, 120);
+        for (let k = 0; k < 6; k++) tree(60 + k * 175 + rnd(k) * 40, FLOOR - 40, 0.8 + rnd(k + 4) * 0.5);
+        g.fillStyle = "#6aa84f"; g.fillRect(0, FLOOR, W, H - FLOOR); g.fillStyle = "#c2a878"; g.fillRect(0, FLOOR + 20, W, 50);
+      }
+    } else {
+      const wall = setting === "work" ? ["#cfd6dd", "#b7c0c9"] : ["#e9dcc6", "#d9c7a8"];
+      const gw = g.createLinearGradient(0, 0, 0, FLOOR); gw.addColorStop(0, wall[0]); gw.addColorStop(1, wall[1]); g.fillStyle = gw; g.fillRect(0, 0, W, FLOOR);
+      g.fillStyle = setting === "work" ? "#8d98a3" : "#a3754a"; g.fillRect(0, FLOOR, W, H - FLOOR);
+      g.strokeStyle = "rgba(0,0,0,.12)"; g.lineWidth = 2; for (let x = 0; x < W; x += 60) { g.beginPath(); g.moveTo(x, FLOOR); g.lineTo(x - 40, H); g.stroke(); }
+      // door the crew came through + window / props
+      g.fillStyle = "#7a5134"; g.fillRect(40, FLOOR - 230, 110, 230); g.fillStyle = "#e0b44a"; g.beginPath(); g.arc(135, FLOOR - 115, 5, 0, 7); g.fill();
+      g.fillStyle = "#9fd0f2"; g.fillRect(250, 90, 170, 120); g.strokeStyle = "#fff"; g.lineWidth = 8; g.strokeRect(250, 90, 170, 120); g.beginPath(); g.moveTo(335, 90); g.lineTo(335, 210); g.stroke();
+      if (setting === "home") { g.fillStyle = "#6d4c8f"; g.fillRect(760, FLOOR - 90, 170, 60); g.fillRect(760, FLOOR - 140, 26, 110); g.fillRect(904, FLOOR - 140, 26, 110); g.fillStyle = "#3b2b1d"; g.fillRect(470, FLOOR - 230, 70, 90); g.fillStyle = "#c9a227"; g.fillRect(478, FLOOR - 222, 54, 74); }
+      else { g.fillStyle = "#58636e"; for (let k = 0; k < 3; k++) g.fillRect(700 + k * 80, FLOOR - 200, 60, 200); g.fillStyle = "#c33"; g.fillRect(470, 70, 120, 34); g.fillStyle = "#fff"; g.font = "bold 18px system-ui"; g.fillText("EXIT", 505, 94); }
+    }
+  }
+  function tree(x, y, s) { const g = ctx; g.fillStyle = "#6b4a2b"; g.fillRect(x - 6 * s, y - 70 * s, 12 * s, 70 * s); g.fillStyle = "#2f7d32"; g.beginPath(); g.arc(x, y - 90 * s, 42 * s, 0, 7); g.arc(x - 28 * s, y - 70 * s, 30 * s, 0, 7); g.arc(x + 28 * s, y - 70 * s, 30 * s, 0, 7); g.fill(); }
+  function car(x, y) { const g = ctx; g.save(); g.translate(x, y); g.rotate(-0.06); g.fillStyle = "#8a1f2b"; rr(-110, -70, 220, 50, 12); g.fill(); g.fillStyle = "#a52a36"; rr(-70, -105, 130, 40, 14); g.fill(); g.fillStyle = "#cfe6f5"; g.fillRect(-58, -98, 48, 28); g.fillRect(0, -98, 50, 28); g.fillStyle = "#222"; [-65, 65].forEach(wx => { g.beginPath(); g.arc(wx, -20, 20, 0, 7); g.fill(); }); g.strokeStyle = "#333"; g.lineWidth = 3; g.beginPath(); g.moveTo(90, -70); g.lineTo(100, -50); g.lineTo(88, -36); g.stroke(); g.restore(); }
+  function rr(x, y, w, h, r) { const g = ctx; g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function ambulance(t) {
+    const g = ctx, outdoor = setting === "road" || setting === "outdoor", x = A.amb.x - (A.amb.off || 0), y = FLOOR + (outdoor ? 30 : 0);
+    if (!outdoor && idx >= 2 && !A.driveOff) return; // indoors: rig parked outside after arrival
+    g.save(); g.translate(x, y); const s = outdoor ? 1 : 0.85; g.scale(s, s);
+    g.fillStyle = "#f4f4f4"; rr(0, -150, 230, 120, 10); g.fill(); g.fillStyle = "#e8e8e8"; rr(230, -110, 80, 80, 12); g.fill();
+    g.fillStyle = "#cfe6f5"; g.fillRect(250, -100, 48, 34); g.fillStyle = "#d22"; g.fillRect(0, -78, 310, 12);
+    g.fillStyle = "#d22"; g.font = "bold 22px system-ui"; g.fillText("✚", 95, -98); g.fillStyle = "#c11"; g.font = "bold 13px system-ui"; g.fillText("PARAMEDIC", 70, -44);
+    g.fillStyle = "#222"; [55, 250].forEach(wx => { g.beginPath(); g.arc(wx, -28, 22, 0, 7); g.fill(); g.fillStyle = "#999"; g.beginPath(); g.arc(wx, -28, 9, 0, 7); g.fill(); g.fillStyle = "#222"; });
+    const on = A.amb.lights && (Math.floor(t * 4) % 2 === 0);
+    g.fillStyle = on ? "#ff2a2a" : "#7a1010"; g.fillRect(10, -162, 34, 12); g.fillStyle = on ? "#2a6bff" : "#102a7a"; g.fillRect(186, -162, 34, 12);
+    if (on) { g.fillStyle = "rgba(255,40,40,.18)"; g.beginPath(); g.arc(27, -156, 60, 0, 7); g.fill(); } else { g.fillStyle = "rgba(40,90,255,.18)"; g.beginPath(); g.arc(203, -156, 60, 0, 7); g.fill(); }
+    g.restore();
+  }
+  const SKIN = ["#f1c9a5", "#e0ac7e", "#c68c5e", "#9a6440", "#6e4429"];
+  function ptSkin(n) {
+    const base = SKIN[seed % SKIN.length], v = n.v || {};
+    if (n.arrest || v.spo2 < 86) return mix(base, "#7b8fc9", n.arrest ? 0.55 : 0.4);
+    if (v.sbp < 90 || n.sev > 0.65) return mix(base, "#e8e8e0", 0.42);
+    if ((v.temp || 0) >= 102 || /flush|red/.test(String(n.skin || ""))) return mix(base, "#e2533b", 0.3);
+    return base;
+  }
+  function mix(a, b, k) { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), A1 = p(a), B1 = p(b); return "#" + A1.map((x, i) => Math.round(x + (B1[i] - x) * k).toString(16).padStart(2, "0")).join(""); }
+  function person(x, o) {
+    // o: { shirt, pants, skin, label, act, walk, moving, flip, kid, hat }
+    const g = ctx, t = performance.now() / 1000; g.save(); g.translate(x, FLOOR); if (o.flip) g.scale(-1, 1);
+    const kneel = /cpr|bvm|iv|ivsetup|med|bpcuff|stethoscope|examine|leads|twelve|bgl|bandage|cspine|tape|o2|pulseox|airway|shock|pace/.test(o.act) && !o.moving;
+    const sw = o.moving ? Math.sin(o.walk) * 0.5 : 0, hy = kneel ? -95 : -150;
+    g.lineCap = "round"; g.lineWidth = 13;
+    // legs
+    g.strokeStyle = o.pants;
+    if (kneel) { g.beginPath(); g.moveTo(0, -60); g.lineTo(28, -30); g.lineTo(-6, -4); g.stroke(); g.beginPath(); g.moveTo(-2, -60); g.lineTo(-22, -4); g.stroke(); }
+    else { g.beginPath(); g.moveTo(0, -80); g.lineTo(Math.sin(sw) * 34, -4); g.stroke(); g.beginPath(); g.moveTo(0, -80); g.lineTo(-Math.sin(sw) * 34, -4); g.stroke(); }
+    g.fillStyle = "#1b1b1b"; if (!kneel) { g.fillRect(Math.sin(sw) * 34 - 8, -8, 20, 8); g.fillRect(-Math.sin(sw) * 34 - 8, -8, 20, 8); }
+    // torso
+    const ty = kneel ? -60 : -80; g.fillStyle = o.shirt; rr(-17, hy + 22, 34, ty - hy - 18, 9); g.fill();
+    if (o.patch) { g.fillStyle = o.patch; g.fillRect(-12, hy + 34, 10, 10); }
+    // arms
+    const cprB = o.act === "cpr" ? Math.abs(Math.sin(t * Math.PI * 110 / 60)) * 10 : 0;
+    g.strokeStyle = o.shirt; g.lineWidth = 11;
+    const reach = (ax, ay) => { g.beginPath(); g.moveTo(0, hy + 32); g.lineTo(ax * 0.55, (hy + 32 + ay) / 2 + 6); g.lineTo(ax, ay); g.stroke(); g.fillStyle = o.glove || o.skin; g.beginPath(); g.arc(ax, ay, 6, 0, 7); g.fill(); };
+    const A2 = o.act;
+    if (A2 === "cpr") { reach(44, -40 + cprB); reach(40, -42 + cprB); }
+    else if (A2 === "bvm") { const sq = Math.sin(t * Math.PI * 2 / 6) > 0.85 ? 6 : 0; reach(46, -46); reach(30 - sq, -62); g.fillStyle = "#e9a23b"; g.beginPath(); g.ellipse(36 - sq, -64, 16 - sq / 2, 10, 0, 0, 7); g.fill(); }
+    else if (A2 === "point") { reach(60, hy + 30); reach(10, hy + 70); }
+    else if (A2 === "radio") { reach(14, hy + 18); reach(8, hy + 80); g.fillStyle = "#222"; g.fillRect(8, hy + 4, 10, 22); }
+    else if (A2 === "gloves") { const w = Math.sin(t * 8) * 6; reach(18 + w, hy + 40); reach(26 - w, hy + 44); }
+    else if (A2 === "gurney") { reach(48, -72); reach(42, -76); }
+    else if (A2 === "talk" || A2 === "stand") { const w = A2 === "talk" ? Math.sin(t * 5) * 6 : 0; reach(18, hy + 92 + w); reach(-12, hy + 95); }
+    else if (kneel) { const w = Math.sin(t * 3) * 3; reach(48, -50 + w); reach(34, -44 - w); }
+    else { reach(18, hy + 92); reach(-12, hy + 95); }
+    // tools in hand
+    if (!o.moving) tool(A2, t);
+    // head
+    g.fillStyle = o.skin; g.beginPath(); g.arc(0, hy, 17, 0, 7); g.fill();
+    g.fillStyle = o.hair || "#2b2018"; g.beginPath(); g.arc(0, hy - 4, 17, Math.PI, 0); g.fill();
+    g.fillStyle = "#111"; g.beginPath(); g.arc(7, hy, 2, 0, 7); g.fill();
+    if (o.act === "stethoscope") { g.strokeStyle = "#222"; g.lineWidth = 2.5; g.beginPath(); g.moveTo(10, hy + 6); g.quadraticCurveTo(30, hy + 50, 48, -50); g.stroke(); g.fillStyle = "#bbb"; g.beginPath(); g.arc(48, -50, 5, 0, 7); g.fill(); }
+    g.restore();
+    // label (unflipped)
+    if (o.label) { g.save(); g.font = "bold 13px system-ui"; const tw = g.measureText(o.label).width + 12; g.fillStyle = o.labelBg; rr(x - tw / 2, FLOOR + hy - 52 + (kneel ? 0 : 0), tw, 20, 6); g.fill(); g.fillStyle = "#fff"; g.textAlign = "center"; g.fillText(o.label, x, FLOOR + hy - 37); g.restore(); }
+  }
+  function tool(a, t) {
+    const g = ctx;
+    if (a === "med") { g.fillStyle = "#eef"; g.fillRect(44, -58, 22, 5); g.fillStyle = "#c33"; g.fillRect(66, -57, 6, 3); }
+    else if (a === "iv" || a === "ivsetup") { g.strokeStyle = "#ddd"; g.lineWidth = 3; g.beginPath(); g.moveTo(50, -50); g.lineTo(62, -64); g.stroke(); }
+    else if (a === "bgl") { g.fillStyle = "#3b82f6"; g.fillRect(40, -66, 14, 20); }
+    else if (a === "tape") { g.fillStyle = ["#e33", "#a3f", "#fd3", "#fff", "#38f", "#f80", "#3c3"][Math.floor(t) % 7]; g.fillRect(30, -48, 80, 8); }
+    else if (a === "bandage") { g.fillStyle = "#f4f4f4"; g.fillRect(40, -56, 20, 12); }
+  }
+  function patient(n, t) {
+    const g = ctx, kid = sc.patient.age < 14, s = kid ? (sc.patient.age < 2 ? 0.45 : 0.68) : 1, skin = ptSkin(n), shirt = ["#4a7bb7", "#b74a6e", "#5c8a4a", "#8a6a4a", "#6a5ab5"][seed % 5];
+    const onG = A.pt.onGurney, gx = A.gurney.x, px = onG ? gx + 10 : PX, base = onG ? FLOOR - 62 : FLOOR;
+    g.save(); g.translate(px, base); g.scale(s, s);
+    const pose = onG ? (A.pt.pose === "sit" ? "sit" : "supine") : A.pt.pose;
+    const breath = n.arrest ? 0 : Math.sin(t * Math.PI * 2 * Math.max(0.1, (n.v.rr || 14) / 60)) * 1.5;
+    if (pose === "supine" || pose === "recovery") {
+      g.fillStyle = "#2c3e50"; rr(-10, -26, 80, 20, 9); g.fill(); // legs
+      g.fillStyle = shirt; rr(-80, -32 - breath, 78, 26 + breath, 10); g.fill();
+      g.fillStyle = skin; g.beginPath(); g.arc(-98, -22, 17, 0, 7); g.fill(); g.fillStyle = "#3a2a1a"; g.beginPath(); g.arc(-104, -24, 16, Math.PI * 0.6, Math.PI * 1.6); g.fill();
+      if (n.mental === "unresponsive" || n.arrest) { g.strokeStyle = "#222"; g.lineWidth = 2; g.beginPath(); g.moveTo(-96, -30); g.lineTo(-90, -30); g.stroke(); }
+      g.strokeStyle = skin; g.lineWidth = 9; g.lineCap = "round"; g.beginPath(); g.moveTo(-60, -14); g.lineTo(-24, -6); g.stroke();
+      if (n.o2) { g.fillStyle = "rgba(160,220,255,.7)"; g.beginPath(); g.ellipse(-110, -18, 9, 7, 0, 0, 7); g.fill(); }
+      if (n.sga) { g.fillStyle = "#3c9"; g.fillRect(-122, -28, 12, 6); }
+      if (n.pads) { g.fillStyle = "#fff"; g.fillRect(-62, -34, 14, 10); g.fillRect(-30, -30, 14, 10); }
+      if (A.cc) { g.fillStyle = "#e6c34a"; g.fillRect(-86, -32, 10, 20); }
+    } else {
+      g.fillStyle = "#6b4e2e"; g.fillRect(-28, -70, 56, 10); g.fillRect(-26, -60, 6, 60); g.fillRect(20, -60, 6, 60); // chair / seat edge
+      g.strokeStyle = "#2c3e50"; g.lineWidth = 15; g.lineCap = "round"; g.beginPath(); g.moveTo(0, -72); g.lineTo(36, -70); g.lineTo(38, -6); g.stroke();
+      const lean = /lean|tripod/.test(String(sc.approach && sc.approach.see || "").toLowerCase()) ? 0.25 : 0;
+      g.save(); g.translate(0, -72); g.rotate(lean);
+      g.fillStyle = shirt; rr(-18, -72 - breath, 36, 74 + breath, 10); g.fill();
+      g.strokeStyle = skin; g.lineWidth = 9; g.beginPath(); g.moveTo(0, -58); g.lineTo(26, -24); g.lineTo(40, -20); g.stroke();
+      g.fillStyle = skin; g.beginPath(); g.arc(4, -92, 17, 0, 7); g.fill(); g.fillStyle = sc.patient.age > 65 ? "#cfcfcf" : "#3a2a1a"; g.beginPath(); g.arc(2, -96, 17, Math.PI, 0.1); g.fill();
+      if (n.o2) { g.fillStyle = "rgba(160,220,255,.75)"; g.beginPath(); g.ellipse(16, -86, 9, 8, 0, 0, 7); g.fill(); }
+      if (n.pads) { g.fillStyle = "#fff"; g.fillRect(-10, -60, 12, 9); }
+      g.restore();
+    }
+    g.restore();
+    // equipment around the patient (state-driven)
+    if (n.rev && n.rev.monitor) { g.fillStyle = "#2a2f36"; rr(PX + 150, FLOOR - 60, 70, 52, 6); g.fill(); g.fillStyle = "#041"; g.fillRect(PX + 156, FLOOR - 54, 58, 30); g.strokeStyle = "#2bff88"; g.lineWidth = 1.6; g.beginPath(); for (let k = 0; k < 58; k++) { const ph = ((k + t * 40) % 20); g.lineTo(PX + 156 + k, FLOOR - 39 - (n.arrest && !n.rosc ? Math.sin(k + t * 9) * 4 : (ph < 2 ? 10 : 0))); } g.stroke(); g.strokeStyle = "rgba(255,255,255,.4)"; g.lineWidth = 1; g.beginPath(); g.moveTo(PX + 150, FLOOR - 30); g.quadraticCurveTo(PX + 60, FLOOR - 70, onG ? gx : PX - 40, onG ? FLOOR - 92 : FLOOR - 28); g.stroke(); }
+    if (n.iv) { const ix = onG ? gx + 70 : PX - 140; g.strokeStyle = "#999"; g.lineWidth = 3; g.beginPath(); g.moveTo(ix, FLOOR); g.lineTo(ix, FLOOR - 190); g.stroke(); g.fillStyle = "rgba(200,230,255,.9)"; rr(ix - 12, FLOOR - 205, 24, 34, 5); g.fill(); g.strokeStyle = "rgba(255,255,255,.6)"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(ix, FLOOR - 171); g.quadraticCurveTo(ix + 30, FLOOR - 90, onG ? gx - 20 : PX - 60, onG ? FLOOR - 80 : FLOOR - 20); g.stroke(); }
+    if (n.o2) { const ox = PX + 120; g.fillStyle = "#2e8b57"; rr(ox, FLOOR - 70, 18, 66, 6); g.fill(); g.fillStyle = "#ddd"; g.fillRect(ox + 4, FLOOR - 78, 10, 8); }
+  }
+  function gurney() {
+    if (!A.gurney.show) return; const g = ctx, x = A.gurney.x;
+    g.fillStyle = "#c9ced4"; g.fillRect(x - 120, FLOOR - 64, 240, 10); g.fillStyle = "#e9493c"; rr(x - 118, FLOOR - 74, 236, 12, 5); g.fill();
+    g.strokeStyle = "#8a9099"; g.lineWidth = 5; g.beginPath(); g.moveTo(x - 90, FLOOR - 54); g.lineTo(x + 90, FLOOR - 12); g.moveTo(x + 90, FLOOR - 54); g.lineTo(x - 90, FLOOR - 12); g.stroke();
+    g.fillStyle = "#222"; [-90, 90].forEach(wx => { g.beginPath(); g.arc(x + wx, FLOOR - 7, 7, 0, 7); g.fill(); });
+  }
+  function fxDraw(now) {
+    const g = ctx; A.fx = A.fx.filter(f => now - f.t < 900);
+    A.fx.forEach(f => { const k = (now - f.t) / 900;
+      if (f.k === "zap") { g.fillStyle = `rgba(255,255,255,${0.75 * (1 - k)})`; g.fillRect(0, 0, W, H); g.strokeStyle = `rgba(255,230,60,${1 - k})`; g.lineWidth = 5; g.beginPath(); let x = PX - 60, y = FLOOR - 120; g.moveTo(x, y); for (let j = 0; j < 6; j++) { x += 14 * (j % 2 ? -1 : 1); y += 16; g.lineTo(x, y); } g.stroke(); }
+      if (f.k === "charge") { g.strokeStyle = `rgba(255,200,40,${1 - k})`; g.lineWidth = 3; g.beginPath(); g.arc(PX + 185, FLOOR - 34, 20 + 40 * k, 0, 7); g.stroke(); } });
+  }
+  function draw(t) {
+    const s = steps[idx]; if (!s) { ctx.fillStyle = "#0b0f14"; ctx.fillRect(0, 0, W, H); return; }
+    const n = s.snap; bg(t); ambulance(t); gurney(); patient(n, t);
+    const medic = { shirt: "#1d2f55", pants: "#16213a", skin: SKIN[(seed + 2) % SKIN.length], label: "PARAMEDIC", labelBg: "#1d4ed8", patch: "#ffd84a", glove: "#5b6cff", hair: "#2b2018" };
+    const emt = { shirt: "#7fa7c9", pants: "#2f3a46", skin: SKIN[(seed + 4) % SKIN.length], label: "EMT", labelBg: "#0f766e", patch: "#fff", glove: "#5b6cff", hair: "#6b3e1e" };
+    if (A.emt.show && !(A.driveOff && (A.amb.off || 0) > 60)) person(A.emt.x, Object.assign(emt, { act: A.emt.act, walk: A.emt.walk, moving: A.emt.moving, flip: A.emt.x > PX + 20 }));
+    if (A.medic.show && !(A.driveOff && (A.amb.off || 0) > 60)) person(A.medic.x, Object.assign(medic, { act: A.medic.act, walk: A.medic.walk, moving: A.medic.moving, flip: A.medic.x > PX + 20 }));
+    fxDraw(performance.now());
+    if (setting !== "road" && setting !== "outdoor" && A.driveOff && idx >= steps.length - 1) { ctx.fillStyle = "rgba(11,15,20,.55)"; ctx.fillRect(0, 0, W, H); ctx.fillStyle = "#fff"; ctx.font = "bold 28px system-ui"; ctx.textAlign = "center"; ctx.fillText("🚑 Transporting…", W / 2, H / 2); ctx.textAlign = "left"; }
+  }
+
+  // ---------------- end / debrief ----------------
+  function showEnd() {
+    const g = out.grade, e = $("#wEnd"); e.hidden = false;
+    const d = g.dest || {}, dn = d.chosen || d.pick || (d.destOk ? "correct" : "");
+    e.innerHTML = `<div class="w-banner ${g.perfect ? "ok" : "miss"}">${g.perfect ? "★ PERFECT CALL ★" : "CALL COMPLETE"} <span>${g.score}%</span></div>
+      <div class="w-grade"><div>Checklist <b>${g.score}%</b></div><div>Provider Impression <b>${g.piOk ? "✓" : "✗"}</b> ${esc(g.pi || "")}</div><div>Destination ${g.destOk ? "✓" : "✗"} ${esc(typeof dn === "string" ? dn : "")}</div><div>Med checks <b>${out.quizzes.filter(q => q.ok).length}/${out.quizzes.length}</b></div></div>
+      ${g.missing.length ? `<p class="fine">Not completed: ${esc(g.missing.join("; "))}</p>` : ""}
+      ${g.cautions.length ? `<details><summary>Instructor notes (${g.cautions.length})</summary><ul>${g.cautions.map(c => `<li>${esc(c)}</li>`).join("")}</ul></details>` : ""}
+      <div class="w-end-btns"><button id="wDebrief">Ideal debrief</button> <button class="ghost" id="wTry">Run this call myself</button> <button class="ghost" id="wNext2">Next call ▶</button></div>`;
+    if (sfx && g.perfect) SFX.ok();
+    $("#wDebrief").onclick = () => { stop(); try { MedicUI.renderDebrief(out.result); MedicUI.show("debrief"); } catch (err) { console.error(err); } };
+    $("#wTry").onclick = () => { stop(); MedicUI.show("menu"); const c = document.querySelector(`.sc-card[data-id="${sc.id}"]`); if (c) c.click(); };
+    $("#wNext2").onclick = next;
+  }
+  function next() { const i = SCENARIOS.findIndex(s => s.id === sc.id); load(SCENARIOS[(i + 1) % SCENARIOS.length].id); }
+
+  // ---------------- wiring ----------------
+  function open(id) {
+    MedicUI.show("watch");
+    if (!built) build();
+    setTimeout(() => { resize(); if (mon) mon.resizeAll(); }, 30);
+    load(id || $("#wPick").value || lsGet("last", SCENARIOS[0].id));
+  }
+  function build() {
+    built = true; cv = $("#wStage"); ctx = cv.getContext("2d");
+    $("#wPick").innerHTML = SCENARIOS.map((s, i) => `<option value="${s.id}">${i + 1}. ${esc(s.dispatchTitle || s.id)}</option>`).join("");
+    speed = lsGet("speed", 1); showWhy = lsGet("why", true); tts = lsGet("tts", true); sfx = lsGet("sfx", true);
+    $("#wSpeed").value = String(speed); $("#wWhyT").checked = showWhy; syncToggles();
+    $("#wPlay").onclick = () => playing ? pause() : play();
+    $("#wFwd").onclick = () => { pause(); go(idx + 1, true); if (idx >= steps.length - 1) showEnd(); };
+    $("#wBack").onclick = () => { pause(); go(idx - 1, true); };
+    $("#wRestart").onclick = () => { pause(); resetWorld(); idx = -1; go(0, true); play(); };
+    $("#wNext").onclick = next;
+    $("#wPick").onchange = e => load(e.target.value);
+    $("#wSpeed").onchange = e => { speed = +e.target.value; lsSet("speed", speed); };
+    $("#wWhyT").onchange = e => { showWhy = e.target.checked; lsSet("why", showWhy); if (steps[idx]) why(steps[idx]); };
+    $("#wTTS").onclick = () => { tts = !tts; lsSet("tts", tts); if (!tts) try { speechSynthesis.cancel(); } catch (e) {} syncToggles(); };
+    $("#wSFX").onclick = () => { sfx = !sfx; lsSet("sfx", sfx); syncToggles(); };
+    $("#wScrub").oninput = e => { pause(); const to = +e.target.value; if (to < idx) resetWorld(); go(to, true); };
+    $("#wExit").onclick = () => { stop(); tok++; MedicUI.show("menu"); };
+    $("#wTrack").onclick = e => { const t = e.target.closest(".emt-tag"); if (t) { pause(); go(+t.dataset.i, true); } };
+    mon = Monitor.create(); mon.init(() => monSnap, { ecg: "wECG", pleth: "wPleth", co2: "wCO2" }); syncToggles();
+    window.addEventListener("resize", () => { resize(); mon.resizeAll(); });
+    document.addEventListener("keydown", e => { if (!$("#watch").classList.contains("active") || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return; if (e.key === " ") { e.preventDefault(); playing ? pause() : play(); } else if (e.key === "ArrowRight") $("#wFwd").click(); else if (e.key === "ArrowLeft") $("#wBack").click(); });
+    resize(); raf = requestAnimationFrame(frame);
+  }
+  function syncToggles() {
+    $("#wTTS").textContent = tts ? "🗣 Voice on" : "🗣 Voice off"; $("#wTTS").classList.toggle("off", !tts);
+    $("#wSFX").textContent = sfx ? "🔊 SFX on" : "🔇 SFX off"; $("#wSFX").classList.toggle("off", !sfx);
+    if (mon) { const want = sfx; if (mon._beep !== want) { mon._beep = want; if (mon.toggleBeep() !== want) mon.toggleBeep(); } }
+  }
+  return { open, load, get steps() { return steps; }, get idx() { return idx; }, get out() { return out; }, get playing() { return playing; }, go, play, pause, next };
 })();
 
 </script>

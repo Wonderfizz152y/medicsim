@@ -38,6 +38,15 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.0
+- **Watch a call** (home screen ▶ Watch a call): pick any of the 109 scenarios and watch a model paramedic and EMT run it start to finish in an animated 2D scene. It includes the ambulance arriving with lights, the crew walking in, action poses, patient skin tint by perfusion, typewriter speech bubbles, a live monitor HUD (ECG, pleth, EtCO₂), an objective tracker with labeled phases and EMT task tags, and a perfect-call banner with an ideal debrief.
+- The run is not scripted. `src/autopilot.js` drives the real engine (`SIM`) using each scenario's own checklist, dispatch, findings and grading, and follows Adrian's call flow. The paramedic does all assessment and history: scene/BSI, AVPU, ABCs, A&O then age, HPI/SAMPLE, OPQRST, pertinent negatives, then treatment, Base, and a specific destination. The EMT does only delegated hands-on tasks (vitals, O₂, BGL, electrodes, IV setup, CPR, BVM, c-spine, bleeding control, splint, Broselow, gurney), with closed-loop replies.
+- Controls: play/pause, step back/forward, scrub bar, 0.5–2× speed, restart, scenario picker, next call, "Why" protocol captions toggle, voice mute, SFX mute. Keyboard: space and ←/→. Works offline.
+- Engine fixes found by the autopilot (these also apply to interactive mode):
+  - "Nebulized epinephrine" is no longer parsed as albuterol and is narrated as neb epi.
+  - Midazolam is not flagged "not indicated" on calls whose checklist requires it.
+- Tests: `tests/sim_v2140.js` (Watch on all 109 calls) and `tests/browser/v2140_ui.mjs`.
+
 ### 2.13.0
 - **L-HABBO stroke screen** (TP 1232 #7, mLAPSS criteria), walked in this order: **L** last known well → **H** history of epilepsy/seizure → **A** age ≥ 40 → **B** bed-bound/wheelchair-bound → **B** blood glucose 60–400 → **O** obvious asymmetry. Scenario-specific answers; voice per item or "run L-HABBO"; tap panel (L-HABBO button in the Next bar plus All actions > L-HABBO); graded on stroke calls, with missed letters listed in the debrief. LAMS and stroke-center logic unchanged.
 - **Reassess on condition change**: a clear ↻ cue when the patient changes. The expected order is HABBO (the H, A, B, B, O items of L-HABBO) → ABCs → BP, SpO₂, RR → the rest of the vitals. "Reassess" / "I'm going to reassess" (voice or tap) returns updated values. Graded per change in the debrief.
