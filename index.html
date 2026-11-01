@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.14.1 5ac1f1ecd4">
+<meta name="medicsim-version" content="2.14.2 9c7d087e24">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1940,7 +1940,7 @@ const DOSING = (() => {
         correct: "Hypersensitivity; pregnant patients in labor",
         distractors: [
           "Severe isolated extremity fracture pain with BP 138/84",
-          "Acute burn pain or chest pain refractory to nitroglycerin",
+          "Altered mental status (GCS < 15)",
           "SBP < 90 mmHg"
         ]
       }
@@ -4408,6 +4408,13 @@ const SIM = (() => {
       if (st.t - l.t >= wait && st.x.szStillCue !== l.t) { st.x.szStillCue = l.t; event(`Still seizing ${Math.round((st.t - l.t) / 60)} min after midazolam ${l.mg} mg ${l.route}.`, "find");
         ui.say([{ speaker: "warn", text: l.iv ? "Instructor note: still seizing 2 min after IV midazolam. MCG 1317.25 allows a repeat of 5 mg IV/IO x1 (max 10 mg before Base). [LA County Ref. 1231 #6]" : "Instructor note: still seizing after IM/IN midazolam. CONTACT BASE for additional dosing (max 20 mg total with Base). [LA County Ref. 1231 #6 / MCG 1317.25]" }]); } }
   }
+  // v2.14.2: TP 1244 #25 (rev 04-01-25), Isolated Head Injury: standing-order pain medication only "for an alert and oriented
+  // patient with GCS 15"; otherwise "CONTACT BASE ... for initial orders". This is the ONLY place the A&O/GCS 15 rule applies.
+  function headInjury() {
+    if (sc.headInjury != null) return !!sc.headInjury;
+    const tr = String((st && st.tg && st.tg.trauma) || (typeof sc.trauma === "string" ? sc.trauma : "") || "");
+    return sc.protocol === "1244" && /head (injur|trauma)|skull|scalp|parietal|occipital|temporal|\btbi\b|intracranial|concuss/i.test(tr) && !/no head injury|no trauma/i.test(tr);
+  }
   function isAO4() {
     if (!st || st.x.arrest) return false;
     const m = mental(), g = (st.tg && st.tg.gcs) || (sc.targets && sc.targets(st).gcs) || [4, 5, 6];
@@ -5367,14 +5374,24 @@ const SIM = (() => {
         break; }
       case "ondansetron": narr = "Ondansetron 4 mg ODT/IV"; { const mg = doseOf(tx, "mg"); if (mg && mg !== 4) notes.push(dev(`Ondansetron dose is 4 mg (you said ${mg}).`, "1211 #9", "note")); } break;
       case "fentanyl": {
-        const mcg = doseOf(tx, "mcg"); narr = `Fentanyl ${mcg || 50} mcg ${tx.route || "IV"}`;
-        if (mcg && mcg !== 50) notes.push(dev(`Fentanyl adult dose is 50 mcg, repeat q5 min, max 150 mcg before Base (you said ${mcg} mcg).`, "MCG 1317.19", "note"));
+        const mcg = doseOf(tx, "mcg"), peds = PEDS(), prevN = st.count.fentanyl || 0, base = !!st.events["t:base"]; narr = `Fentanyl ${mcg || 50} mcg ${tx.route || "IV"}`;
         // v2.14.1: no SBP gate for fentanyl. MCG 1317.19 (rev 07-01-24) contraindications are hypersensitivity and
         // pregnant patients in labor only; it does not release histamine and is unlikely to cause hypotension.
-        if (!["alert", "anxious"].includes(m)) notes.push(dev("Opioid analgesia in a patient with ALOC.", "MCG 1345"));
-        st.x.fentTotal = (st.x.fentTotal || 0) + (mcg || 50); if (st.x.fentTotal > 150 && !st.events["t:base"]) notes.push(dev("Fentanyl > 150 mcg requires Base contact.", "MCG 1317.19"));
+        // v2.14.2: no blanket "altered = no opioid" rule either (MCG 1345 lists AMS nowhere). Head injury only: TP 1244 #25.
+        if (sc.inLabor) notes.push(dev("Fentanyl is contraindicated in pregnant patients in labor.", "MCG 1317.19 / 1218", "deviation"));
+        if (headInjury() && !isAO4() && !base) notes.push(dev("Head injury and the patient is NOT alert and oriented with GCS 15: CONTACT BASE for initial pain-medication orders before giving fentanyl.", "1244 #25", "deviation"));
+        if (peds) { // MCG 1317.19 / MCG 1309: 1 mcg/kg IV/IO/IM or 1.5 mcg/kg IN (color code, not graded); repeat in 5 min x1; max 2 doses before Base, Base up to 4
+          if (st.last.fentanyl != null && st.t - st.last.fentanyl < 5 * 60 - 15) notes.push(dev(`Pediatric fentanyl repeated after ${Math.round(st.t - st.last.fentanyl)} s: the repeat interval is 5 minutes.`, "MCG 1317.19 / MCG 1309", "caution"));
+          if (prevN >= 4) notes.push(dev("Pediatric fentanyl: a 5th administration exceeds the limit even with Base orders (2 before Base contact, Base may allow up to 4 total). CONTACT BASE limit reached.", "MCG 1317.19 / MCG 1309", "deviation"));
+          else if (prevN >= 2 && !base) notes.push(dev("Pediatric fentanyl: 2 administrations is the limit before Base contact. CONTACT BASE for a 3rd or 4th.", "MCG 1317.19 / MCG 1309", "deviation"));
+        } else {
+          if (mcg && mcg !== 50) notes.push(dev(`Fentanyl adult dose is 50 mcg, repeat q5 min, max 150 mcg before Base (you said ${mcg} mcg).`, "MCG 1317.19", "note"));
+          st.x.fentTotal = (st.x.fentTotal || 0) + (mcg || 50); if (st.x.fentTotal > 150 && !base) notes.push(dev("Fentanyl > 150 mcg requires Base contact.", "MCG 1317.19"));
+        }
         break; }
-      case "morphine": narr = `Morphine ${doseOf(tx, "mg") || 4} mg ${tx.route || "IV"}`; if (sbp < 90) notes.push(dev("Opioid analgesia with SBP < 90.", "MCG 1345")); break;
+      case "morphine": narr = `Morphine ${doseOf(tx, "mg") || 4} mg ${tx.route || "IV"}`; if (sbp < 90) notes.push(dev("Opioid analgesia with SBP < 90.", "MCG 1345"));
+        if (headInjury() && !isAO4() && !st.events["t:base"]) notes.push(dev("Head injury and the patient is NOT alert and oriented with GCS 15: CONTACT BASE for initial pain-medication orders before giving morphine.", "1244 #25", "deviation"));
+        break;
       case "ketorolac": if (["stemi", "cardiac"].includes(sc.base)) notes.push(dev("Do NOT give ketorolac for cardiac chest pain.", "1211 ❺")); narr = `Ketorolac ${doseOf(tx, "mg") || (tx.route === "IM" ? 30 : 15)} mg ${tx.route || "IV"}`; break;
       case "diphen": { const mg = doseOf(tx, "mg"), route = tx.route === "IM" ? "IM" : tx.route === "IV" || tx.route === "IO" ? "IV" : sc.dystonic && !tx.route ? "IM" : "IV"; // MCG 1317.15 (rev 01-01-26), TP 1239 #5
         const noRoute = !tx.route; if (noRoute) tx.route = route; // v2.10.6: dystonic calls default to deep IM (primary route per Adrian)
@@ -5993,7 +6010,7 @@ const SIM = (() => {
     st.ended = true; stop(); log("sys", "Scenario ended"); return { sc, st, checklist: checklist() };
   }
 
-  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
+  return { start, stop, handle, end, setQuizPaused, isQuizPaused, getMedQuiz, gradeMedQuiz, pendingMedQuiz, event, mental, isAO4, headInjury, setPI, selectDest, toggleTraumaTriage, expectedDest, expectedTraumaTriage, destGrade, flow, approach, aeiou, AEIOU, code: () => st ? codeState() : null, codeSummary: () => st ? codeSummary() : null, get partnerQueue() { return st ? (st.pq || []) : []; }, get lastParsed() { return lastParsed; }, get state() { return st; }, get scenario() { return sc; }, checklist, tick, reassessSummary: () => st ? reassessSummary() : null, lhabbo: lhabboStatus, get wu() { return st ? st.x.wu || null : null; }, get curveball() { return st && typeof COURSE !== "undefined" ? COURSE.summary(st) : null; }, _treat: (id, extra) => treat(Object.assign({ id, doses: [], route: null, raw: "" }, extra || {})), _assess: id => assess(id), ipKnown: () => st ? ipKnown() : false, lungText: (u) => { if (!st) return ""; computeTargets(false); return EXAM.find("lungs", sc, st, u || "", mental()); }, lungSpec: (u) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.classify(sc, st, u || ""); }, playLungs: (u, opts) => { if (!st || typeof LUNGS === "undefined") return null; computeTargets(false); return LUNGS.playForState(sc, st, u || "", opts); }, device: deviceTap, devMon: () => st && typeof DEVICE !== "undefined" ? DEVICE.mon(st, sc) : null };
 })();
 
 /* ===== course.js ===== */
@@ -7603,7 +7620,7 @@ SCENARIOS.push({
     const s = st.sev, pde = st.flags.nitroWithPde5 ? 1 : 0;
     const nitroDrop = 16 * E(st, "nitro") * (pde ? 3.4 : 1);
     const pain = 7 + 3 * s - 2.2 * E(st, "nitro") - 3 * E(st, "fentanyl") - 2.5 * E(st, "morphine") - (n(st, "aspirin") ? 0.4 : 0);
-    const sbp = 152 - 28 * s - nitroDrop - 6 * E(st, "fentanyl") + 10 * E(st, "ns") + (st.flags.position === "supine" ? 6 : 0);
+    const sbp = 152 - 28 * s - nitroDrop + 10 * E(st, "ns") + (st.flags.position === "supine" ? 6 : 0);
     const brady = s > 0.88;
     const hr = brady ? 46 : 96 + 14 * s + 8 * E(st, "nitro") * (1 + 2 * pde) - 4 * E(st, "fentanyl");
     return {
@@ -8393,7 +8410,7 @@ addS(G({
   personality: "In severe distress, restless, can't get comfortable, swears. Uncontrolled hypertension, skips his meds.",
   allergies: [], startSev: 0.45, drift0: 0.025, pain: [8, 10], bgl: 118, temp: 98.4,
   vit: { good: { hr: 104, sbp: 186, dbp: 104, rr: 22, spo2: 97, etco2: 34 }, bad: { hr: 124, sbp: 150, dbp: 80, rr: 26, spo2: 95, etco2: 30 } },
-  txResp: { fentanyl: { hr: -10, sbp: -10, drift: -0.01 }, nitro: { sbp: -15 }, ns: { sbp: 8 } },
+  txResp: { fentanyl: { hr: -10, drift: -0.01 } /* v2.14.2: no fentanyl SBP drop (MCG 1317.19: unlikely to cause hypotension); HR eases with pain control */, nitro: { sbp: -15 }, ns: { sbp: 8 } },
   bpNote: (st, v) => `Right arm ${Math.round(v.sbp)}/${Math.round(v.dbp)}; LEFT arm ${Math.round(v.sbp - 34)}/${Math.round(v.dbp - 16)} (difference > 20 mmHg).`,
   skin: "Pale, cool, diaphoretic", lungs: "Clear bilaterally", neuro: "Moves all extremities; LEFT radial pulse weaker than right; no facial droop",
   twelve: (st, v) => ({ st: { V5: -0.06, V6: -0.06 }, tall: true, text: "Sinus tachycardia. LVH by voltage. No ST elevation." }),
@@ -9973,7 +9990,7 @@ function bornNow(st, H, how) {
 }
 
 addS(G({
-  id: "ob_delivery", protocol: "1215", refs: ["1215", "1218", "1216-P", "1200.2"], base: "ob", difficulty: "Intermediate", ob: true,
+  id: "ob_delivery", protocol: "1215", refs: ["1215", "1218", "1216-P", "1200.2"], base: "ob", difficulty: "Intermediate", ob: true, inLabor: true,
   dispatchTitle: "29 y/o female, in labor", dispatchShort: "El Monte apartment, contractions close together.",
   dispatch: "Engine 166 / RA 166, respond to an apartment on Garvey Ave, El Monte. 29-year-old female in labor, says the baby is coming. Time of call 0412.",
   scene: "Scene safe. Small bedroom. The patient is on the bed on her side, breathing through a contraction. Her husband is holding a hospital bag. Towels on the floor are wet.",
@@ -12587,7 +12604,7 @@ addS(G({
 
 addS(G({
   id: "shoulder_dystocia", protocol: "1215", refs: ["1215", "1217", "1216-P"], base: "shoulderdyst", difficulty: "Advanced", tag: "OB",
-  ob: true,
+  ob: true, inLabor: true,
   dispatchTitle: "28 y/o female, crowning, shoulder stuck", dispatchShort: "Compton home birth, midwife calling.",
   dispatch: "Engine 95 / RA 95, respond to a residence on Rosecrans, Compton. Home birth, baby’s head delivered, shoulder stuck. Time of call 0318.",
   scene: "Scene safe. Midwife present. Fetal head delivered, turtle sign (head retracting), anterior shoulder will not deliver with gentle downward traction. Clock started.",
@@ -12627,7 +12644,7 @@ addS(G({
 
 addS(G({
   id: "prolapsed_cord", protocol: "1217", refs: ["1217", "1215"], base: "prolapse", difficulty: "Advanced", tag: "OB",
-  ob: true,
+  ob: true, inLabor: true,
   dispatchTitle: "32 y/o female, cord protruding from vagina", dispatchShort: "Torrance home, 38 weeks.",
   dispatch: "Engine 6 / RA 6, respond to a residence on Torrance Blvd. 32-year-old female, 38 weeks pregnant, cord coming out. Time of call 2240.",
   scene: "Scene safe. Patient on bed, panicked. Pulsating umbilical cord visible at vaginal introitus. No crowning yet. Fetal movement reported minutes ago.",
@@ -14316,20 +14333,23 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     await say("Partner, get BP, SpO2 and resp rate", Object.assign(W("vitals"), { dt: 4 }));
     phase("ao");
     if (canTalk()) { await say("What's your name, where are we, what year is it, and what happened today?", W("ao")); await say("How old are you?", W("age")); }
-    // trauma in pain and getting worse: the medic doesn't let the window close — line + analgesia now (while A&O),
+    // trauma in pain and getting worse: the medic doesn't let the window close — line + analgesia now,
     // the history continues while it runs (TP 1244 #18 / MCG 1345). v2.14.1: fentanyl has NO SBP limit (MCG 1317.19 rev 07-01-24:
     // contraindications are hypersensitivity and pregnant patients in labor only; no histamine release, unlikely to cause hypotension).
     // Morphine keeps its hypotension / poor-perfusion contraindication (MCG 1317.27 / MCG 1345).
-    { const pk = ["t:fentanyl", "t:morphine"].find(k => pending().some(c => posKeys(c).includes(k))), okM = () => ["alert", "anxious"].includes(mental()),
-        opOk = k => okM() && (k !== "t:morphine" || !(st().v.sbp < 90));
+    // v2.14.2: no blanket "altered = no opioid" hold. The A&O/GCS 15 condition exists only for head injury (TP 1244 #25),
+    // and there it means CONTACT BASE for initial orders, not "never".
+    { const pk = ["t:fentanyl", "t:morphine"].find(k => pending().some(c => posKeys(c).includes(k))),
+        headBase = () => !!(S.headInjury && S.headInjury()) && !(S.isAO4 && S.isAO4()), // TP 1244 #25: Base first (handled in the treatment loop, BASE_FIRST)
+        opOk = k => !headBase() && (k !== "t:morphine" || !(st().v.sbp < 90));
       const nsOk = () => pending().some(c => posKeys(c).includes("t:ns")) && st().v.sbp < 90 && !(sc.internalBleed && S.isAO4 && S.isAO4());
-      if (pk && sc.tag === "TRAUMA" && okM() && (sc.drift0 || 0) > 0 && (opOk(pk) || nsOk())) {
+      if (pk && sc.tag === "TRAUMA" && (sc.drift0 || 0) > 0 && (opOk(pk) || nsOk())) {
         phase("tx");
         if (!st().flags.iv && !st().flags.io) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); await doKey("t:iv", { why: "Vascular access for analgesia / fluids", ref: "MCG 1375", dt: 8 }); }
         if (nsOk()) await doKey("t:ns", { why: "Shock with altered mental status: normal saline to keep SBP > 90 (permissive hypotension is only for A&O×4)", ref: "TP 1244 #15", dt: 8 });
         if (opOk(pk)) await doKey(pk, pk === "t:fentanyl"
-          ? { why: "Pain management early, while the patient is still A&O. Fentanyl 50 mcg slow IV: no blood-pressure limit (contraindications are only hypersensitivity and pregnancy in labor); push slowly and monitor respiratory status", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.19", dt: 8 }
-          : { why: "Pain management early, while the patient is still A&O with SBP ≥ 90 (morphine is contraindicated with hypotension or poor perfusion)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.27", dt: 8 }); } }
+          ? { why: "Pain management early (TP 1244 #18). Fentanyl 50 mcg slow IV: no blood-pressure limit and no mental-status contraindication (contraindications are only hypersensitivity and pregnancy in labor); push slowly and monitor respiratory status. Head injury is the exception: standing order only if A&O with GCS 15, otherwise Base orders first (TP 1244 #25)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.19", dt: 8 }
+          : { why: "Pain management early, SBP ≥ 90 (morphine is contraindicated with hypotension or poor perfusion)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.27", dt: 8 }); } }
     if (altered || !S.isAO4 || !S.isAO4()) { phase("why"); const ae = S.aeiou(); for (const i of ae.items) if (!i.done && N.AE_SAY[i.id]) await say(N.AE_SAY[i.id][1], { why: `Altered: AEIOU-TIPS (${i.id.replace("I2", "I")})`, ref: "standard practice*" }); }
     const stroke = (typeof LHABBO !== "undefined" && LHABBO.strokeCall && LHABBO.strokeCall(sc)) || sc.protocol === "1232";
     if (stroke) { phase("why"); await say(N.LHABBO_RUN[1], { why: "L-HABBO in order: Last known well, History of seizure, Age ≥40, Bed/wheelchair bound, Blood glucose 60–400, Obvious asymmetry", ref: "Ref. 521 / TP 1232" });
@@ -14414,7 +14434,9 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     if (has("t:base")) return; phase("base");
     const ed = S.expectedDest ? S.expectedDest() : {}, D = (PROTOCOLS.DESTINATIONS || []).find(d => d.id === ed.primary);
     await baseReport(D, ask); phase("tx"); }
-  const BASE_FIRST = k => /^t:(pace|cardiovert)$/.test(k) || (/^t:(calcium|bicarb)$/.test(k) && sc.allow && sc.allow[k.slice(2)] === "base") || (k === "t:diphen" && sc.protocol === "1239");
+  // v2.14.2: TP 1244 #25 head injury: pain medication by standing order only for an A&O patient with GCS 15; otherwise Base first
+  const HEAD_BASE = k => /^t:(fentanyl|morphine)$/.test(k) && !!(S.headInjury && S.headInjury()) && !(S.isAO4 && S.isAO4());
+  const BASE_FIRST = k => HEAD_BASE(k) || /^t:(pace|cardiovert)$/.test(k) || (/^t:(calcium|bicarb)$/.test(k) && sc.allow && sc.allow[k.slice(2)] === "base") || (k === "t:diphen" && sc.protocol === "1239");
   async function pace(c) {
     await padsOn(); await baseFirst("initiating transcutaneous pacing"); const R = { why: c.label, ref: "TP 1212 / MCG 1365" };
     await say("Start pacing at 70", Object.assign({}, R, { anim: "monitor", dt: 2 }));
@@ -14440,8 +14462,8 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   }
   const ok4 = k => { // hold a med the current state contraindicates (it stays on the list and is retried when the patient allows)
     const s = st(), m = mental();
-    if (k === "t:fentanyl") return ["alert", "anxious"].includes(m); // MCG 1317.19: no SBP limit
-    if (k === "t:morphine") return ["alert", "anxious"].includes(m) && !(s.v.sbp < 90); // MCG 1317.27: hypotension / poor perfusion
+    if (k === "t:fentanyl") return true; // MCG 1317.19: no SBP limit; v2.14.2: no ALOC hold (head injury -> Base first, BASE_FIRST)
+    if (k === "t:morphine") return !(s.v.sbp < 90); // MCG 1317.27: hypotension / poor perfusion
     if (k === "t:nitro") return !(s.v.sbp < 100);
     return true; };
   async function preMed(k) {

@@ -38,6 +38,14 @@ Opening `index.html` straight from disk (file://) works for typing, but browsers
 Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The service worker version changes with every build. Users get the update on their next visit, and downloaded models are kept.
 
 ## Version notes
+### 2.14.2
+- Fentanyl / opioid analgesia: removed the blanket "no opioid if altered" rule (engine + Watch mode). MCG 1345 has no AMS contraindication. The A&O / GCS 15 condition applies only to head injury (TP 1244 #25, rev 04-01-25): "For an alert and oriented patient with GCS 15: Fentanyl 50mcg ... CONTACT BASE for additional pain management or for initial orders if patient not alert and oriented with GCS 15." Head injury + not A&O GCS 15 + no Base = "CONTACT BASE for initial pain-medication orders" deviation (fentanyl and morphine); Watch mode contacts Base first.
+- Fentanyl contraindicated in pregnant patients in labor (MCG 1317.19): flagged on ob_delivery, shoulder_dystocia, prolapsed_cord (`inLabor`).
+- Pediatric fentanyl (MCG 1317.19 / MCG 1309): dose amount stays color-code (not graded); graded: 3rd dose without Base, 5th dose even with Base (max 2 before Base, Base up to 4), repeat < 5 min. Adult 50/150 mcg notes no longer apply to peds.
+- Physiology: removed fentanyl SBP drops (dissection txResp sbp -10; STEMI -6*E(fentanyl)). HR easing with pain control kept. Flail chest RR -3 (splinting relief) kept.
+- Quiz: contra distractor "Altered mental status (GCS < 15)".
+- Tests: tests/sim_v2142.js.
+
 ### 2.14.1
 - **Fentanyl has no blood-pressure limit** (MCG 1317.19, rev 07-01-24). The engine no longer logs "Opioid analgesia with SBP < 90" for fentanyl, and Watch mode no longer withholds fentanyl when SBP < 90. Per 1317.19 the only contraindications are hypersensitivity and pregnant patients in labor; fentanyl does not release histamine and is unlikely to cause hypotension. Morphine keeps its hypotension / poor-perfusion contraindication (MCG 1317.27 / MCG 1345).
 - Med quiz (fentanyl): contraindications are exactly "Hypersensitivity; pregnant patients in labor". The dose, repeat and max answers now include IO, the Base allowance (up to 250 mcg), and the pediatric values (1 mcg/kg IV/IO/IM or 1.5 mcg/kg IN per MCG 1309, repeat x1, 2 doses prior to Base, up to 4 with Base).
