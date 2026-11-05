@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.14.6 e399133f54">
+<meta name="medicsim-version" content="2.14.7 e5c8abd1c8">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -741,6 +741,16 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 }
 @media (max-width:820px){ .w-end{position:fixed;inset:12% 3% auto;max-height:76vh;z-index:30} }
 
+/* v2.14.7 pediatric dextrose tap row */
+.peds-dex-row{flex-wrap:wrap;background:#1a1530;border-top:1px solid #4b3a8a}
+.peds-dex-row .lbl{color:#c4b5fd}
+.peds-dex-row button{background:#2a1f4d;border-color:#6d5bd0;color:#e9e3ff;font-size:.85em;min-height:40px}
+.peds-dex-row button.due{background:#5b2a0f;border-color:#f59e0b;color:#fff3d6;box-shadow:0 0 0 2px #f59e0b55}
+.peds-dex-row button.done{opacity:.75}
+.peds-dex-row button:disabled{opacity:.45}
+.peds-dex-row .pd-note{flex-basis:100%;font-size:.75em;color:#d8ccff}
+.peds-dex-row[hidden]{display:none!important}
+
 </style>
 </head>
 <body>
@@ -847,6 +857,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
         <div class="aeiou-panel lhabbo-panel" id="lhabboPanel" hidden aria-label="L-HABBO stroke screen (tap = same as saying it)"></div>
         <div class="dest-panel" id="destPanel" hidden aria-label="Post-Transport Destination and Trauma Triage (Ref. 506) selector"></div>
         <div class="next-bar" id="nextBar" hidden aria-label="Next step suggestions (tap = same as saying it)"><div class="next-head"><span class="lbl">Next</span><span class="next-step" id="nextStep"></span><button type="button" class="next-ae" id="btnAeiou" hidden>AEIOU-TIPS</button><button type="button" class="next-ae next-lh" id="btnLhabbo" hidden>L-HABBO</button><button type="button" class="next-ae next-rs" id="btnReassess" hidden title="Reassess: HABBO → ABCs → BP, SpO₂, RR → rest">↻ Reassess</button><button type="button" class="next-all" id="btnAll">All actions ▾</button></div><div class="next-chips" id="nextChips"></div></div>
+        <div class="assess-row peds-dex-row" id="pedsDexRow" hidden aria-label="Pediatric dextrose by weight (tap = same as saying it)"><span class="lbl">Peds D10</span><button type="button" id="pdTape" data-say="Broselow tape, what color are they?">📏 Broselow tape</button><button type="button" id="pdD10" data-say="Dextrose 10 percent, 1 milliliter per kilo IV">💉 D10 1 mL/kg</button><button type="button" id="pdBgl" data-say="Checking a blood glucose">🩸 Check blood glucose</button><span class="pd-note" id="pdNote"></span></div>
         <div class="assess-row" id="assessRow" aria-label="Quick assess (tap = same as saying it)"><span class="lbl">Assess</span>
           <button type="button" data-say="Checking radial pulse">Radial</button><button type="button" data-say="Checking carotid pulse">Carotid</button><button type="button" data-say="Listening to lung sounds">🩺 Lungs</button><button type="button" data-say="Checking skin signs">Skin</button><button type="button" data-say="Feeling the forehead">Forehead</button><button type="button" data-say="Checking pupils">Pupils</button><button type="button" data-say="Open your mouth, checking the airway">Mouth/airway</button><button type="button" data-say="Expose the patient">Expose</button><button type="button" data-say="Palpate the abdomen">Abdomen</button><button type="button" data-say="Is the patient tracking me?">Tracking?</button><button type="button" data-say="What do I see?">What do I see?</button>
           <button type="button" class="help" id="btnHelp">❓ What can I say?</button></div>
@@ -1033,6 +1044,16 @@ const PROTOCOLS = {
       "BG > 400 or 'HIGH' or poor perfusion: Normal Saline 1 L IV/IO rapid infusion, reassess every 250 mL",
       "Nausea/vomiting: Ondansetron 4 mg ODT/IV/IM, may repeat x1 in 15 min",
       "Hypoglycemia patients wanting to refuse transport are high risk if on long-acting agents, no DM history, etc. (Ref. 834)"]},
+  "1203-P": { title: "Diabetic Emergencies (Pediatric)", revised: "07-01-24",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1040380_1203DiabeticEmergencies2018-05-30.pdf",
+    keyPoints: [
+      "Length-based tape (Broselow, MCG 1309) for the weight in kg",
+      "Check blood glucose; treat BG < 60 mg/dL (< 45 mg/dL in neonates)",
+      "Dextrose 10% 1 mL/kg IV/IO per dose (e.g. 12 kg = 12 mL)",
+      "Instructor workflow: give 3 doses (3 mL/kg), then RECHECK the blood glucose",
+      "Still < 60 or symptomatic: up to 2 more doses (5 doses total = 5 mL/kg max), then recheck",
+      "No IV/IO: Glucagon IM, color-code dose (MCG 1309)",
+      "Transport; Base contact for age ≤ 12 months or persistent hypoglycemia (Ref. 1200.2)"]},
   "1210-P": { title: "Cardiac Arrest (Pediatric)", revised: "07-01-26",
     url: "https://file.lacounty.gov/SDSInter/dhs/1179867_1210-PCardiacArrest.pdf",
     keyPoints: [
@@ -2281,6 +2302,10 @@ const DOSING = (() => {
     { k: "contra", label: "Contraindications", shortLabel: "Contraindications", prompt: "Select the contraindications" }
   ];
 
+  const pdKg = (st, sc) => (st && st.x && st.x.bros && st.x.bros.measKg) || Math.round((sc && sc.patient && sc.patient.weightKg) || 0) || null;
+  const PEDS_D10 = { dose: (st, sc) => { const k = pdKg(st, sc); return `1 mL/kg D10 IV/IO per dose${k ? ` (${k} kg = ${k} mL)` : ""}, weight from the Broselow tape`; },
+    repeat: () => "Give 3 doses (3 mL/kg), recheck BG; if still < 60 mg/dL, up to 2 more doses",
+    max: () => "5 doses total (5 mL/kg), then contact Base" };
   function getQuiz(id, sc, st, tx) {
     const key = quizKeyFor(id, sc, st, tx);
     if (!key || !MED_QUIZ[key]) return null;
@@ -2290,7 +2315,8 @@ const DOSING = (() => {
     const peds = isPeds(sc);
     const brosColor = (st && st.x && st.x.bros && st.x.bros.color) || null;
     const questions = Q_META.map((m, idx) => {
-      const src = entry[m.k];
+      let src = entry[m.k];
+      if (peds && key === "d10" && PEDS_D10[m.k]) src = Object.assign({}, src, { correct: PEDS_D10[m.k](st, sc) }); // v2.14.7
       const correctIdx = perm[idx];
       const dist = src.distractors.slice();
       // Deterministic rotation of distractors
@@ -4692,6 +4718,25 @@ const SIM = (() => {
   // (or, with trauma, padding for neutral in-line alignment) is placed. Standard practice* (TP 1210-P ❺ "no chest rise after repositioning").
   const pedsRollNeeded = () => PEDS() && sc.patient.age < 3 && !(st.x && st.x.roll) && !(st.flags && st.flags.sga);
   const OB_TX = new Set(["obkit", "deliver", "drynewborn", "clampcord", "placenta", "fundal", "skintoskin"]);
+  // v2.14.7: pediatric D10 by weight (Adrian's workflow): 1 mL/kg per dose, 3 doses, recheck BG, up to 2 more (5 total = 5 mL/kg)
+  function bglMark() { st.x.bglM = { v: Math.round(st.v.bgl), t: st.t }; const c = st.count.d10 || 0; if (c >= 3) rec("x:d10recheck3"); if (c >= 5) rec("x:d10recheck5"); }
+  const pedsKg = () => st.x.bros ? st.x.bros.measKg : Math.max(1, Math.round(sc.patient.weightKg || 20));
+  function pedsD10Calc(tx) {
+    const kg = pedsKg(), nth = (st.count.d10 || 0) + 1, raw = String(tx.raw || "").toLowerCase();
+    let given = null; const pk = raw.match(/(\d+(?:\.\d+)?)?\s*(?:ml|mls|mils?|milliliters?|millilitres?|cc|cc's)?\s*(?:per|\/|a)\s*(?:kg|kilo|kilogram)s?\b/);
+    if (pk) given = (pk[1] ? parseFloat(pk[1]) : 1) * kg;
+    else { const d = (tx.doses || []).find(x => /^ml$/i.test(x.u)); if (d) given = d.v;
+      else { const m = raw.replace(/\bd\s?-?\s?10\b|\b10\s*(%|percent|per cent)|\bten percent\b|dextrose 10/g, " ").match(/(\d+(?:\.\d+)?)/); if (m) given = parseFloat(m[1]); } }
+    if (given == null) given = kg;
+    const iss = [], okDose = Math.abs(given - kg) <= 0.5 + 0.05 * kg, bm = st.x.bglM;
+    if (!okDose) iss.push([`Pediatric D10 is 1 mL/kg per dose: ${kg} kg → ${kg} mL. You said ${Math.round(given * 10) / 10} mL.`, "MCG 1309 / TP 1203-P", "deviation"]);
+    if (!st.flags.iv && !st.flags.io) iss.push(["Dextrose IV/IO requires vascular access. Without IV/IO, use glucagon IM (color-code dose).", "TP 1203-P", "caution"]);
+    if (!st.events["a:bgl"]) iss.push(["Dextrose given before checking blood glucose.", "TP 1203-P", "caution"]);
+    else if ((nth === 1 || nth >= 4) && bm && bm.v >= 60) iss.push([`Dextrose for a measured BG of ${bm.v} (threshold < 60 mg/dL).`, "TP 1203-P", "deviation"]);
+    if (nth === 4 && !st.events["x:d10recheck3"]) iss.push(["Recheck the blood glucose after the first 3 doses (3 mL/kg) before giving a 4th dose.", "TP 1203-P (instructor workflow)", "deviation"]);
+    if (nth > 5) iss.push(["Maximum 5 doses of D10 (5 mL/kg total). Contact Base for more.", "TP 1203-P (instructor workflow)", "deviation"]);
+    const tot = Math.round(((st.x.d10mL || 0) + given) * 10) / 10; st.x.d10mL = tot; st.x.d10Last = given;
+    return { kg, nth, given, iss, narr: `Dextrose 10% ${Math.round(given * 10) / 10} mL IV (1 mL/kg × ${kg} kg), dose ${nth} of 5 · total ${tot} mL${nth === 3 ? " · recheck the blood glucose now" : nth === 5 ? " · max reached, recheck BG" : ""}` }; }
   const PEDS_DOSE_TX = new Set(["epi", "pushepi", "albuterol", "ns", "d10", "midaz", "naloxone", "diphen", "ondansetron", "fentanyl", "morphine", "glucagon", "atropine", "adenosine", "amio", "calcium", "bicarb", "ketorolac"]);
   function event(text, kind = "sys") { if (sc && sc.protocol === "1210-P") text = String(text).replace(/\(1210 [^)]*\)/g, m => "(" + pedsRef(m.slice(1, -1)) + ")");
     if (st && st.x.code && st.x.code.provStarted && st.x.rosc && !st.x.code.roscRecT && /\bROSC\b/.test(text)) text = "Rhythm check: ORGANIZED rhythm on the monitor, and EtCO2 abruptly jumped well above the CPR baseline."; /* ROSC is for the medic to recognize (1210 ❻) */
@@ -5051,7 +5096,7 @@ const SIM = (() => {
       case "rr": R("rr", Math.round(st.v.rr)); out.push(`Respiratory rate ${Math.round(st.v.rr)}/min${st.v.rr < 10 ? ", shallow" : st.v.rr > 24 ? ", labored" : ""}.`); break;
       case "etco2": st.rev.etco2 = { t: st.t }; out.push(`Capnography applied: EtCO2 ${Math.round(st.v.etco2)} mmHg${tg.capno === "shark" ? ", shark-fin waveform" : ""}.`); break;
       case "temp": R("temp", st.v.temp.toFixed(1) + "°F"); if (st.v && st.v.temp >= 100.4) rec("a:tactile_fever"); out.push(`Temp ${st.v.temp.toFixed(1)}°F.`); break;
-      case "bgl": { const bt = tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); R("bgl", bt); out.push(`Blood glucose ${bt}.`); } break;
+      case "bgl": { const bt = tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); R("bgl", bt); bglMark(); out.push(`Blood glucose ${bt}.`); } break;
       case "gcs": R("gcs", gcsStr()); out.push(`GCS ${gcsStr()}: ${gcsDetail()}. Mental status: ${mental()}.`); break;
       case "pupils": R("pupils", tg.pupils); out.push(X("pupils")); break;
       case "skin": {
@@ -5153,7 +5198,7 @@ const SIM = (() => {
     }
     const id = tx.id, out = [], notes = [], m = mental(), alert = ["alert", "anxious", "aphasic"].includes(m);
     const sbp = st.v.sbp, bpKnown = st.rev.bp && st.t - st.rev.bp.t < 300;
-    let narr = TX_LABEL[id] || id;
+    let narr = TX_LABEL[id] || id, pedsD10 = null;
     const allergic = (sc.allergies || []).find(a => (id === "morphine" && /morphine|codeine|opiate/.test(a)) || (id === "fentanyl" && /fentanyl/.test(a)) || (id === "aspirin" && /aspirin|nsaid/.test(a)));
     if (allergic) notes.push(dev(`${narr} given to a patient with a documented allergy (${allergic}).`, "1201"));
     { const wd = wuCheck(id, tx); if (wd) notes.push(wd); }
@@ -5374,7 +5419,7 @@ const SIM = (() => {
       case "vector": { st.x.vector = (st.x.vector || 0) + 1; narr = "Pads moved: vector change (anterior-lateral ↔ anterior-posterior)"; if (st.x.code && st.x.code.shockLog.length < 3) notes.push(dev("Vector change is for a persistent shockable rhythm after three shocks.", "1210 #8 ❾", "note")); break; }
       case "terminate": { if (!st.x.arrest) { narr = "Termination not applicable: the patient has a pulse"; notes.push(dev("Termination of resuscitation applies only to a patient in cardiac arrest.", "Ref. 814", "caution")); break; }
         narr = "Resuscitation terminated (time of death noted)"; st.flags.cpr = false; st.x.terminated = st.t; if (st.x.code) st.x.code.provStarted = false; if (!st.events["t:base"]) notes.push(dev("Termination of resuscitation requires Base Physician consult unless ALL Ref. 814 II.A criteria are met.", "1210 #17 / Ref. 814", "deviation")); st.flags.cpr = false; break; }
-      case "d10": {
+      case "d10": { if (PEDS()) { pedsD10 = pedsD10Calc(tx); break; }
         if (/d50|d25/.test(tx.raw || "")) notes.push(dev("LA County uses Dextrose 10% (125 mL, repeat to 250 mL), not D50/D25 for adults.", "1203 #7", "note"));
         if (!st.flags.iv) notes.push(dev("Dextrose IV/IO requires vascular access. Without IV, use glucagon 1 mg IM.", "1203 #7", "caution"));
         if (!st.events["a:bgl"]) notes.push(dev("Dextrose given before checking blood glucose.", "1203 #6", "caution"));
@@ -5521,9 +5566,10 @@ const SIM = (() => {
         if (withPulse && (route === "IV" || route === "IO")) notes.push(dev(`Epinephrine ${route} in a child WITH a pulse: wrong route. Pediatric anaphylaxis/bronchospasm epinephrine is IM (1 mg/mL), color-code dose; IV/IO epinephrine is for cardiac arrest (1210-P).`, "MCG 1309 / 1219-P", "critical")); }
       if (!st.x.bros && !st.x.brosWarn) { st.x.brosWarn = true; notes.push(dev("Weight-based pediatric drug given before the length-based tape: measure with the length-based tape (Broselow) first and use the MCG 1309 color code.", "MCG 1309 G1", "caution")); }
       if (id === "midaz") st.x.midazW = 1;
+      if (pedsD10) { narr = pedsD10.narr; for (const q of pedsD10.iss) notes.push(dev(q[0], q[1], q[2])); }
     }
     if (typeof DOSING !== "undefined") for (const d of DOSING.check(id, tx, sc, st, { wheeze: /wheez/i.test(String(st.tg.lungs || "")), headTrauma: /head|multisystem/i.test(String(st.tg.trauma || "")) && !/no signs/i.test(String(st.tg.trauma || "")) })) notes.push(dev(d.text, d.ref, d.level));
-    if (id !== "midaz" && id !== "permhypo") { st.count[id] = (st.count[id] || 0) + 1; rec("t:" + id); if (id === "albuterol" && n(st, "albuterol") >= 2) rec("t:albuterol#2"); if (n(st, id) >= 2) rec("t:" + id + "#2"); }
+    if (id !== "midaz" && id !== "permhypo") { st.count[id] = (st.count[id] || 0) + 1; rec("t:" + id); if (id === "albuterol" && n(st, "albuterol") >= 2) rec("t:albuterol#2"); if (n(st, id) >= 2) rec("t:" + id + "#2"); if (id === "d10" && n(st, id) >= 3) rec("t:d10#" + Math.min(5, n(st, id))); }
     if (st.x.rosc) rec("t:" + id + "@rosc");
     st.last[id] = st.t;
     if ((id === "epi" || id === "pushepi") && st.x.epiOd) { addEffect("epiod"); st.x.epiOd = false; }
@@ -5690,7 +5736,7 @@ const SIM = (() => {
           const irr = /afib|irregular|ectop|pvc/i.test(String(st.tg.rhythm) + " " + String(st.tg.rhythmName));
           say(`${o.auto ? "Recheck. " : ""}Vitals: pulse ${hr}${irr ? " and irregular" : ""}, BP ${bpm ? bpm[1] : "unable to get one"}, ${rrReport().replace(/^Resps are/, "resps").replace(/\.$/, "")}, sat ${st.v.spo2 == null ? "no reading" : Math.round(st.v.spo2) + "% on " + o2Name()}.`);
           break; }
-        case "bgl": { assess("bgl"); const bt = st.tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); say(`Sugar is ${bt}.`); break; }
+        case "bgl": { assess("bgl"); bglMark(); const bt = st.tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); say(`Sugar is ${bt}.`); break; }
         case "temp": assess("temp"); say(`Temp is ${st.v.temp.toFixed(1)}°F.`); break;
         case "monitor": { const r = assess("monitor"); say("Leads are on, monitor's up. Take a look."); out.push({ speaker: "find", text: r.join(" ") }); break; }
         case "12lead": { const r = assess("12lead"); say(st.tg.twelve ? "12-lead's done. Here you go." : "Can't get a clean 12-lead right now, medic."); out.push({ speaker: "find", text: r.join(" ") }); break; }
@@ -10473,6 +10519,83 @@ addS(G({
   }, common("prochlorperazine (Compazine)"))));
 })();
 
+/* ===== scx_17_peds_hypo.js ===== */
+/* =====================================================================
+ * v2.14.7 PEDIATRIC HYPOGLYCEMIA (Adrian's dextrose workflow)
+ * Broselow tape for kg -> D10 1 mL/kg IV per dose -> 3 doses (3 mL/kg)
+ * -> recheck BG -> if still < 60, up to 2 more doses (5 total, 5 mL/kg).
+ * Glucose model: each D10 dose raises BG by `rise` mg/dL per 1 mL/kg,
+ * absorbed over ~40 s; ongoing drop `drop` mg/dL per minute.
+ * ===================================================================== */
+function PH(o) {
+  const ok = o.ok, kg = o.kg;
+  const D10 = [
+    { label: "Length-based tape (Broselow): color + weight in kg", keys: ["a:broselow"], ref: "MCG 1309", critical: true },
+    { label: "Blood glucose (< 60 mg/dL)", keys: ["a:bgl"], ref: "TP 1203-P", critical: true },
+    { label: "Vascular access (IV/IO)", keys: ["t:iv", "t:io"], ref: "TP 1203-P", critical: true },
+    { label: `D10 1 mL/kg IV × 3 doses (${kg} mL each, ${3 * kg} mL = 3 mL/kg)`, keys: ["t:d10#3"], ref: "TP 1203-P / MCG 1309", critical: true },
+    { label: "Recheck blood glucose after dose 3", keys: ["x:d10recheck3"], ref: "TP 1203-P", critical: true },
+  ];
+  if (!ok) D10.push(
+    { label: `Still < 60: D10 doses 4 and 5 (${kg} mL each, total ${5 * kg} mL = 5 mL/kg max)`, keys: ["t:d10#5"], ref: "TP 1203-P", critical: true },
+    { label: "Recheck blood glucose after dose 5", keys: ["x:d10recheck5"], ref: "TP 1203-P", critical: true });
+  D10.push({ label: o.age < 3 ? "Transport / Base contact (age ≤ 36 months)" : "Transport", keys: ["t:transport", "t:base"], ref: "1200.2", critical: true });
+  const g = st => st.x.g;
+  return addS(G(Object.assign({
+    protocol: "1203-P", refs: ["1203-P", "1309"], base: "pedshypo", difficulty: ok ? "Intermediate" : "Advanced", tag: "PEDS", peds: true,
+    startSev: 0.6, drift0: 0, pain: [0, 0], temp: 98.8,
+    init: st => { st.x.g = o.bg0; st.x.gq = 0; },
+    tickExtra: (st, dt) => { const a = Math.min(st.x.gq, 1.2 * dt); st.x.g += a; st.x.gq -= a; st.x.g = Math.max(18, st.x.g - (o.drop || 0.4) * dt / 60);
+      st.sev = Math.max(0, Math.min(1, (75 - st.x.g) / 45)); },
+    onTreat: (id, st) => { if (id === "d10") st.x.gq += o.rise * (st.x.d10Last || kg) / kg; if (id === "glucagon") st.x.gq += 20; if (id === "oralglucose" && st.x.g >= 50) st.x.gq += 10; },
+    bgl: g,
+    mentalFn: st => st.x.g < 40 ? "unresponsive" : st.x.g < 60 ? "confused" : "alert",
+    vit: o.vit, skin: [[0.3, "Warm, dry, pink"], [1, "Pale, cool, diaphoretic"]], lungs: "Clear bilaterally", pupils: "PERRL, 3 mm",
+    neuro: [[0.35, "Moves all extremities, acting normally for age"], [1, "Limp, minimal response to stimulus; no focal deficit"]],
+    checklist: D10,
+    pi: { correct: "HYPO", accept: ["ALOC"], differential: ["HYPO", "SEPI", "ALOC"], clues: { HYPO: "Low glucose explains the altered mental status.", SEPI: "No seizure activity.", ALOC: "Hypoglycemia is the cause." },
+      explain: `Pediatric hypoglycemia: Broselow (${kg} kg), D10 1 mL/kg = ${kg} mL × 3, recheck BG, ${ok ? "responded after 3 doses" : "still low, doses 4 and 5 (5 mL/kg max), recheck"}.`, keyFindingKeys: ["a:broselow", "a:bgl"] },
+    expected: `Peds hypoglycemia. Broselow → ${kg} kg. D10 ${kg} mL IV × 3, recheck BG${ok ? " (responds)" : ", still < 60 → 2 more doses (total 5)"}, transport.`,
+  }, o.spec)));
+}
+
+PH({ kg: 12, age: 2, ok: true, bg0: 38, rise: 13, vit: { good: { hr: 120, sbp: 96, dbp: 60, rr: 26, spo2: 98, etco2: 36 }, bad: { hr: 160, sbp: 88, dbp: 54, rr: 30, spo2: 96, etco2: 34 } }, spec: {
+  id: "peds_hypo_toddler", dispatchTitle: "2 y/o, hard to wake after vomiting", dispatchShort: "Pico Rivera home, dad calling.",
+  dispatch: "RA 25, respond to a house on Rosemead Blvd, Pico Rivera. 2-year-old male, hard to wake up, vomiting since last night. Time of call 0712.",
+  scene: "Scene safe. Toddler limp on the couch, pale and sweaty, dad holding a sippy cup he refused. Stomach bug in the house.",
+  approach: { see: "Living room. Toddler limp on the couch, pale, sweaty; dad kneeling next to him.", track: "Eyes half open, not tracking; moans to pain." },
+  patient: { name: "Mateo Ruiz", age: 2, sex: "M", weightKg: 12 }, bystander: { name: "Luis", role: "father", sex: "M" },
+  personality: "Limp and moaning while low; fussy and crying for dad once the sugar comes up.",
+  answers: { greet: st => st.x.g < 60 ? "(moans)" : "(cries) Papi!", name: "(dad: Mateo)", age: "(dad: he's two)", cc: st => st.x.g < 60 ? "(no answer)" : "(clings to dad)", orient: st => st.x.g < 60 ? "(no answer)" : "(looks at dad, crying)",
+    allergies: "(dad: none)", meds: "(dad: nothing)", history: "(dad: healthy, shots up to date)", lastoral: "(dad: nothing since dinner, he threw it all up)", events: "(dad: stomach flu, couldn't keep anything down, this morning he wouldn't wake up right)" },
+  bystanderAnswers: { cc: "He's been throwing up since last night, nothing stays down. This morning he's floppy and won't wake up right.", weight: "About 26 pounds, maybe 12 kilos." },
+}});
+
+PH({ kg: 25, age: 8, ok: false, bg0: 26, rise: 9, drop: 0.5, vit: { good: { hr: 100, sbp: 104, dbp: 66, rr: 20, spo2: 98, etco2: 37 }, bad: { hr: 136, sbp: 96, dbp: 60, rr: 24, spo2: 97, etco2: 35 } }, spec: {
+  id: "peds_hypo_t1dm", dispatchTitle: "8 y/o diabetic, unresponsive", dispatchShort: "Whittier home, mom calling.",
+  dispatch: "RA 38, respond to a house on Painter Ave, Whittier. 8-year-old female, type 1 diabetic, unresponsive after soccer practice. Time of call 1845.",
+  scene: "Scene safe. Girl on her bedroom floor, sweaty and pale, insulin pump on her hip. Mom says the pump gave a big bolus for a dinner she never ate.",
+  approach: { see: "Bedroom. School-age girl on the floor, pale, soaked in sweat, insulin pump clipped to her shorts; mom on the phone with dispatch.", track: "Eyes closed, not tracking; withdraws to pain." },
+  patient: { name: "Lily Tran", age: 8, sex: "F", weightKg: 25 }, bystander: { name: "Amy", role: "mother", sex: "F" },
+  personality: "Unresponsive while low; once the sugar is up, embarrassed and asking for juice.",
+  answers: { greet: st => st.x.g < 60 ? "(no response)" : "Hi... I feel shaky.", name: st => st.x.g < 60 ? "(no response)" : "Lily.", age: st => st.x.g < 60 ? "(no response)" : "Eight.",
+    cc: st => st.x.g < 60 ? "(mumbles)" : "I feel shaky and hungry.", orient: st => st.x.g < 60 ? "(no response)" : "I'm in my room. It's Tuesday.",
+    allergies: "(mom: no allergies)", meds: "(mom: insulin pump, Humalog)", history: "(mom: type 1 diabetes since she was five)", lastoral: "(mom: a granola bar before soccer, then the bolus for dinner and she didn't eat)", events: "(mom: two hours of soccer, then the pump gave her dinner insulin and she fell asleep before eating)" },
+  bystanderAnswers: { cc: "She's type 1. Her pump gave her a full dinner bolus after soccer and she never ate. I found her on the floor.", weight: "She's about 55 pounds, 25 kilos." },
+}});
+
+PH({ kg: 8, age: 0, ok: true, bg0: 34, rise: 14, vit: { good: { hr: 140, sbp: 86, dbp: 52, rr: 34, spo2: 98, etco2: 36 }, bad: { hr: 180, sbp: 78, dbp: 46, rr: 44, spo2: 96, etco2: 33 } }, spec: {
+  id: "peds_hypo_infant", dispatchTitle: "9-month-old, floppy and not feeding", dispatchShort: "Norwalk apartment, grandmother calling.",
+  dispatch: "RA 115, respond to an apartment on Imperial Hwy, Norwalk. 9-month-old female, floppy, not feeding since yesterday with fever. Time of call 0230.",
+  scene: "Scene safe. Infant floppy in grandmother's arms, pale and mottled, weak cry. Bottle untouched; recent ear infection.",
+  approach: { see: "Bedroom. Infant floppy in grandma's arms, pale, weak cry, half-full bottle on the dresser.", track: "Eyes open briefly, not tracking; does not fix and follow." },
+  patient: { name: "Sofia Alvarez", age: 0, ageText: "9 months", sex: "F", weightKg: 8 }, bystander: { name: "Rosa", role: "grandmother", sex: "F" }, temp: 100.8,
+  personality: "Floppy with a weak cry while low; once the sugar comes up, cries strongly and reaches for grandma.",
+  answers: { greet: st => st.x.g < 60 ? "(weak cry)" : "(loud cry)", name: "(grandma: Sofia)", age: "(grandma: nine months)", cc: "(weak cry)", orient: st => st.x.g < 60 ? "(doesn't track)" : "(tracks grandma, crying)",
+    allergies: "(grandma: none)", meds: "(grandma: amoxicillin for her ear)", history: "(grandma: full term, healthy)", lastoral: "(grandma: a little formula yesterday afternoon)", events: "(grandma: fever and fussy for two days, stopped eating, tonight she's floppy)" },
+  bystanderAnswers: { cc: "She's had a fever and an ear infection, hardly ate in a day, now she's floppy.", weight: "She was 17 pounds at her checkup, about 8 kilos." },
+}});
+
 /* ===== scx_20_exam.js ===== */
 /* Extra physical-exam findings (abdomen, scene details) per scenario. */
 (() => {
@@ -12837,7 +12960,7 @@ addS(G({
     { label: "IV/IO NS bolus per MCG 1309 (shock)", keys: ["t:ns"], ref: "1207-P / MCG 1309", critical: true },
     { label: "Temperature", keys: ["a:temp"], ref: "1204" },
     { label: "Base / transport (13–36 months)", keys: ["t:base"], ref: "1200.2", critical: true },
-    { label: "D10 if hypoglycemic", keys: ["t:d10"], ref: "1203-P", optional: true },
+    { label: "If BG < 60: D10 1 mL/kg IV (10 mL) × 3, recheck BG, up to 2 more (5 mL/kg max)", keys: ["t:d10"], ref: "TP 1203-P / MCG 1309", optional: true },
   ],
   pi: { correct: "HOTN", accept: ["DRHA", "NAVM"], acceptNote: "Shock from dehydration primary; diarrhea/vomiting secondary.", differential: ["HOTN", "DRHA", "SEPS"],
     clues: { HOTN: "Pediatric hypovolemic shock from gastroenteritis.", DRHA: "Diarrhea is the cause.", SEPS: "Possible but primary picture is volume loss; no petechiae." },
@@ -13102,7 +13225,7 @@ const RuleBasedPatient = (() => {
     if (parsed.toBystander && byAns[q]) return [{ speaker: "bystander", text: resolve(byAns[q], st) }];
     if (parsed.toBystander && (q === "asa_q" || q === "ntg_q") && by) return [{ speaker: "bystander", text: medScreenAnswer(q, sc, st, true) }];
     if (sc.patient.age < 6 && byAns[q]) { const o = []; if (talk && sc.answers && sc.answers[q]) o.push({ speaker: "patient", text: resolve(sc.answers[q], st) }); o.push({ speaker: "bystander", text: resolve(byAns[q], st) }); return o; }
-    if (sc.patient.age < 6 && q === "age" && by) return [{ speaker: "bystander", text: `${sc.patient.sex === "F" ? "She's" : "He's"} ${sc.patient.age < 1 ? "a newborn" : sc.patient.age === 1 ? "one year old" : sc.patient.age + " years old"}.` }];
+    if (sc.patient.age < 6 && q === "age" && by) return [{ speaker: "bystander", text: `${sc.patient.sex === "F" ? "She's" : "He's"} ${sc.patient.ageText ? sc.patient.ageText + " old" : sc.patient.age < 1 ? "a newborn" : sc.patient.age === 1 ? "one year old" : sc.patient.age + " years old"}.` }];
     if (!talk) {
       const out = [];
       if (byAns[q]) out.push({ speaker: "bystander", text: resolve(byAns[q], st) });
@@ -13927,6 +14050,7 @@ const NEXT = (() => {
     "1219-P": [["epi", "diphen"], ["nrb", "supine", "fowler"], ["iv", "ns"], ["albuterol", "pushepi"]],
     "1241": [["opa", "suction", "bvm", "nrb", "recovery"], ["naloxone", "midaz"], ["iv", "ns"], ["d10", "oralglucose"]],
     "1203": [["oralglucose", "d10", "glucagon"], ["iv", "ns"]],
+    "1203-P": [["iv", "io"], ["d10", "glucagon"]],
     // v2.10.5: TP 1231 #6 / MCG 1317.25 midazolam 10 mg IN/IM or 5 mg IV/IO; TP 1239 #5 / MCG 1317.15 diphenhydramine 50 mg IV / deep IM
     "1231": [["recovery", "suction", "opa", "nrb"], ["midaz", "mid_im10", "mid_iv5", "naloxone"], ["bvm"], ["d10", "oralglucose"], ["iv"]],
     "1231-P": [["recovery", "suction", "nrb"], ["mid_peds", "naloxone"], ["d10", "oralglucose"], ["cooling"]],
@@ -14048,7 +14172,16 @@ const NEXT = (() => {
     if (!has("spo2")) out.push(C("Pulse ox", "Partner, get a pulse ox", "partner"));
     return out;
   }
-  function suggest(sim) {
+  // v2.14.7: pediatric D10 by weight (1 mL/kg per dose, 3 doses, recheck, up to 5): computed tap labels
+  function pedsDex(sim) { const sc = sim && sim.scenario, st = sim && sim.state; if (!sc || !st || !(sc.peds || sc.patient.age < 15)) return null;
+    const kg = st.x.bros ? st.x.bros.measKg : null, n = st.count.d10 || 0, next = n + 1;
+    const re3 = !!st.events["x:d10recheck3"], bglDue = (n >= 3 && !re3) || (n >= 5 && !st.events["x:d10recheck5"]);
+    return { kg, measured: !!kg, n, next, bglDue, max: n >= 5,
+      label: kg ? `D10 ${kg} mL (1 mL/kg)${n ? ` · ${n >= 5 ? "5 of 5 given" : "next: dose " + next + " of 5"}` : " · dose 1 of 5"}` : "D10 1 mL/kg (tape first)",
+      say: kg ? `Dextrose 10 percent, ${kg} milliliters IV` : "Dextrose 10 percent, 1 milliliter per kilo IV" }; }
+  function pedsFix(sim, c) { if (!c || !/^Dextrose 10 perc/i.test(c.say || "")) return c; const p = pedsDex(sim); return p ? Object.assign({}, c, { label: p.label, say: p.say }) : c; }
+  function suggest(sim) { const r = suggest1(sim); if (r && r.chips) r.chips = r.chips.map(c => pedsFix(sim, c)); return r; }
+  function suggest1(sim) {
     const st = sim.state, sc = sim.scenario; if (!st || !sc) return null;
     const F = sc.patient && sc.patient.sex === "F", ev = st.events;
     const col = st.x.bros && st.x.bros.color, fin = (step, title, chips) => ({ step, title, chips: chips.slice(0, step === "tx" ? 12 : 6).map(c => ({ ...c, say: pron(c.say, F), label: col ? c.label.replace(/\(color code\)/, `(${col})`) : c.label })) });
@@ -14194,9 +14327,9 @@ const NEXT = (() => {
     out = out.slice(0, Math.min(lim, Math.max(2, 10 - prefix.length)));
     return [...prefix, ...out, C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Transport", "Let's transport, load and go", "radio")];
   }
-  function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => ({ label: l, say: pron(s, F) }))]); }
+  function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => pedsFix(sim, { label: l, say: pron(s, F) }))]); }
   function aeiouChips() { return AE_SAY; }
-  return { suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS, BASE_ID, BASE_ID2, STROKE_CH, PN_SCRIPT, AE_SAY, pron, hypoAltered, codeChips };
+  return { pedsDex, suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS, BASE_ID, BASE_ID2, STROKE_CH, PN_SCRIPT, AE_SAY, pron, hypoAltered, codeChips };
 })();
 
 /* ===== autopilot.js ===== */
@@ -14736,11 +14869,26 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     return null; }
   // ---------- treatment: the scenario's own checklist, in protocol slot order ----------
   const lastTry = {}, IVMED = /^t:(ns|txa|fentanyl|morphine|d10|amio|adenosine|calcium|bicarb|ondansetron|ketorolac|diltiazem|lidocaine|mag|atropine)(#\d+)?$/;
+  // v2.14.7: pediatric dextrose by weight (Adrian): BG, Broselow kg, IV, D10 1 mL/kg × 3, recheck BG, still < 60 → doses 4-5, recheck
+  async function pedsDexAP() {
+    const s = st(), R = "TP 1203-P / MCG 1309 (instructor workflow)"; if (s.x.apDex) return false; s.x.apDex = 1;
+    if (!has("a:bgl")) { await say("Partner, check a blood sugar", { why: "Blood glucose before dextrose", ref: "TP 1203-P", dt: 4 }); await C.waitPartner(60); }
+    if (st().x.bglM && st().x.bglM.v >= 60) return false;
+    if (!has("a:broselow")) await doKey("a:broselow", { why: "Length-based tape for the weight in kg", ref: "MCG 1309", dt: 6 });
+    if (!st().flags.iv && !st().flags.io) { if (!st().x.apIvSetup) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); } await doKey("t:iv", { why: "Vascular access before IV dextrose", ref: "TP 1203-P", dt: 20 }); }
+    const kg = st().x.bros ? st().x.bros.measKg : Math.round(sc.patient.weightKg);
+    const dose = () => say(`Dextrose 10 percent, ${kg} milliliters IV`, { why: `D10 1 mL/kg × ${kg} kg = ${kg} mL, dose ${(st().count.d10 || 0) + 1} of 5`, ref: R, dt: 15 });
+    const recheck = async after => { tick(45); await say("Partner, check a blood sugar", { why: `Recheck the blood glucose after dose ${after}`, ref: R, dt: 4 }); await C.waitPartner(60); };
+    while ((st().count.d10 || 0) < 3) await dose();
+    await recheck(3);
+    if (st().x.bglM && st().x.bglM.v < 60) { while ((st().count.d10 || 0) < 5) await dose(); await recheck(5); }
+    return true; }
   async function treatLoop(maxN, inCode) {
     for (let n = 0; n < (maxN || 40); n++) {
       await C.reassessIfChanged();
       const P = pending().slice().sort((x, y) => (posKeys(y).includes("t:fowler") && st().v.sbp >= 90) - (posKeys(x).includes("t:fowler") && st().v.sbp >= 90)), nDone = Object.keys(st().events).length; let did = false;
       for (const c of P) {
+        if (sc.peds && !inCode && posKeys(c).some(x => /^(t:d10|x:d10re)/.test(x))) { if (await pedsDexAP()) { did = true; break; } if (posKeys(c).every(x => /^(t:d10|x:d10re)/.test(x))) continue; }
         const keys = (posKeys(c).includes("t:ncok") ? ["t:ncok", ...posKeys(c).filter(k => !/^t:(nrb|nc|ncok)$/.test(k))] : posKeys(c)).filter(k => !LATE.test(k) && !k.startsWith("lh:") && ok4(k) && ((tried[k] || 0) < 2 || ((tried[k] || 0) < 4 && lastTry[k] != null && nDone > lastTry[k])));
         let k = keys.find(k => k === "t:pace" || k === "t:cardiovert" || C.sayFor(k, c.label));
         if (!k) continue;
@@ -14799,7 +14947,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     const given = Object.keys(s.events).filter(k => /^t:/.test(k) && !/^t:(base|notify|transport)/.test(k)).map(k => k.slice(2));
     const neg = s.x.ros ? Object.keys(s.x.ros).filter(k => s.x.ros[k].yes === 0) : [];
     const resp = s.x.rosc ? "ROSC achieved" : (s.sev < (s.x.sev0 || 99) ? "patient improved" : "patient now unchanged");
-    const txt = `Base, this is Medic 12. We have a ${p.age} year old ${sex}, ${nm}, ${ms}. Vitals ${vit}. Findings: ${find || "as above"}${neg.length ? ", denies " + neg.join(", ") : ""}${s.x.traumacpr ? ", trauma assessment completed" : ""}. History ${s.events["q:history"] ? "obtained" : "unknown"}, meds and allergies reviewed. We gave ${given.join(", ") || "no treatments yet"}, ${resp}. ETA 10 minutes to ${D ? D.label : "the receiving hospital"}, ${ask || "requesting orders"}, over.`;
+    const txt = `Base, this is Medic 12. We have a ${p.ageText ? p.ageText + " old" : p.age + " year old"} ${sex}, ${nm}, ${ms}. Vitals ${vit}. Findings: ${find || "as above"}${neg.length ? ", denies " + neg.join(", ") : ""}${s.x.traumacpr ? ", trauma assessment completed" : ""}. History ${s.events["q:history"] ? "obtained" : "unknown"}, meds and allergies reviewed. We gave ${given.join(", ") || "no treatments yet"}, ${resp}. ETA 10 minutes to ${D ? D.label : "the receiving hospital"}, ${ask || "requesting orders"}, over.`;
     await say(txt, { why: "Base contact: concise report (age/sex, CC, mental status, vitals, findings, treatment + response, ETA, request)", ref: "Ref. 1200.2 / Ref. 808", dt: 25, anim: "radio" });
   }
 } };
@@ -15515,6 +15663,14 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
         const key = c => c.slot != null ? "s" + c.slot : c.grp ? "g" + c.grp : c.cat === "radio" ? "radio" : "x";
         $("#nextChips").classList.toggle("wrap", sg.step === "tx" || (sg.chips[0] && sg.chips[0].grp === "partner") || sg.chips.some(c => /^(Blood pressure|Resp rate|Pulse ox|BP, SpO₂, RR)$/.test(c.label))); // M5: wrap whenever vitals taps are present (not-tracking path too) // vitals step wraps (max 2 rows) so BP / RR / SpO2 taps are all visible
         $("#nextChips").innerHTML = sg.chips.map((c, i) => `${i && key(c) !== key(sg.chips[i - 1]) ? '<span class="chip-sep" aria-hidden="true"></span>' : ""}<button type="button" class="c-${esc(c.cat || "talk")}" data-say="${esc(c.say)}" title="${esc(c.say)}">${esc(c.label)}</button>`).join(""); } }
+    // v2.14.7: pediatric dextrose tap row (Broselow kg, D10 1 mL/kg with a dose counter, BG recheck)
+    { const row = $("#pedsDexRow"), pd = typeof NEXT !== "undefined" && NEXT.pedsDex ? NEXT.pedsDex(SIM) : null;
+      if (row) { row.hidden = !pd || !!st.x.arrest;
+        if (pd && !row.hidden) { const bros = st.x.bros, t = $("#pdTape"), d = $("#pdD10"), g = $("#pdBgl"), bm = st.x.bglM;
+          t.textContent = bros ? `📏 Tape: ${bros.color} · ${bros.measKg} kg` : "📏 Broselow tape"; t.classList.toggle("done", !!bros); t.classList.toggle("due", !bros);
+          d.textContent = "💉 " + pd.label; d.dataset.say = pd.say; d.title = pd.say; d.disabled = pd.max; d.classList.toggle("due", !!bros && !!bm && bm.v < 60 && !pd.bglDue && !pd.max);
+          g.textContent = pd.bglDue ? `🩸 Check blood glucose (recheck after dose ${pd.n >= 5 ? 5 : 3})` : "🩸 Check blood glucose"; g.classList.toggle("due", pd.bglDue || !st.events["a:bgl"]);
+          $("#pdNote").textContent = `${bros ? bros.measKg + " kg → " + bros.measKg + " mL per dose" : "Tape first for the kg"} · doses given ${pd.n}/5${pd.n ? " (" + (st.x.d10mL || 0) + " mL)" : ""}${bm ? " · last BG " + bm.v : ""}${pd.n >= 3 && pd.n < 5 && !pd.bglDue && bm && bm.v < 60 ? " · still < 60: doses 4–5 OK" : ""}`; } } }
     const ae = SIM.aeiou && SIM.aeiou();
     const showAe = !!(ae && ae.altered && !st.x.arrest);
     $("#btnAeiou").hidden = !showAe; if (showAe) $("#btnAeiou").textContent = `AEIOU-TIPS ${ae.n}/${ae.total}`;
@@ -15748,7 +15904,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     const refs = [...new Set([...(sc.refs || []), ...((g && PROVIDER_IMPRESSIONS[g.p.correct]) ? [PROVIDER_IMPRESSIONS[g.p.correct][1].split("/")[0]] : [])])];
     $("#debriefBody").innerHTML = `
       <h1>${esc(sc.dispatchTitle)}</h1>
-      <p class="sub">${esc(sc.patient.name)}, ${sc.patient.age} y/o ${sc.patient.sex === "M" ? "male" : "female"} · Duration ${fmtT(st.t)} · Protocols: ${refs.map(r => PROTOCOLS[r] ? `<a href="${PROTOCOLS[r].url}" target="_blank" rel="noopener">Ref. ${r} ${esc(PROTOCOLS[r].title)} (rev. ${PROTOCOLS[r].revised})</a>` : "Ref. " + r).join(" · ")}</p>
+      <p class="sub">${esc(sc.patient.name)}, ${sc.patient.ageText || sc.patient.age + " y/o"} ${sc.patient.sex === "M" ? "male" : "female"} · Duration ${fmtT(st.t)} · Protocols: ${refs.map(r => PROTOCOLS[r] ? `<a href="${PROTOCOLS[r].url}" target="_blank" rel="noopener">Ref. ${r} ${esc(PROTOCOLS[r].title)} (rev. ${PROTOCOLS[r].revised})</a>` : "Ref. " + r).join(" · ")}</p>
       ${timedHtml}
       ${drill ? "" : `<div class="db-grid">
         <div class="db-box"><h3>Protocol checklist</h3><div class="score">${score}%</div><p class="fine">${done.length}/${req.length} expected actions${missedCrit.length ? ` · <b style="color:#ff8a95">${missedCrit.length} critical missed</b>` : ""}${g ? ` · impression ${g.ok ? "correct" : g.partial ? "partially correct" : "incorrect"}` : ""}</p>${ckHtml}</div>
@@ -15805,7 +15961,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     return `<div class="db-box" style="margin-top:1em"><h3>Assessment flow</h3><p class="fine">Expected order: tracking on approach → intro/consent → radial + carotid → skin/forehead → partner gets BP/SpO2/RR → chief complaint → AVPU → fix ABCs/life threats → A&O → if altered, find why → history/allergies/meds/OPQRST/pertinent negatives → treat and transport. The early hands-on steps (1–6) can be done in any reasonable order.</p>${rows}<h4>Order check</h4>${flags}<p class="fine">Your sequence: ${esc(f.seq.join(" → ") || "nothing recorded")}</p>${aeH}${csH}</div>`;
   }
   function debriefText(sc, st, checklist, g, score) {
-    const L = [`MedicSim LA debrief: ${sc.dispatchTitle}`, `Patient: ${sc.patient.name}, ${sc.patient.age}${sc.patient.sex}`, `Duration: ${fmtT(st.t)} | Checklist score: ${score}%`];
+    const L = [`MedicSim LA debrief: ${sc.dispatchTitle}`, `Patient: ${sc.patient.name}, ${sc.patient.ageText ? sc.patient.ageText + " " : sc.patient.age}${sc.patient.sex}`, `Duration: ${fmtT(st.t)} | Checklist score: ${score}%`];
     if (g) L.push(`Provider Impression: chose ${g.chosen || "none"}; correct ${g.p.correct} (${g.ok ? "CORRECT" : g.partial ? "PARTIAL" : "INCORRECT"}). ${g.p.explain}`);
     { const dg = SIM.destGrade ? SIM.destGrade(sc, st) : null; if (dg) { L.push(`Destination: chose ${dg.chosenLabel}; expected ${dg.expectedLabel} (${dg.ref}) — ${dg.reason}`); if (dg.isTrauma) L.push(`Trauma Triage (Ref. 506): chose [${dg.chosenTriageLabels.join("; ") || "none"}]; expected [${dg.primaryTriageLabels.join("; ")}]`); } }
     { const sm = DEBRIEF.summary(sc, st, checklist, score, g ? g.ok : null); L.push("", "TIME TO KEY INTERVENTIONS:"); sm.tl.forEach(r => L.push(`${r.status === "ontime" ? "[on time]" : r.status === "late" ? "[late]" : "[missed]"} ${r.label}: ${r.t != null ? fmtT(r.t) : "not done"} (target <= ${fmtT(r.target)})`));
@@ -15947,6 +16103,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     $("#quick").innerHTML = quick.map(q => `<button type="button">${esc(q)}</button>`).join("");
     $("#quick").onclick = e => { if (e.target.tagName === "BUTTON") submit(e.target.textContent); };
     // quick-assess row: a tap goes through exactly the same path as saying the phrase (logged + assessment flow)
+    $("#pedsDexRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b && !b.disabled) submit(b.dataset.say, true); };
     $("#assessRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
     // Partner quick actions: a tap is logged exactly like saying the order. Buttons with a ▾ open a small choice sheet.
     const pr = n => { const F = SIM.scenario && SIM.scenario.patient.sex === "F"; return F ? n.replace(/\bhim\b/g, "her").replace(/\bhis\b/g, "her") : n; };
