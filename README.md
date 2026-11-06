@@ -291,3 +291,10 @@ Re-run `python3 src/build.py`, then commit the new `deploy/` contents. The servi
   - In-line with CPAP: TP 1237 #12/❺.
   - Handheld neb, neb mask/NRB, MDI.
   - In-line BVM: standard practice*, not addressed in TP 1237 / MCG 1317.3.
+
+## v2.15.2 — infant bradycardia / rate-dependent perfusion
+- New `peds_brady_rate`: Noah Reyes, 8 months, Red 8 kg, complete AV block, HR 38, BP 54/30, hypoventilating / SpO2 82%.
+- TP 1212-P (07-01-26) + MCG 1365 (04-01-24): effective BVM/oxygen FIRST, infant CPR if still <60 with severe ALOC / poor perfusion; monitor/vitals, tape, glucose, IV/IO, NS 160 mL, Base, epinephrine 0.08 mg IV/IO, atropine 0.16 mg IV/IO for refractory AV block, then TCP.
+- Start 100/min and 40 mA; capture at 60 mA, confirm femoral pulse, add 10 mA. BP stays low at 100 and 110/min; only pediatric protocol maximum 120/min restores adequate BP (~82/45). Not maximum current (200 mA hardware limit). This is a scenario response, NOT a rule that all infants need max rate.
+- Pediatric pacer mode caps rate at 120/min on taps and voice; adult hardware range unchanged. NEXT chips and Watch use the same real engine commands; delays / early pacing / untreated persistent hypotension are graded. Watch is perfect.
+- Sources: https://file.lacounty.gov/SDSInter/dhs/1040512_1212-PCardiacDysrhythmia-Bradycardia.pdf and https://file.lacounty.gov/SDSInter/dhs/1040604_1365-TCP.pdf .

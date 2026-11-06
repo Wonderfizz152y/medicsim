@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.15.1 a5d1c5a862">
+<meta name="medicsim-version" content="2.15.2 4dfc650946">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -1131,6 +1131,9 @@ const PROTOCOLS = {
       "Persistent pain or nitro contraindicated: MCG 1345 Pain Management (Fentanyl 50 mcg per MCG 1317.19); do not give ketorolac",
       "Nausea/vomiting: Ondansetron 4 mg ODT/IV/IM, may repeat x1 in 15 min",
       "Poor perfusion: NS 1 L IV rapid infusion, reassess every 250 mL"]},
+  "1212-P": { title: "Cardiac Dysrhythmia – Bradycardia (Pediatric)", revised: "07-01-26",
+    url: "https://file.lacounty.gov/SDSInter/dhs/1040512_1212-PCardiacDysrhythmia-Bradycardia.pdf",
+    keyPoints: ["Airway and oxygenation/ventilation FIRST; high-flow O2 for poor perfusion, BMV for poor perfusion (#3–5)", "Monitor; 12-lead prn for dysrhythmia", "Vascular access; NS 20 mL/kg IV/IO rapid infusion per MCG 1309 (#6–7)", "Persistent HR <60 with poor perfusion despite BMV and severe ALOC: begin compressions (#8 / ❷)", "Epinephrine 0.01 mg/kg of 0.1 mg/mL slow IV/IO push, repeat q3–5 min; CONTACT BASE concurrent (#8)", "Suspected AV block or unresponsive to epinephrine: atropine 0.02 mg/kg IV/IO, repeat once in 5 min (#9)", "Consider TCP for HR ≤40 with continued poor perfusion despite BMV/epinephrine; Base consultation (#10 / ❹)", "Infant <12 months: A/P pads, initial rate 100/min, current 40 mA, titrate to electrical AND mechanical capture then +10 mA (MCG 1365)", "Persistent poor perfusion despite capture: increase rate by 10/min, pediatric maximum 120/min (MCG 1365 #7)", "TCP in infants has limited out-of-hospital evidence; this scenario response is not a universal treatment endpoint. Transport to EDAP/PMC"]},
   "1212": { title: "Cardiac Dysrhythmia – Bradycardia", revised: "07-01-24",
     url: "https://file.lacounty.gov/SDSInter/dhs/1040389_1212CardiacDysrhythmia-Bradycardia2018-04-25.pdf",
     keyPoints: ["Base contact REQUIRED for all symptomatic bradycardia", "Monitor + 12-lead; if STEMI suspected treat with TP 1211", "Supine for poor perfusion if respiratory status allows", "Vascular access (do not delay TCP for it)",
@@ -2413,6 +2416,10 @@ const DOSING = (() => {
     const questions = Q_META.map((m, idx) => {
       let src = entry[m.k];
       if (peds && key === "d10" && PEDS_D10[m.k]) src = Object.assign({}, src, { correct: PEDS_D10[m.k](st, sc) }); // v2.14.7
+      if (sc && sc.protocol === "1212-P" && ["epi_arrest", "atropine", "ns"].includes(key)) {
+        const facts = key === "epi_arrest" ? {dose:"Epinephrine 0.01 mg/kg of 0.1 mg/mL slow IV/IO push (8 kg = 0.08 mg)",repeat:"Every 3–5 minutes for persistent poor perfusion",max:"CONTACT BASE concurrent with initial treatment; further doses per 1212-P / Base",contra:"Not indicated without symptomatic bradycardia / poor perfusion; ventilate first"} : key === "atropine" ? {dose:"Atropine 0.02 mg/kg IV/IO push (8 kg = 0.16 mg)",repeat:"May repeat once in 5 minutes",max:"Two doses, then further Base direction",contra:"Indicated for suspected AV block or unresponsive to epinephrine; do not delay ventilation"} : {dose:"Normal saline 20 mL/kg IV/IO rapid infusion (8 kg = 160 mL)",repeat:"Reassess perfusion / BP after the bolus; further fluids per protocol / Base",max:"Weight-based bolus per 1212-P / MCG 1309; contact Base for ongoing shock",contra:"Monitor for fluid overload; reassess lungs and perfusion"};
+        src = Object.assign({}, src, {correct:facts[m.k]});
+      }
       const correctIdx = perm[idx];
       const dist = src.distractors.slice();
       // Deterministic rotation of distractors
@@ -2589,6 +2596,7 @@ const DEVICE = (() => {
   const S = st => st.x.dv || (st.x.dv = { pace: { on: false, rate: RATE0, mA: 0, t0: null, started: false }, sync: false, energy: null, charged: null, charging: null,
     clearT: null, o2T: null, shocks: [], log: [], ramp: 0, cap: "none", ecapT: null, mechT: null, mechConfT: null, convT: null, lastOK: false, painS: 0, lastComplain: -99, noted: {} });
   const tcpOf = sc => { const t = Object.assign({ thr: 65, sbp: 24 }, sc.tcp || {}); if (t.mech == null) t.mech = t.thr; return t; };
+  const maxRate = sc => sc.peds ? 120 : 180; // MCG 1365 #7: pediatric protocol-mode ceiling
   const awake = m => ["alert", "anxious", "confused", "aphasic"].includes(m);
   const perfusing = (st) => !st.x.arrest && st.tg && st.tg.pulse !== false && !["vf", "asystole"].includes(st.tg.rhythm);
   function dlog(C, text) { const d = S(C.st); d.log.push({ t: C.st.t, text }); C.log("device", text); }
@@ -2607,7 +2615,7 @@ const DEVICE = (() => {
     if (!d) return tg;
     const p = d.pace;
     if (p.on && p.mA > 0 && st.flags.pads && tg.pulse !== false) {
-      const c = capture(st, sc), t = tcpOf(sc), boost = (t.sbp + 4 * Math.max(0, Math.min(3, (p.rate - 70) / 10))) * d.ramp;
+      const c = capture(st, sc), t = tcpOf(sc), boost = (t.ratePerfusion ? (p.rate >= maxRate(sc) ? t.sbp : 0) : (t.sbp + 4 * Math.max(0, Math.min(3, (p.rate - 70) / 10)))) * d.ramp;
       if (c === "mech") Object.assign(tg, { hr: tg.hr + (p.rate - tg.hr) * Math.min(1, d.ramp * 1.5), sbp: tg.sbp + boost, dbp: tg.dbp + boost * 0.55, rhythm: "paced", rhythmName: `Ventricular paced rhythm at ${p.rate}: a wide QRS and T wave after every pacer spike (${p.mA} mA)`, twelve: { st: {}, text: `Ventricular paced rhythm at ${p.rate}, wide QRS after each spike.` } });
       else if (c === "elec") Object.assign(tg, { rhythm: "paced", rhythmName: `Ventricular paced rhythm at ${p.rate}: a wide QRS after every pacer spike (${p.mA} mA)`, twelve: { st: {}, text: `Ventricular paced rhythm at ${p.rate}.` } });
       else if (c === "none") tg.rhythmName = `${tg.rhythmName}, with pacer spikes at ${p.rate} NOT followed by a QRS (no capture, ${p.mA} mA)`;
@@ -2620,7 +2628,7 @@ const DEVICE = (() => {
   // ---------- monitor display state ----------
   function mon(st, sc) {
     const d = st.x.dv; if (!d) return null; const p = d.pace, c = st.tg ? capture(st, sc) : "none";
-    return { pads: !!st.flags.pads, pacing: p.on && p.mA > 0 && !!st.flags.pads, pacerOn: p.on, rate: p.rate, mA: p.mA, cap: c, sync: d.sync, energy: d.energy, charged: d.charged, charging: !!d.charging, shockN: d.shocks.length, under: underlying(st) };
+    return { pads: !!st.flags.pads, pacing: p.on && p.mA > 0 && !!st.flags.pads, pacerOn: p.on, rate: p.rate, maxRate: maxRate(sc), maxMA: MAX_MA, mA: p.mA, cap: c, sync: d.sync, energy: d.energy, charged: d.charged, charging: !!d.charging, shockN: d.shocks.length, under: underlying(st) };
   }
   // ---------- operations ----------
   const needPads = (C) => { const st = C.st; if (st.flags.pads) return null; const pend = (st.pq || []).some(q => q.id === "pads");
@@ -2657,9 +2665,9 @@ const DEVICE = (() => {
           if (o.op === "pace" || p.on || ["ma", "maup", "madown", "startat"].includes(o.op)) { const np = needPads(C); if (np && o.op === "pace") { lines.push(np); return lines; } }
           if (o.op === "pace") { if (!p.on) { p.on = true; if (!p.rate) p.rate = RATE0; dlog(C, `PACER ON (rate ${p.rate}, ${p.mA} mA)`); pend(`Pacer on: demand mode, rate ${p.rate} ppm, output ${p.mA} mA.`); } }
           if (o.op === "rate" || o.op === "rateup" || o.op === "ratedown") {
-            const nr = Math.max(30, Math.min(180, o.op === "rate" ? o.val : p.rate + (o.op === "rateup" ? 1 : -1) * (o.val || 10)));
+            const nr = Math.max(30, Math.min(maxRate(sc), o.op === "rate" ? o.val : p.rate + (o.op === "rateup" ? 1 : -1) * (o.val || 10)));
             p.rate = nr; dlog(C, `Pacing rate ${nr} ppm`); pend(`Rate ${nr} ppm.`);
-            if (nr > 100 && !d.noted.rate) { d.noted.rate = true; lines.push(C.dev("Maximum adult pacing rate is 100 bpm (increase by 10 bpm at a time for poor perfusion).", "MCG 1365 #7", "caution")); }
+            if (!sc.peds && nr > 100 && !d.noted.rate) { d.noted.rate = true; lines.push(C.dev("Maximum adult pacing rate is 100 bpm (increase by 10 bpm at a time for poor perfusion).", "MCG 1365 #7", "caution")); }
           }
           if (["ma", "maup", "madown", "startat"].includes(o.op)) {
             const nm = Math.max(0, Math.min(MAX_MA, o.op === "ma" || o.op === "startat" ? o.val : p.mA + (o.op === "maup" ? 1 : -1) * (o.val || STEP)));
@@ -2816,7 +2824,7 @@ const DEVICE = (() => {
     const d = st.x.dv; if (!d) return null;
     return { log: d.log.slice(), shocks: d.shocks.slice(), ecapT: d.ecapT, mechT: d.mechT, mechConfT: d.mechConfT, convT: d.convT, paceT0: d.pace.t0 };
   }
-  return { S, run, tick, overlay, mon, paced, capture, pulseCheck, summary, tcpOf, sedation };
+  return { S, run, tick, overlay, mon, paced, capture, pulseCheck, summary, tcpOf, sedation, maxRate, MAX_MA };
 })();
 function PACED(st) { return DEVICE.paced(st); }
 function PACE_RATE(st) { return st.x.dv ? st.x.dv.pace.rate : 70; }
@@ -4819,6 +4827,7 @@ const SIM = (() => {
   const PEDS = () => sc.patient.age < 15 || !!sc.peds;
   // v2.10.7: infants/toddlers have a large occiput: supine, the neck flexes and BMV chest rise is poor until a shoulder roll
   // (or, with trauma, padding for neutral in-line alignment) is placed. Standard practice* (TP 1210-P ❺ "no chest rise after repositioning").
+  const pedsBradyCPR = () => sc.protocol === "1212-P" && st.v.hr < 60 && st.v.sbp < 70 && mental() === "unresponsive" && st.flags.o2 === "bvm";
   const pedsRollNeeded = () => PEDS() && sc.patient.age < 3 && !(st.x && st.x.roll) && !(st.flags && st.flags.sga);
   const OB_TX = new Set(["obkit", "deliver", "drynewborn", "clampcord", "placenta", "fundal", "skintoskin"]);
   // v2.14.7: pediatric D10 by weight (Adrian's workflow): 1 mL/kg per dose, 3 doses, recheck BG, up to 2 more (5 total = 5 mL/kg)
@@ -5009,6 +5018,11 @@ const SIM = (() => {
   }
   // Reassess macro: HABBO → ABCs → BP, SpO2, RR → rest of the vitals, with fresh values
   function reassessWalk() {
+    if (typeof BRADY !== "undefined" && BRADY.is(sc)) {
+      rec("x:reassess"); const sites = lastSites; lastSites = ["femoral"];
+      const out = ["Infant reassessment: responsiveness / airway / ventilation / perfusion:", ...assess("painresp"), ...assess("airway"), ...assess("lungs"), ...assess("pulse"), ...assess("skin"), ...assess("bp"), ...assess("spo2"), ...assess("rr")];
+      lastSites = sites; return out.join(" ");
+    }
     rec("x:reassess"); const he = sc.patient.sex === "F" ? "she" : "he", lines = ["↻ Reassessment (HABBO → ABCs → BP, SpO₂, RR → rest):"];
     const hx = [];
     if (!st.events["q:seizurehx"]) rec("q:seizurehx"); if (!st.events["q:age"] && !st.x.age) { rec("q:age"); st.x.age = true; } if (!st.events["q:bedbound"]) rec("q:bedbound");
@@ -5431,6 +5445,16 @@ const SIM = (() => {
         if (sc.base === "chf" && !st.flags.cpap && mode !== "cpap") notes.push(dev("In pulmonary edema, albuterol is for wheezing that persists despite CPAP.", "1214 #9", "note"));
         break; }
       case "epi": {
+        if (sc.protocol === "1212-P") {
+          const expected = 0.01 * sc.patient.weightKg, mg = doseOf(tx, "mg");
+          narr = `Epinephrine ${mg == null ? expected : mg} mg (0.1 mg/mL) slow IV/IO push, per MCG 1309`;
+          if (!st.flags.iv && !st.flags.io) notes.push(dev("Epinephrine requires IV/IO access.", "1212-P #8"));
+          if (tx.route && !["IV", "IO"].includes(tx.route)) notes.push(dev("Pediatric bradycardia epinephrine is slow IV/IO, not IM.", "1212-P #8"));
+          if (mg != null && Math.abs(mg - expected) > 0.001) notes.push(dev(`Pediatric bradycardia epinephrine is 0.01 mg/kg = ${expected} mg (0.1 mg/mL).`, "1212-P #8"));
+          if (st.last.epi != null && st.t - st.last.epi < 180) notes.push(dev("Repeat epinephrine every 3–5 minutes, not sooner.", "1212-P #8"));
+          if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with epinephrine for symptomatic pediatric bradycardia.", "1212-P #8", "caution"));
+          break;
+        }
         const route = tx.route, bare = (String(tx.raw || "").match(/\b(?:epi\w*|adrenaline)\s+(?:of\s+)?(0?\.\d+|\d+(?:\.\d+)?)\b(?!\s*(?:mcg|micro|ml|cc|mL))/i) || [])[1];
         const mg = doseOf(tx, "mg") || (bare != null && +bare <= 5 ? +bare : null);
         if (st.x.arrest) {
@@ -5504,8 +5528,8 @@ const SIM = (() => {
       case "cardiovert": { const j = doseOf(tx, "J"); narr = `Synchronized cardioversion ${j || 120} J`; if ((!sc.allow || !sc.allow.cardiovert) && !(typeof COURSE !== "undefined" && COURSE.allowed(st, "cardiovert"))) notes.push(dev("Synchronized cardioversion is for tachycardia with poor perfusion and ALOC (or per Base). Not indicated for this rhythm/patient.", "1213")); else { if (!st.events["t:base"] && !(sc.baseOrder && st.x.baseOrd == null && st.events["x:cvnobase"])) notes.push(dev("CONTACT BASE concurrent with cardioversion.", "1213 #12/#17/#19", "note")); } if (st.x.arrest) notes.push(dev("Pulseless rhythm: DEFIBRILLATE (unsynchronized), don't cardiovert.", "1210 #8")); break; }
       case "pace": { const dv = st.x.dv && st.x.dv.pace; narr = `Transcutaneous pacing started (A/P pads, rate ${dv ? dv.rate : 70}, ${dv ? dv.mA : 0} mA)`; const uh = (st.x.dvU && st.x.dvU.hr) || st.v.hr; if (!(uh <= 45 && st.v.sbp < 100) && !(typeof COURSE !== "undefined" && COURSE.allowed(st, "pace"))) notes.push(dev("TCP is for HR ≤ 40 with continued poor perfusion.", "1212 #9")); if (!st.events["t:base"]) notes.push(dev("CONTACT BASE concurrent with initiation of TCP.", "1212 #9", "note")); break; }
       case "cpr":
-        if (!st.x.arrest && st.tg.pulse !== false) notes.push(dev("CPR on a patient with a pulse.", "1210"));
-        st.flags.cpr = true; st.x.noCpr = 0; narr = "High-quality CPR: 100-120/min, 2 in depth, full recoil"; break;
+        if (!st.x.arrest && st.tg.pulse !== false && !pedsBradyCPR()) notes.push(dev("CPR on a patient with a pulse.", "1210"));
+        st.flags.cpr = true; st.x.noCpr = 0; narr = PEDS() && sc.patient.age < 1 ? "High-quality infant CPR: 100–120/min, one-third chest depth (~1.5 inches), full recoil, 15:2 with two rescuers" : "High-quality CPR: 100-120/min, 2 in depth, full recoil"; break;
       case "stopcpr": st.flags.cpr = false; narr = "Compressions paused"; if (roscRecognized("compressions stopped")) narr = "Compressions stopped: strong carotid pulse. ROSC confirmed (1210 #18)."; break;
       case "needle": { // generic: scenarios with a tension pneumothorax handle this in preTreat
         if (narr !== (TX_LABEL[id] || id)) break; // scenario preTreat already described it
@@ -5640,7 +5664,17 @@ const SIM = (() => {
         if (sc.base === "anaph" && !n(st, "epi")) notes.push(dev("Diphenhydramine does not treat anaphylaxis. Epinephrine is the first priority.", "1219 ❸"));
         if (route === "IV" && !st.flags.iv) notes.push(dev("Diphenhydramine IV needs vascular access. If unable to obtain access, give 50 mg deep IM.", "1239 #5 / MCG 1317.15", "caution"));
         break; }
-      case "atropine": narr = "Atropine 1 mg IV/IO"; if (!(st.v.hr < 60 && sbp < 100)) notes.push(dev("Atropine is for bradycardia with poor perfusion.", "1212 #8")); if (!st.flags.iv) notes.push(dev("Atropine IV/IO requires access. If no IV, proceed to TCP.", "1212 #8", "caution")); if (n(st, "atropine") >= 3) notes.push(dev("Atropine max 3 mg.", "1212 #8")); if (sc.chb && st.v.hr <= 40 && !(st.x.dv && st.x.dv.pace.on)) notes.push(dev("3rd-degree / 2nd-degree type II block with HR ≤ 40: atropine is unlikely to help; proceed immediately to TCP and don't delay it for atropine.", "1212 #8, ❸", "note")); break;
+      case "atropine":
+        if (sc.protocol === "1212-P") {
+          const expected = 0.02 * sc.patient.weightKg, mg = doseOf(tx, "mg");
+          narr = `Atropine ${mg == null ? expected : mg} mg (0.1 mg/mL) IV/IO per MCG 1309`;
+          if (!st.flags.iv && !st.flags.io) notes.push(dev("Atropine requires IV/IO access.", "1212-P #9"));
+          if (mg != null && Math.abs(mg - expected) > 0.001) notes.push(dev(`Atropine 0.02 mg/kg = ${expected} mg IV/IO.`, "1212-P #9"));
+          if (st.last.atropine != null && st.t - st.last.atropine < 300) notes.push(dev("Atropine may repeat once in 5 minutes.", "1212-P #9"));
+          if (n(st, "atropine") >= 2) notes.push(dev("Atropine maximum two doses before further Base direction.", "1212-P #9"));
+          break;
+        }
+        narr = "Atropine 1 mg IV/IO"; if (!(st.v.hr < 60 && sbp < 100)) notes.push(dev("Atropine is for bradycardia with poor perfusion.", "1212 #8")); if (!st.flags.iv) notes.push(dev("Atropine IV/IO requires access. If no IV, proceed to TCP.", "1212 #8", "caution")); if (n(st, "atropine") >= 3) notes.push(dev("Atropine max 3 mg.", "1212 #8")); if (sc.chb && st.v.hr <= 40 && !(st.x.dv && st.x.dv.pace.on)) notes.push(dev("3rd-degree / 2nd-degree type II block with HR ≤ 40: atropine is unlikely to help; proceed immediately to TCP and don't delay it for atropine.", "1212 #8, ❸", "note")); break;
       case "adenosine": narr = "Adenosine 12 mg rapid IV push + NS flush"; if (!sc.allow || !sc.allow.adenosine) notes.push(dev("Adenosine is for regular narrow-complex SVT (or regular monomorphic WCT); not indicated for this rhythm (e.g., irregular AFib or sinus tach).", "1213")); if (!st.flags.iv) notes.push(dev("Adenosine requires IV access (antecubital preferred).", "1213", "caution")); { const mg = doseOf(tx, "mg"); if (mg && mg !== 12) notes.push(dev(`LA County adenosine dose is 12 mg (you said ${mg} mg).`, "1213 #10", "note")); } break;
       case "vagal": narr = "Modified Valsalva maneuver"; if (!sc.allow || !sc.allow.adenosine) notes.push(dev("Valsalva is for SVT with adequate perfusion.", "1213 #10", "note")); break;
       case "cooling": narr = "Passive cooling measures"; break;
@@ -5789,7 +5823,7 @@ const SIM = (() => {
       if (o.id === "ivsetup" && st.flags.iv) { lines.push(pSay("You've already got a line in, medic. Want me to hang fluids? That's your call.")); continue; }
       if ((pVent || pCpr) && o.kind === "t" && o.id === "ivsetup") { lines.push(pSay(pVent ? "I'm on the bag, medic. I can't come off ventilations to set up the IV. Get someone on the bag and I'll spike it." : "I'm on compressions, medic. I can't come off the chest to set up the IV. Swap me out and I'll spike it.")); continue; }
       const ack = partnerAck(o, raw, P.recheckMin);
-      if (o.id === "cpr" && st.tg.pulse !== false && !st.x.arrest) { lines.push(pSay(`Hold on, medic, ${he()} has a pulse. I'm not starting compressions on ${him()}.`)); continue; }
+      if (o.id === "cpr" && st.tg.pulse !== false && !st.x.arrest && !pedsBradyCPR()) { lines.push(pSay(`Hold on, medic, ${he()} has a pulse. I'm not starting compressions on ${him()}.`)); continue; }
       const dur = pRand(PT_TIME[o.id] || [8, 14]); let start = Math.max(st.t, st.pBusy || 0);
       // v2.14.4: life threats first: airway / ventilation jumps ahead of queued tasks the EMT hasn't started yet
       // (the task in hand is finished first, then the bag / suction / adjunct; the rest of the queue slides back)
@@ -6037,7 +6071,7 @@ const SIM = (() => {
     }
     // v2.13.0 reassessment after each condition change
     const rs = reassessSummary();
-    if (rs && rs.any) base.push({ label: "Reassessed after condition change (HABBO → ABCs → BP → SpO₂ → RR → rest)", keys: ["x:reassess"], ref: "standard practice* (instructor standard: reassess on change; HABBO = L-HABBO items H, A, B, B, O)", reassess: true });
+    if (rs && rs.any) base.push({ label: typeof BRADY !== "undefined" && BRADY.is(sc) ? "Reassessed infant responsiveness / ABCs / pulse-perfusion / BP / SpO₂ / RR after change" : "Reassessed after condition change (HABBO → ABCs → BP → SpO₂ → RR → rest)", keys: ["x:reassess"], ref: "standard practice* (instructor standard: reassess on change; HABBO = L-HABBO items H, A, B, B, O)", reassess: !(typeof BRADY !== "undefined" && BRADY.is(sc)) });
     return base.map(c => c.reassess ? { ...c, done: rs.ok, time: (rs.changes.find(x => x.started != null) || {}).started ?? null } : ({ ...c, done: c.all ? c.keys.every(keyDone) : (c.keys.some(k => k.startsWith("!")) ? c.keys.every(keyDone) : c.keys.some(keyDone)), time: firstTime(c.keys) }));
   }
   function lhabboStatus() { if (!st || typeof LHABBO === "undefined") return null; const its = LHABBO.ITEMS.map(i => ({ ...i, done: !!st.events[i.key], t: (st.events[i.key] || [])[0] })); return { graded: LHABBO.strokeCall(sc), items: its, missed: its.filter(i => !i.done), result: st.x.lhabbo || null }; }
@@ -8289,6 +8323,90 @@ const COLD = (() => {
   return {handle,reading,report,onTreat,tick,chips,watch,SAY};
 })();
 var AUTOPILOT_WORDS = Object.assign(typeof AUTOPILOT_WORDS !== 'undefined' ? AUTOPILOT_WORDS : {}, COLD.SAY);
+
+/* ===== brady.js ===== */
+/* Infant brady teaching case. All commands run through the normal SIM/NLU/device paths. */
+const BRADY = (() => {
+  const is = sc => sc && sc.id === 'peds_brady_rate';
+  const recovered = st => !!(st.x.dv && st.x.dv.cap === 'mech' && st.x.dv.pace.rate === 120 && st.v && st.v.sbp >= 70);
+  const ever = (st,k) => !!st.events[k];
+  const vent = st => st.flags.o2 === 'bvm' && !!st.x.roll;
+  function preTreat(id,st,tx,H) {
+    const flag = text => { H.rec('x:pb:sequence'); H.devQuiet(text,'1212-P / MCG 1365','critical'); };
+    if (id==='cpr' && (!vent(st) || st.v.hr>=60)) { flag('Infant CPR requires persistent HR <60 with poor perfusion and severe ALOC AFTER effective BMV.'); return {block:true,lines:[{speaker:'find',text:'Ventilate effectively first, reassess HR/perfusion, then compress if still indicated.'}]}; }
+    if (['ns','epi','atropine'].includes(id) && !ever(st,'a:broselow')) flag('Use the Broselow tape before weight-based drugs / fluids.');
+    if (id==='epi' && !st.count.ns) flag('Fluid resuscitation and reassessment precede epinephrine for persistent poor perfusion in this call.');
+    if (id==='epi' && (!vent(st) || !ever(st,'x:pb:cpr'))) flag('Treat ventilation first; persistent severe ALOC / HR <60 and poor perfusion require CPR before epinephrine.');
+    if (id==='atropine' && (!vent(st) || !st.count.epi)) flag('Atropine for persistent AV block follows airway/ventilation and epinephrine in this call.');
+    if (id==='pace' && (!vent(st) || !ever(st,'x:pb:cpr') || !st.count.epi || !st.count.atropine)) flag('Pacing began before effective ventilation, indicated CPR and epinephrine/atropine for refractory infant AV block.');
+    if (id==='stopcpr' && st.v.hr<60) flag('Persistent HR <60 with severe ALOC and poor perfusion: continue indicated infant compressions.');
+    return null;
+  }
+  function tick(st,dt,H) {
+    const rec = k => {if(!ever(st,k))H.rec(k);};
+    if(vent(st)) {rec('x:pb:vent'); if(st.flags.cpr)rec('x:pb:cpr');}
+    if(st.t>60 && !vent(st) && !ever(st,'x:pb:delay')) {H.rec('x:pb:delay');H.devQuiet('Ventilation delayed in a hypoxic, bradycardic infant. Airway / oxygenation and effective BMV are the first priorities.','1212-P ❶','critical');}
+    const d=st.x.dv, p=d&&d.pace, mech=d&&d.cap==='mech';
+    const bp=(st.events['a:bp']||[]).slice(-1)[0];
+    if(mech && d.mechConfT!=null && bp>=d.mechConfT && p.rate===100 && st.v.sbp<70)rec('x:pb:lowBP');
+    if(mech && ever(st,'x:pb:lowBP') && p.rate===110)rec('x:pb:110');
+    if(mech && p.rate===120 && ever(st,'x:pb:110') && st.v.sbp>=70) {rec('x:pb:rate');if(bp>= (st.events['x:pb:rate']||[Infinity])[0])rec('x:pb:goodBP');}
+    // Final checklist must not stay green after losing capture or lowering rate again.
+    if(!mech || p.rate!==120 || st.v.sbp<70){delete st.events['x:pb:rate'];delete st.events['x:pb:goodBP'];}
+    if(mech && p.rate<120 && d.mechConfT!=null && st.t-d.mechConfT>60 && !st.x.pbRateWarn){st.x.pbRateWarn=true;H.devQuiet('Capture alone is not adequate perfusion: BP is still low. Increase the RATE by 10/min, reassess, up to pediatric maximum 120/min; more mA is not the solution.','MCG 1365 #7','deviation');}
+  }
+  // Ordered coaching. A chip is the normal voice command, never a shortcut around the device.
+  function next(sc,st) {
+    const e=k=>ever(st,k), p=st.x.dv&&st.x.dv.pace, d=st.x.dv;
+    const c=(label,say)=>({label,say,grp:'peds-brady'});
+    const result=(title,...chips)=>({step:'peds-brady',title,chips});
+    if(!e('q:greet'))return result('Caregiver introduction / responsiveness',c('Introduce yourself',"Hi, my name is Adrian, and I'm here to help. Is that okay?"),c('Responsiveness','Is he alert?'),c('Airway / breathing','Is his airway clear and is he breathing adequately?'));
+    if(!vent(st))return result('Airway / oxygenation FIRST — effective BVM',c('BVM + O2 / capno (partner)','Partner, bag him with the BVM and put capno on'),c('Neutral infant positioning','I am putting a towel under his shoulders'),c('Check chest rise','Check chest rise'));
+    if(!e('a:painresp'))return result('Assess infant responsiveness',c('Nail-bed response','Nail bed pressure'));
+    if(!e('a:pulse')||!e('a:skin'))return result('Infant pulse / perfusion',c('Femoral pulse','Check a femoral pulse'),c('Skin / forehead','I am feeling the forehead, checking skin signs'));
+
+    if(!e('x:pb:cpr'))return result('After BMV: HR <60 + severe ALOC / poor perfusion → infant CPR',c('Infant compressions 15:2','I am starting compressions, infant CPR 15 to 2'));
+    if(!e('a:monitor')||!e('a:bp'))return result('Monitor / baseline BP (EMT is on BVM; medic cycles NIBP)',c('Monitor','I am putting him on the monitor'),c('BP / SpO2 / RR','I am checking blood pressure, pulse ox and respirations'));
+    if(!e('a:broselow'))return result('Broselow before weight-based medication',c('Broselow tape','Broselow tape, what color are they?'));
+    if(!e('a:bgl'))return result('Check glucose',c('Blood glucose','I am checking a blood sugar'));
+    if(!st.flags.iv&&!st.flags.io)return result('IV/IO access',c('IV','Start an IV'),c('IO if IV delayed','Start an IO'));
+    if(!e('t:ns'))return result('NS 20 mL/kg and reassess',c('NS 160 mL IV','Normal saline 160 milliliters IV'));
+    if(!e('t:base'))return result('CONTACT BASE concurrent with epinephrine / TCP',c('Contact Base','Base, this is Medic 12, how copy?'));
+    if(!e('t:epi'))return result('Persistent bradycardia: epinephrine per 1212-P #8',c('Epi 0.08 mg slow IV','Epinephrine 0.08 milligrams slow IV push'));
+    if(!e('t:atropine'))return result('Persistent AV block: atropine',c('Atropine 0.16 mg IV','Atropine 0.16 milligrams IV'));
+    if(!st.flags.pads)return result('Refractory AV block: A/P pacing pads + ECG',c('Pacing pads','I am applying the pads'));
+    if(!p||!p.on||p.rate<100)return result('Infant initial pacing RATE 100/min',c('Pacer ON, rate 100','Start pacing at 100'));
+    if(!p.mA)return result('Start OUTPUT at 40 mA',c('40 mA','Start at 40 milliamps'));
+    if(!d||d.cap!=='mech')return result('Increase output to electrical AND mechanical capture',c('Output +10 mA','Go up by 10 milliamps'),c('Check electrical capture','I have electrical capture'));
+    if(d.mechConfT==null)return result('Capture on ECG → confirm palpable pulse',...(!e('a:ecapread')?[c('Electrical capture','I have electrical capture')]:[]),c('Femoral pulse matches rate','Check a femoral pulse'));
+    if(st.flags.cpr)return result('Paced pulse now ≥60/min: stop compressions, continue BVM',c('Stop compressions','I will stop compressions'));
+    if(!e('x:margin'))return result('Capture confirmed → add 10 mA safety margin',c('Output +10 mA','Go up by 10 milliamps'));
+    if(!e('x:pb:lowBP'))return result('Recheck BP: capture is NOT enough',c('Recheck BP','I am checking blood pressure'));
+    if(p.rate<120)return result('BP still poor: increase RATE by 10, pediatric maximum 120/min',c('Rate +10','Increase the pacing rate by 10'),c('Recheck BP','I am checking blood pressure'));
+    return result('At 120/min: confirm pulse and adequate BP, continue ventilation, transport',c('Femoral pulse','Check a femoral pulse'),c('Recheck BP','I am checking blood pressure'),c('Stop compressions when HR/perfusion adequate','I will stop compressions'),c('Transport','Let\'s transport, load and go'));
+  }
+  async function watch(sc,S,say,H) {
+    const st=H.st, phase=H.setPhase;
+    const cmd=async(t,why,dt=4)=>say(t,{why,ref:'TP 1212-P / MCG 1365',dt,task:/^Partner, bag/.test(t)?'emt:bvm':null});
+    phase('avpu');await cmd(AUTOPILOT.INTRO,'Introduce yourself to the caregiver and infant; implied consent with parent permission.');AUTOPILOT.consent(sc,S.mental(),H.push,'');
+    phase('abc');await cmd('Partner, bag him with the BVM and put capno on','Ventilation and high-flow O2 FIRST, immediately after introduction / no verbal response; EMT ventilates while medic treats.');await cmd('I am putting a towel under his shoulders','Neutral infant airway; good chest rise.');
+    phase('avpu');await cmd('Nail bed pressure','No response to voice; assess pain response while BVM is being applied.');await cmd('Check a femoral pulse','Appropriate infant central pulse and perfusion.');await cmd('I am feeling the forehead, checking skin signs','Cool, pale, mottled, poor perfusion.');
+    phase('abc');H.tick(10,true);await cmd('Check chest rise','Confirm effective BMV, not just a BVM order.');
+    await cmd('I am starting compressions, infant CPR 15 to 2','Despite effective BMV: HR 38, severe ALOC, continued poor perfusion. Infant CPR.');
+    phase('exam');await cmd('I am putting him on the monitor','EMT is busy ventilating; medic places monitor.');await cmd('I am checking blood pressure, pulse ox and respirations','Medic cycles NIBP; do not interrupt partner ventilation.');await cmd('Broselow tape, what color are they?','Red / 8 kg before medication.');await cmd('I am checking a blood sugar','Rule out hypoglycemia; BG 92.');await cmd('Listen to lung sounds','Verify bilateral air entry.');
+    phase('tx');await cmd('Start an IV','Vascular access, IO if delayed.');await cmd('Normal saline 160 milliliters IV','20 mL/kg × 8 kg.');await cmd('I am checking blood pressure','Reassess after fluids.');
+    phase('base');await cmd('Base, this is Medic 12. We have an eight month old male, Red, eight kilograms, complete heart block, HR 38, BP 54 over 30, severe ALOC despite effective BVM and CPR. Glucose 92, IV access, NS 160 mL given. Initiating epinephrine then atropine and TCP for continued poor perfusion. Requesting physician consultation, over.','Base concurrent with epinephrine and pacing.');
+    phase('tx');await cmd('Epinephrine 0.08 milligrams slow IV push','0.01 mg/kg of 0.1 mg/mL IV/IO; still bradycardic.');await cmd('Atropine 0.16 milligrams IV','0.02 mg/kg for refractory AV block.');
+    await cmd('I am applying the pads','Infant pacing pads anterior/posterior; monitor connected.');await cmd('Start pacing at 100','Infant <12 months: initial RATE 100/min.');await cmd('Start at 40 milliamps','Initial OUTPUT 40 mA, titrate to capture.');
+    while(S.devMon().cap!=='mech' && S.devMon().mA<100)await cmd('Go up by 10 milliamps','Increase current until electrical AND mechanical capture.');
+    await cmd('I have electrical capture','Every spike followed by wide QRS and T.');H.tick(15,true);await cmd('Check a femoral pulse','Confirm mechanical capture at paced rate.');await cmd('Set the mA to 70','10 mA over 60 mA capture threshold, NOT maximum current.');await cmd('I will stop compressions','Paced pulse now 100/min; reassess perfusion.');
+    phase('reassess');await cmd('I am checking blood pressure','Capture at 100/min but BP still ~54/30: inadequate perfusion.');
+    for(const rate of [110,120]){await cmd('Increase the pacing rate by 10',`Increase RATE stepwise to ${rate}/min; pediatric ceiling 120.`,6);H.tick(15,true);await cmd('I am checking blood pressure',rate===110?'Still hypotensive at 110/min.':'At protocol maximum 120/min, BP now ~82/45 and perfusion improving.');}
+    await cmd('Check a femoral pulse','Reconfirm pulse at 120/min.');await cmd('I am listening to lung sounds','Reassess air entry; continue ventilation.');await cmd('I am feeling the forehead, checking skin signs','Reassess perfusion after increasing rate.');await cmd("I'm going to reassess",'Age-appropriate infant reassessment: responsiveness, ABCs, pulse/perfusion and vitals.');
+    S.setPI('DYSR');S.selectDest('pmc',true);phase('dest');await cmd('Notify the receiving hospital','Pre-alert EDAP/PMC.');await cmd("Let's transport, load and go",'Prompt transport with pacing, continuous ventilation, ongoing BP/pulse checks.');
+  }
+  return {is,recovered,preTreat,tick,next,watch};
+})();
 
 /* ===== sc0_base.js ===== */
 /* =====================================================================
@@ -11201,6 +11319,53 @@ PH({ kg: 8, age: 0, ok: true, bg0: 34, rise: 14, vit: { good: { hr: 140, sbp: 86
     allergies: "(grandma: none)", meds: "(grandma: amoxicillin for her ear)", history: "(grandma: full term, healthy)", lastoral: "(grandma: a little formula yesterday afternoon)", events: "(grandma: fever and fussy for two days, stopped eating, tonight she's floppy)" },
   bystanderAnswers: { cc: "She's had a fever and an ear infection, hardly ate in a day, now she's floppy.", weight: "She was 17 pounds at her checkup, about 8 kilos." },
 }});
+
+/* ===== scx_18_peds_brady.js ===== */
+/* TP 1212-P (07-01-26), MCG 1365 (04-01-24). Scenario-specific low-output response,
+ * NOT a claim that every infant needs 120 ppm or that high current improves BP. */
+addS(G({
+  id: 'peds_brady_rate', protocol: '1212-P', refs: ['1212-P','1365','1309','1200.2'], base: 'brady', peds: true, chb: true, difficulty: 'Advanced',
+  dispatchTitle: '8-month-old infant, lethargic / bradycardia', dispatchShort: 'Chino Hills home, infant barely responding.',
+  dispatch: 'Respond to a Chino Hills residence for an 8-month-old boy, barely responding and breathing slowly. Parents on scene.',
+  scene: 'Scene safe. An 8-month-old lies limp on a blanket, pale and mottled, with slow shallow breaths and little response to his mother. Both parents are present.',
+  approach: { track: 'Eyes closed, not tracking; weak response to painful stimulus.', see: 'Limp infant with slow shallow respirations, pale mottled skin; parents calling for help.' },
+  patient: { name: 'Noah Reyes', age: 0, ageText: '8 months', sex: 'M', weightKg: 8 }, bystander: { name: 'Elena', role: 'mother', sex: 'F' },
+  personality: 'Nonverbal infant; history from mother. Not tracking, no verbal response; weak withdrawal to nail-bed pressure.',
+  allergies: [], startSev: 0.8, drift0: 0, pain: [0,0], bgl: 92, temp: 98.4, o2Gain: 0,
+  vit: { good: { hr: 38, sbp: 54, dbp: 30, rr: 8, spo2: 82, etco2: 55 }, bad: { hr: 38, sbp: 54, dbp: 30, rr: 8, spo2: 82, etco2: 55 } },
+  tcp: { thr: 60, mech: 60, sbp: 28, ratePerfusion: true },
+  rhythm: 'chb', rhythmName: 'Third-degree (complete) AV block, ventricular escape 38/min',
+  twelve: { st: {}, text: 'Complete AV block: atrial rate 140, ventricular escape 38, AV dissociation. No ST elevation.' },
+  skin: 'Pale, cool, mottled; capillary refill 4 seconds', lungs: 'Clear but faint with shallow slow respirations',
+  airway: 'Patent with neutral positioning; slow shallow breathing, ventilation inadequate', mentalFn: st => 'unresponsive',
+  special(st) { const vent=st.flags.o2==='bvm' && st.x.roll; return { spo2: vent?98:st.flags.o2==='nrb'?86:st.flags.o2==='nc'?84:82, rr: vent?20:8, etco2: vent?36:55, lungs: vent?'Clear bilateral breath sounds with BVM chest rise':'Faint bilateral breath sounds; shallow slow breaths', pulse:true, airway:vent?'Patent with neutral positioning and BVM support':'Patent but ventilation inadequate', ...(BRADY.recovered(st)?{skin:'Warmer, pinker; capillary refill 2 seconds'}:{}) }; },
+  answers: { greet:'(no verbal response; does not track)', cc:'(no verbal response)', orient:'(not tracking)' }, fallback:['(no verbal response; mother answers)'],
+  bystanderAnswers: { name:'Noah Reyes.', age:'Eight months.', consent:'Yes, please help him!', cc:'He went floppy and stopped looking at me. His breathing got really slow.', onset:'About ten minutes ago.', history:'He has congenital complete heart block. His cardiologist has been following him.', meds:'No medicines.', allergies:'No allergies.', lastoral:'Formula an hour ago.', events:'He was feeding, then became pale and limp.', drugs:'No access to medicines or drugs.', weight:'About eight kilograms.' },
+  preTreat: (id,st,tx,H) => BRADY.preTreat(id,st,tx,H), tickExtra: (st,dt,H) => BRADY.tick(st,dt,H),
+  checklist: [
+    {label:'Introduce yourself; assess responsiveness, infant femoral pulse, skin and perfusion',keys:['q:greet','a:pulse','a:skin','a:painresp'],all:true,ref:'1201 / 1212-P #1',critical:true},
+    {label:'BVM started with high-flow oxygen (verify effective chest rise)',keys:['t:bvm'],ref:'1212-P #3–5',optional:true},
+    {label:'Airway / BVM with high-flow O2 and good chest rise FIRST',keys:['x:pb:vent'],ref:'1212-P #1–5 / ❶',critical:true},
+    {label:'CPR only after BMV for persistent HR <60, severe ALOC and poor perfusion',keys:['x:pb:cpr'],ref:'1212-P #8 / ❷',critical:true},
+    {label:'Monitor / rhythm and initial BP assessed',keys:['a:monitor','a:bp'],all:true,ref:'1212-P #4',critical:true},
+    {label:'Broselow tape: Red, 8 kg before weight-based treatment',keys:['a:broselow'],ref:'MCG 1309',critical:true},
+    {label:'Check glucose (92 mg/dL; no dextrose indicated)',keys:['a:bgl'],ref:'1201'},
+    {label:'IV/IO access',keys:['t:iv','t:io'],ref:'1212-P #6',critical:true},
+    {label:'NS 20 mL/kg (160 mL) IV/IO and reassess',keys:['t:ns'],ref:'1212-P #7',critical:true},
+    {label:'Base contact concurrent with epinephrine and TCP',keys:['t:base'],ref:'1212-P #8,#10',critical:true},
+    {label:'Epinephrine 0.08 mg of 0.1 mg/mL slow IV/IO after BMV',keys:['t:epi'],ref:'1212-P #8',critical:true},
+    {label:'Atropine 0.16 mg IV/IO for persistent AV block',keys:['t:atropine'],ref:'1212-P #9',critical:true},
+    {label:'TCP after ventilation / CPR / drug therapy; initial infant rate 100/min',keys:['t:pace'],ref:'1212-P #10 / MCG 1365',critical:true},
+    {label:'Stop infant compressions once a confirmed paced pulse is ≥60/min; continue ventilation',keys:['t:stopcpr'],ref:'1212-P ❷',critical:true},
+    {label:'After capture and pulse confirmation: recheck BP; still hypotensive at 100/min',keys:['x:pb:lowBP'],ref:'MCG 1365 #5–7',critical:true},
+    {label:'Persistent hypotension: rate 100 → 110 → pediatric maximum 120/min (NOT maximum mA)',keys:['x:pb:rate'],ref:'MCG 1365 #7',critical:true},
+    {label:'Recheck BP after rate escalation: adequate infant BP (about 82/45) at 120/min',keys:['x:pb:goodBP'],ref:'MCG 1365 #7',critical:true},
+    {label:'No pacing before ventilation / indicated CPR / epi and atropine; no critical treatment delay',keys:['!x:pb:sequence','!x:pb:delay'],all:true,ref:'1212-P / MCG 1365',critical:true},
+    {label:'Transport to EDAP/PMC',keys:['t:transport'],ref:'Ref. 510',critical:true}
+  ],
+  pi: {correct:'DYSR',accept:[],differential:['DYSR','ALOC','CANT'],clues:{DYSR:'Complete AV block with a pulse, severe bradycardia and poor perfusion.'},explain:'Persistent complete AV block despite oxygenation, NS, epinephrine and atropine. This infant captures at 60 mA, but remains hypotensive at 100 and 110/min; only 120/min restores adequate perfusion in this teaching case.',keyFindingKeys:['a:monitor','a:bp','a:pulse']},
+  expected: 'Airway/oxygenation first: partner BVM, neutral shoulder padding, chest rise. Persistent HR 38 with severe ALOC and poor perfusion despite BMV: infant CPR. Monitor and BP, Broselow Red 8 kg, glucose 92, IV/IO, NS 160 mL. Base concurrent with epinephrine 0.08 mg slow IV/IO (0.1 mg/mL); atropine 0.16 mg IV/IO for AV block. Then A/P pads, pacing RATE 100/min, start OUTPUT 40 mA, titrate to capture at 60 mA, confirm femoral pulse, add 10 mA to 70 mA. Recheck BP: still ~54/30 at 100 and 110/min. Increase RATE by 10 to pediatric protocol maximum 120/min; BP improves to ~82/45. Current does NOT need maxing (hardware maximum 200 mA). Confirm pulse and BP again; stop compressions once HR/perfusion recover; continue ventilation and transport to EDAP/PMC. This rate-dependent response is scenario-specific, not a universal infant pacing rule. TCP in infants has limited evidence; consult Base.'
+}));
 
 /* ===== scx_20_exam.js ===== */
 /* Extra physical-exam findings (abdomen, scene details) per scenario. */
@@ -15235,6 +15400,7 @@ const NEXT = (() => {
   function pedsFix(sim, c) { if (!c || !/^Dextrose 10 perc/i.test(c.say || "")) return c; const p = pedsDex(sim); return p ? Object.assign({}, c, { label: p.label, say: p.say }) : c; }
   function suggest(sim) { const r = suggest1(sim); if (r && r.chips) r.chips = r.chips.map(c => pedsFix(sim, c)); return r; }
   function suggest1(sim) {
+    if (typeof BRADY !== "undefined" && BRADY.is(sim.scenario)) return BRADY.next(sim.scenario, sim.state);
     const st = sim.state, sc = sim.scenario; if (!st || !sc) return null;
     const F = sc.patient && sc.patient.sex === "F", ev = st.events;
     const col = st.x.bros && st.x.bros.color, fin = (step, title, chips) => ({ step, title, chips: chips.slice(0, step === "tx" ? 12 : 6).map(c => ({ ...c, say: pron(c.say, F), label: col ? c.label.replace(/\(color code\)/, `(${col})`) : c.label })) });
@@ -15543,6 +15709,7 @@ const AUTOPILOT = (() => {
 
 /* ---------- default policy: Adrian's call flow, driven by the scenario's own checklist ---------- */
 AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
+  if (typeof BRADY !== "undefined" && BRADY.is(sc)) return BRADY.watch(sc, S, say0, H);
   // every condition change is reassessed right away (HABBO -> ABCs -> BP/SpO2/RR -> rest), the way Adrian's call flow grades it
   // v2.14.4: the EMT is a parallel worker. Before each of Adrian's lines, an idle EMT is handed the next hands-on task the call
   // needs (emtDispatch); after each line, a finished monitor / 12-lead is read by Adrian (emtReview). The EMT never interprets.
@@ -16878,13 +17045,13 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     const k12 = rv.twelve ? `${rv.twelve.t}|${rv.twelve.info && rv.twelve.info.v4r ? 1 : 0}|${rv.twelve.info && rv.twelve.info.v789 ? 1 : 0}` : null;
     if (rv.twelve && k12 !== last12) { last12 = k12; setTimeout(open12, 50); }
     else if (rv.twelve && $("#modal12").classList.contains("open") && st.x.ip && st.x.ip.tw && st.x.ip.tw.done && !/^Rate /.test($("#txt12").textContent)) $("#txt12").textContent = `Rate ${rv.twelve.info.rate}. ${rv.twelve.info.text}`;
-    { const dv = SIM.devMon ? SIM.devMon() : null, d = dv || { pads: !!st.flags.pads, rate: 70, mA: 0, energy: 200 };
+    { const dv = SIM.devMon ? SIM.devMon() : null, d = dv || { pads: !!st.flags.pads, rate: 70, mA: 0, energy: 200, maxRate: DEVICE.maxRate(sc) };
       const set = (id, txt, cls) => { const e = $(id); e.textContent = txt; e.className = cls || ""; };
       set("#dvPads", d.pads ? "PADS ON" : "PADS OFF", d.pads ? "on" : "");
       set("#dvPace", d.pacerOn ? `PACER ${d.rate}/min ${d.mA} mA${d.cap === "mech" || d.cap === "elec" ? " · CAPTURE" : d.cap === "inhibited" ? " · INHIBITED" : d.mA ? " · NO CAPTURE" : ""}` : "PACER OFF", d.pacerOn ? (d.cap === "mech" || d.cap === "elec" ? "cap" : "on") : "");
       set("#dvSync", d.sync ? "SYNC ◆" : "SYNC OFF", d.sync ? "sync" : "");
       set("#dvEnergy", d.charging ? `CHARGING ${d.energy} J…` : d.charged ? `CHARGED ${d.energy} J` : `${d.energy || 200} J`, d.charging || d.charged ? "chg" : "");
-      { const rv_ = $("#dvRateVal"), ma_ = $("#dvMaVal"); if (rv_) rv_.textContent = d.rate || 70; if (ma_) ma_.textContent = d.mA || 0; }
+      { const rv_ = $("#dvRateVal"), ma_ = $("#dvMaVal"); if (rv_) { rv_.textContent = d.rate || 70; const lab = rv_.parentElement.querySelector(".dv-sl"); if (lab) lab.textContent = d.maxRate === 120 ? "Rate (max 120)" : "Pacer rate (ppm)"; const up = document.querySelector('[data-op="rateup"]'); if (up) { up.disabled = d.rate >= d.maxRate; up.title = `Rate +10 (max ${d.maxRate} ppm)`; } } if (ma_) ma_.textContent = d.mA || 0; }
       { const raw = st.x.dv, bar = $("#dvChgBar"), ch = raw && raw.charging, tot = ch ? (ch.J > 200 ? 6 : 4) : 1, pr = ch ? Math.max(0.08, Math.min(1, 1 - (ch.due - st.t) / tot)) : d.charged ? 1 : 0;
         if (bar) bar.style.width = (pr * 100).toFixed(0) + "%"; $("#dvChargeBtn").classList.toggle("charging", !!d.charging); $("#dvChargeBtn").classList.toggle("charged", !!d.charged);
         $("#dvPadsBtn").classList.toggle("act", !!d.pads); $("#monitor").classList.toggle("armed", !!d.charged); }
