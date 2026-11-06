@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.15.0 b2589d70e2">
+<meta name="medicsim-version" content="2.15.1 a5d1c5a862">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -892,6 +892,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
         <div class="aeiou-panel" id="aeiouPanel" hidden aria-label="AEIOU-TIPS workup (tap = same as saying it)"></div>
         <div class="aeiou-panel lhabbo-panel" id="lhabboPanel" hidden aria-label="L-HABBO stroke screen (tap = same as saying it)"></div>
         <div class="mci-panel" id="mciPanel" hidden aria-label="MCI command and triage board (tap = same as saying it)"></div>
+        <div class="assess-row psy-row" id="coldRow" hidden aria-label="Hypothermia: immediate warming and reliable pulse ox (tap or voice)"></div>
         <div class="assess-row psy-row" id="psyRow" hidden aria-label="Behavioral / psych actions (tap = same as saying it)"></div>
         <div class="dest-panel" id="destPanel" hidden aria-label="Post-Transport Destination and Trauma Triage (Ref. 506) selector"></div>
         <div class="next-bar" id="nextBar" hidden aria-label="Next step suggestions (tap = same as saying it)"><div class="next-head"><span class="lbl">Next</span><span class="next-step" id="nextStep"></span><button type="button" class="next-ae" id="btnAeiou" hidden>AEIOU-TIPS</button><button type="button" class="next-ae next-lh" id="btnLhabbo" hidden>L-HABBO</button><button type="button" class="next-ae next-rs" id="btnReassess" hidden title="Reassess: HABBO → ABCs → BP, SpO₂, RR → rest">↻ Reassess</button><button type="button" class="next-all" id="btnAll">All actions ▾</button></div><div class="next-chips" id="nextChips"></div></div>
@@ -1373,6 +1374,20 @@ PROTOCOLS.TRAUMA_TRIAGE = [
   { id: "hr_gt_sbp", code: "III.C", cat: "II. Trauma Guidelines & III. Special Considerations", short: "HR > SBP (Shock Index > 1.0, age ≥ 14)", label: "Heart rate > systolic BP (Shock Index > 1.0) in patients ≥ 14 years", say: "Trauma triage special consideration: heart rate greater than systolic BP" },
   { id: "special_other", code: "III.A/D/E/F", cat: "II. Trauma Guidelines & III. Special Considerations", short: "Pregnancy > 20 wk / unrestrained child / prehospital judgment", label: "Pregnancy > 20 weeks, unrestrained child 0–9 yrs, blunt traumatic arrest with organized activity, or prehospital judgment", say: "Trauma triage special consideration: prehospital judgment" }
 ];
+
+// County TP 1223 PDF verified 2026-11-06; pulse-ox artifact and timing are
+// explicitly separated from the protocol's actual requirements.
+PROTOCOLS['1223'] = {title:'Hypothermia / Cold Injury',revised:'07-01-24',url:'https://file.lacounty.gov/SDSInter/dhs/1040403_1223Hypothermia_ColdInjury2018-04-24.pdf',keyPoints:[
+  '#1-2: Assess airway; basic/advanced airway maneuvers and Oxygen PRN (MCG 1302).',
+  '#3: Cardiac monitoring (MCG 1308); dysrhythmias: TP 1212 / 1213.',
+  '#4 / ❶: Move to a warm environment as quickly as possible, remove wet clothing/items, cover with emergency/rescue blanket or blankets/sheets; warm Normal Saline if available.',
+  '#5 / ❷: Frostbite: handle affected area gently, remove jewelry, cover/protect; do not thaw then refreeze.',
+  '#6-7: Vascular access PRN (MCG 1375). ALOC: TP 1229; check glucose and evaluate causes.',
+  '#8: Poor perfusion: NS 1 L IV rapid infusion, warm if available. Reassess every 250 mL for pulmonary edema; stop if it develops. Persistent poor perfusion: TP 1207.',
+  '#9 / ❸: Hypothermic arrest: usual TP 1210 while rewarming. Continue resuscitation until rewarmed; Base Physician consultation before considering termination.',
+  'Simulation measurement lesson (not quoted from TP 1223): cold vasoconstricted fingers may give falsely low/unreliable SpO2. Confirm waveform and a warmer site with compatible sensor, assess ventilation and central color. Do not assume all low readings in cold patients are artifact.',
+  'Instructor simulation timing targets (not county cutoffs): wet clothing off by 30 s, blankets by 45 s, inside heated ambulance by 60 s. Act immediately; avoid prolonged cold-scene assessment.'
+]};
 
 /* ===== dosing.js ===== */
 /* =====================================================================
@@ -2925,7 +2940,8 @@ const RADIO = (() => {
     SEPS: /seps|septic|fever|tactile|infection|uti|pneumonia|pyelo|cellulitis|flank/, FEVR: /fever|flu|febrile/, ETOH: /intox|etoh|alcohol|drunk/,
     PREG: /pregnan|eclamp|preeclamp|seiz|bleed|hemorrhag|pph|post ?partum|weeks/, BRTH: /labor|deliver|crown|birth|pregnan|contraction/, LABR: /labor|contraction|pregnan/, BABY: /newborn|baby|neonat/,
     SMOK: /smoke|inhalation|soot|airway burn|fire/, COMO: /carbon monoxide|\bco\b|co poisoning|co exposure/,
-    HOTN: /shock|hypotens|bleed|hemorrhag|pale|hypovol/, ALOC: /altered|aloc|confused|unresponsive|mental status/,
+    HOTN: /shock|hypotens|bleed|hemorrhag|pale|hypovol/, ALOC: /altered|aloc|confused|unresponsive|mental status|hypotherm/,
+    WEAK: /weak|hypotherm|cold|wet|shiver|exposure/,
     CHOK: /chok|airway obstruct|foreign body|\bfb\b|heimlich/,
   };
   const FIND = { PSYC: /suicid|plan|voices|hallucinat|glucose|sugar|oriented|ingest|pills|5150/, SAAL: /temp|hot|hyperther|glucose|sugar|capno|etco2|prone/, PALP: /12 ?lead|rhythm|tachy|spo2|\bsat\b|glucose|sugar|lung/, // v2.15.0
@@ -2935,6 +2951,7 @@ const RADIO = (() => {
     SYNC: /orthostat|glucose|sugar|12 ?lead|rhythm|lacer|head/, SEPS: /temp|fever|tactile|tachy|hot|flushed|sugar|glucose|lung|uri|flank|etco2|capno/, FEVR: /temp|fever/, ETOH: /glucose|sugar|alcohol|etoh/, PREG: /blood pressure|bp|fundus|blood loss|ebl|headache|vision|weeks|reflex/, BRTH: /crown|contraction|weeks|ruptur|water|apgar|gravida|g ?\d|newborn/, LABR: /contraction|weeks|ruptur|water/,
     SMOK: /soot|lung|airway|hoarse|stridor|o2|oxygen/, COMO: /oxygen|o2|co|carboxy|headache|nause/,
     HOTN: /bp|hypotens|pale|bleed|fluid|saline|lung/, ALOC: /glucose|sugar|pupil|stroke|seiz|orient/,
+    WEAK: /temp|glucose|sugar|lung|skin|shiver|pulse ox|spo2|forehead/,
     CHOK: /airway|heimlich|back blow|chest thrust|obstruct|stridor/,
   };
   const TX = { aspirin: /aspirin|asa\b/, nitro: /nitro|ntg/, fentanyl: /fentanyl/, morphine: /morphine/, ketorolac: /ketorolac|toradol/, ondansetron: /zofran|ondansetron/, epi: /\bepi|epinephrine|adrenaline/, pushepi: /push ?dose|epi/,
@@ -4661,6 +4678,7 @@ const SIM = (() => {
     if (sc.drift) st.sev = clamp(st.sev + (sc.drift(st) || 0) * dt / 60, 0, 1);
     if (sc.tickExtra) sc.tickExtra(st, dt, H);
     if (sc.mci && typeof MCI !== "undefined") MCI.tick(st, sc, s => { log("radio", s); ui.say([{ speaker: "radio", who: "📻 Dispatch", text: s }]); }); // v2.15.0 resources arriving
+    if (sc.cold && typeof COLD !== "undefined") COLD.tick(devC());
     driftTick();
     if (st.x.nalTrialT != null && !st.x.nalTrialNudged && st.t - st.x.nalTrialT >= 180 && !st.x.arrest) { st.x.nalTrialNudged = true;
       event("No change in breathing or mental status since the naloxone.", "find");
@@ -5170,7 +5188,7 @@ const SIM = (() => {
           if (prev && st.t - prev.t >= 20) st.x.bpTrend = `Last was ${prev.s}/${prev.d} at ${fmtT(prev.t)}; pulse pressure ${prev.s - prev.d} → ${cur.s - cur.d}.`;
           if (!prev || st.t - prev.t >= 20) H.push(cur); }
         out.push(`BP ${bs} mmHg.` + (tg.bpNote ? " " + tg.bpNote : "") + (st.x.bpTrend ? " " + st.x.bpTrend : "")); } break;
-      case "spo2": st.rev.spo2 = { t: st.t }; out.push(st.v.spo2 == null ? "SpO2: no reliable waveform." : `SpO2 ${Math.round(st.v.spo2)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : "room air"}).`); break;
+      case "spo2": st.rev.spo2 = { t: st.t }; out.push(sc.cold && typeof COLD !== "undefined" ? COLD.report(sc, st) : st.v.spo2 == null ? "SpO2: no reliable waveform." : `SpO2 ${Math.round(st.v.spo2)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : "room air"}).`); break;
       case "pulse": { const pc = typeof DEVICE !== "undefined" && !arrest ? DEVICE.pulseCheck(devC(), lastSites, /match|capture/.test(lastText)) : null; R("pulse", arrest || !st.v.hr || tg.pulse === false ? 0 : Math.round(st.v.hr)); out.push(pc || EXAM.pulses(sc, st, lastText, mental(), lastSites)); break; }
       case "mechcap": { const pc = typeof DEVICE !== "undefined" ? DEVICE.pulseCheck(devC(), lastSites.length ? lastSites : ["femoral"], true) : null; out.push(pc || "The pacer isn't running, so there's no capture to check."); break; }
       case "pulsecheck": if (st.x.code) { const c = st.x.code; c.pcN++;
@@ -5680,6 +5698,7 @@ const SIM = (() => {
     if ((id === "epi" || id === "pushepi") && st.x.epiOd) { addEffect("epiod"); st.x.epiOd = false; }
     if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : id === "diphen" ? (tx.route === "IM" ? 900 : 120) : undefined);
     if (typeof COURSE !== "undefined") COURSE.onTreat(id, st, sc);
+    if (sc.cold && typeof COLD !== "undefined") notes.push(...COLD.onTreat(id, devC()));
     if (sc.onTreat) { const r = sc.onTreat(id, st, tx, H); if (r && r.lines) notes.push(...r.lines); }
     log("tx", (narr || TX_LABEL[id] || id) + (tx.raw ? "" : ""));
     if (id === "nc" || id === "nrb" || id === "o2" || id === "cpap" || id === "sga") st.rev.spo2 = st.rev.spo2; // no auto reveal
@@ -5830,7 +5849,7 @@ const SIM = (() => {
       const saveT = lastText; lastText = o.raw || lastText;
       switch (o.id) {
         case "bp": { const r = assess("bp").join(" "); const m = r.match(/(\d+\/\d+)/); say(m ? `BP is ${m[1]}.` + (st.tg.bpNote ? " " + st.tg.bpNote : "") + (st.x.bpTrend ? " " + st.x.bpTrend : "") : `I can't get a pressure on ${him()}, medic.`); break; }
-        case "spo2": assess("spo2"); say(st.v.spo2 == null ? `I can't get a good waveform on the pulse ox, ${he()}'s too ${st.x.arrest ? "down" : "cold"}.` : `Sat is ${Math.round(st.v.spo2)}% on ${o2Name()}.`); break;
+        case "spo2": assess("spo2"); say(sc.cold && typeof COLD !== "undefined" ? COLD.report(sc, st) : st.v.spo2 == null ? `I can't get a good waveform on the pulse ox, ${he()}'s too ${st.x.arrest ? "down" : "cold"}.` : `Sat is ${Math.round(st.v.spo2)}% on ${o2Name()}.`); break;
         case "rr": assess("rr"); say(rrReport()); break;
         case "recheck": { const n = o.recheckMin || 5; st.x.recheck = { every: n * 60, next: st.t + n * 60 }; } // fallthrough to a set now
         case "vitals": {
@@ -5839,7 +5858,7 @@ const SIM = (() => {
           const hr = Math.round(st.v.hr); st.rev.pulse = { t: st.t, val: hr };
           const bpr = assess("bp").join(" "), bpm = bpr.match(/(\d+\/\d+)/); assess("rr"); assess("spo2");
           const irr = /afib|irregular|ectop|pvc/i.test(String(st.tg.rhythm) + " " + String(st.tg.rhythmName));
-          say(`${o.auto ? "Recheck. " : ""}Vitals: pulse ${hr}${irr ? " and irregular" : ""}, BP ${bpm ? bpm[1] : "unable to get one"}, ${rrReport().replace(/^Resps are/, "resps").replace(/\.$/, "")}, sat ${st.v.spo2 == null ? "no reading" : Math.round(st.v.spo2) + "% on " + o2Name()}.`);
+          say(`${o.auto ? "Recheck. " : ""}Vitals: pulse ${hr}${irr ? " and irregular" : ""}, BP ${bpm ? bpm[1] : "unable to get one"}, ${rrReport().replace(/^Resps are/, "resps").replace(/\.$/, "")}, sat ${sc.cold && typeof COLD !== "undefined" ? COLD.report(sc, st) : st.v.spo2 == null ? "no reading" : Math.round(st.v.spo2) + "% on " + o2Name()}.`);
           break; }
         case "bgl": { assess("bgl"); bglMark(); const bt = st.tg.bglText || (Math.round(st.v.bgl) + " mg/dL"); say(`Sugar is ${bt}.`); break; }
         case "temp": assess("temp"); say(`Temp is ${st.v.temp.toFixed(1)}°F.`); break;
@@ -5895,6 +5914,7 @@ const SIM = (() => {
     lastInteraction = st.t;
     if (typeof RADIO !== "undefined") { const rl = radioIn(text); if (rl) { ui.render(); return rl; } }
     if (sc.mci && typeof MCI !== "undefined") { const ml = MCI.handle(text, devC()); if (ml) { log("me", text); ml.forEach(l => { if (l.speaker !== "warn") log(l.speaker === "patient" ? "patient" : "find", l.text); }); ui.render(); return ml; } } // v2.15.0 MCI scene commands (Ref. 519 / 519.2)
+    if (sc.cold && typeof COLD !== "undefined") { const cl = COLD.handle(text, devC()); if (cl) { log("me", text); cl.forEach(l => { if (l.speaker !== "warn") log("find", l.text); }); ui.render(); return cl; } }
     if (sc.psych && typeof PSY !== "undefined") { const pl = PSY.handle(text, devC()); if (pl) { log("me", text); pl.forEach(l => { if (l.speaker !== "warn") log(l.speaker === "patient" ? "patient" : "find", l.text); }); ui.render(); return pl; } } // v2.15.0 TP 1209 actions
     const parsed = await NLU.parseAsync(text); parsed.tx.forEach(t => t.raw = parsed.norm);
     lastText = parsed.norm; lastSites = parsed.pulseSites || []; lastParsed = parsed;
@@ -8193,6 +8213,82 @@ const MCI = (() => {
   }
   return { handle, afterParse, tick, view, debrief, watch, expected, needed, counts, init, TAGS, RX, sayCheck };
 })();
+
+/* ===== cold.js ===== */
+/* v2.15.1 Cold injury: TP 1223 #4 / special consideration 1 (07-01-24).
+ * Physiology stays in st.v; the cold-finger measurement is an artifact, NOT
+ * hypoxemia. All displayed/reported pulse-ox readings use reading()/report().
+ * 30/45/60 s deadlines are simulator instructor targets, not county cutoffs.
+ */
+const COLD = (() => {
+  const SAY = {
+    'x:cold:wet': 'Remove the wet clothing immediately, dry the patient and preserve privacy',
+    't:blanket': 'Cover the patient with dry insulated blankets now',
+    'x:cold:warm': 'Turn the ambulance heat on and gently move the patient into the warmed ambulance now',
+    'x:cold:site': 'Check pulse ox on the warm forehead with a compatible sensor and confirm the waveform',
+    'x:cold:gentle': 'Handle the patient gently, keep them horizontal during the move',
+  };
+  const LABEL = {'x:cold:wet': 'Remove wet clothing', 't:blanket': 'Blankets / rewarm', 'x:cold:warm': 'Heat ON + move to ambulance', 'x:cold:site': 'Reliable SpO2: warm forehead', 'x:cold:gentle': 'Gentle handling'};
+  const has = (st, k) => !!st.events[k];
+  function reading(sc, st) {
+    if (!sc || !sc.cold) return null;
+    const reliable = has(st, 'x:cold:site');
+    return { reliable, value: reliable ? st.v.spo2 : sc.cold.finger, label: reliable ? 'forehead · good waveform' : 'cold finger · UNRELIABLE' };
+  }
+  function report(sc, st) {
+    const r = reading(sc, st); if (!r) return '';
+    return r.reliable ? `SpO2 ${Math.round(r.value)}% (${st.flags.o2 ? st.flags.o2.toUpperCase() : 'room air'}), compatible forehead sensor, good waveform.` : `Finger SpO2 flickers near ${r.value}% with a weak/erratic waveform: UNRELIABLE from cold vasoconstricted fingers. This is not a confirmed oxygen saturation. Assess ventilation, central color and lung sounds; verify at a warmer site with a compatible sensor. Do not chase this artifact with NRB/BVM.`;
+  }
+  function markWarm(C) { if (has(C.st, 'x:cold:heat') && has(C.st, 'x:cold:move') && !has(C.st, 'x:cold:warm')) C.rec('x:cold:warm'); }
+  function handle(text, C) {
+    if (!C.sc.cold) return null;
+    const t = String(text || '').toLowerCase(), st = C.st, out = [], hits = [];
+    // Negated actions do not earn credit. Separate spoken actions or use the tap row.
+    if (/\b(don't|do not|not going to|without|no blankets)\b/.test(t)) return null;
+    if (/(remove|cut off|take off|get .*out of|strip|off with)[^.]*\b(wet|soaked|damp)\b[^.]*\b(cloth|clothes|clothing|garments|jacket|items)|\b(wet|soaked) (clothes|clothing) off/.test(t)) hits.push('x:cold:wet');
+    if (/\b(blankets?|rescue blanket|insulat\w* sheets?)\b/.test(t) && /cover|apply|put|wrap|blankets? (on|now)|give|rewarm/.test(t)) hits.push('t:blanket');
+    if (/\b(ambulance|unit|rig)\b/.test(t) && /\b(heat|heater|warm)\b/.test(t)) hits.push('x:cold:heat');
+    if (/\b(move|load|bring|take|get|into)\b[^.]*\b(ambulance|unit|rig)\b/.test(t) && !/warm (the )?(ambulance|unit|rig) (before|so)/.test(t)) hits.push('x:cold:move');
+    if (/\b(forehead|earlobe|ear lobe|alternate site|warmer site)\b/.test(t) && /pulse ox|spo2|saturation|sensor/.test(t)) hits.push('x:cold:site');
+    if (/handl\w*[^.]*gentl|gentl\w*[^.]*\b(move|lift|handle|transfer)|keep[^.]*horizontal/.test(t)) hits.push('x:cold:gentle');
+    if (/\b(rub|massage)\b[^.]*\b(hands|feet|limbs|extremities|arms|legs)\b/.test(t)) { C.rec('x:cold:rub'); out.push(C.dev('Do not rub or massage cold extremities; protect from further injury and rewarm safely.', 'Cold injury / standard practice*', 'deviation')); }
+    if (!hits.length) return out.length ? out : null;
+    for (const k of [...new Set(hits)]) {
+      if (k === 't:blanket') { out.push(...C.treat({id:'blanket', doses:[], raw:text})); continue; }
+      C.rec(k);
+      if (k === 'x:cold:wet') out.push({speaker:'find', text:'Wet clothing removed immediately, patient dried, privacy maintained. Replace with dry insulation; do not leave exposed in the cold.'});
+      if (k === 'x:cold:heat') out.push({speaker:'find', text:'Ambulance heater ON; patient compartment is warm. Heat alone does not move the patient.'});
+      if (k === 'x:cold:move') out.push({speaker:'find', text:'Patient gently moved on the stretcher into the ambulance. Continue assessment en route, not out in the cold.'});
+      if (k === 'x:cold:site') { st.rev.spo2 = {t:st.t, site:'forehead'}; C.rec('a:spo2'); out.push({speaker:'find', text: `The cold finger flickered near ${C.sc.cold.finger}% with a weak/erratic waveform (UNRELIABLE). ` + report(C.sc, st) + ' Clear lungs, adequate depth and rate, pink central mucosa. The low finger number was artifact, not true hypoxemia.'}); }
+      if (k === 'x:cold:gentle') out.push({speaker:'find', text:'Gentle handling, horizontal stretcher transfer; avoid unnecessary exertion or rough movement.'});
+    }
+    markWarm(C); return out;
+  }
+  function onTreat(id, C) {
+    const st = C.st;
+    if (id === 'blanket' && !has(st, 'x:cold:wet')) return [C.dev('Wet clothes are still on: remove them immediately, dry and cover with insulated blankets. Blankets over soaked clothes alone are not enough.', '1223 #4 / ❶', 'deviation')];
+    if (['nrb','bvm','cpap','sga'].includes(id) && !st.x.arrest && st.v.rr >= 10 && st.v.rr <= 24 && st.v.spo2 >= 94) {
+      C.rec('x:cold:artifactO2'); return [C.dev('Cold-finger SpO2 is falsely low / unreliable, not an indication for NRB or assisted ventilation in this adequately ventilating patient. Confirm a reliable site and assess the patient. True hypoxia: NC if it reaches 94%+, NRB if not; BVM for inadequate ventilation.', 'MCG 1302 / measurement artifact', 'deviation')]; }
+    return [];
+  }
+  function tick(C) {
+    const st = C.st;
+    for (const [k, sec, flag, msg] of [
+      ['x:cold:wet',30,'wetLate','Wet clothes were not removed immediately: ongoing heat loss. Remove, dry and insulate now.'],
+      ['t:blanket',45,'blanketLate','Passive rewarming was delayed: apply dry insulated blankets immediately.'],
+      ['x:cold:warm',60,'sceneLate','Prolonged cold-scene care: turn the ambulance heat on and move the patient into the warmed unit now.']]) {
+      if (st.t >= sec && !has(st,k) && !st.x[flag]) { st.x[flag] = true; C.rec('x:cold:'+flag); C.event(msg, 'find'); C.dev(msg + ' (Simulator instructor timing target, not a county time cutoff.)', '1223 #4 / ❶', 'deviation'); }
+    }
+  }
+  function chips(sc, st) { return sc && sc.cold ? Object.entries(SAY).map(([k,say]) => ({k,say,label:LABEL[k],done:has(st,k)})) : null; }
+  async function watch(sc, S, say) {
+    if (!sc.cold) return;
+    // Life-saving environmental actions immediately after the intro, before prolonged assessment.
+    for (const k of ['x:cold:wet','t:blanket','x:cold:warm','x:cold:site']) await say(SAY[k], {why: k === 'x:cold:site' ? 'Cold fingers give an unreliable low reading: verify with a compatible warmer-site sensor, not reflex NRB/BVM' : 'Immediate warming: stop heat loss and continue care inside the warmed ambulance', ref:'TP 1223 #4 / ❶; MCG 1302',dt:3});
+  }
+  return {handle,reading,report,onTreat,tick,chips,watch,SAY};
+})();
+var AUTOPILOT_WORDS = Object.assign(typeof AUTOPILOT_WORDS !== 'undefined' ? AUTOPILOT_WORDS : {}, COLD.SAY);
 
 /* ===== sc0_base.js ===== */
 /* =====================================================================
@@ -13955,6 +14051,62 @@ addS(clone("anaph", {
   }
 })();
 
+/* ===== scx_87_cold.js ===== */
+/* TP 1223 hypothermia (county PDF opened/verified 2026-11-06, rev 07-01-24).
+ * Refreshes the old hypothermia call and adds a mild rain-exposure call.
+ * No immersion/aspiration, respiratory failure, frostbite or shock is implied.
+ */
+(() => {
+  const check = [
+    {label:'Remove wet clothing immediately; dry and preserve privacy',keys:['x:cold:wet'],critical:true,ref:'1223 #4 / ❶'},
+    {label:'Immediate dry insulated blankets / passive rewarming',keys:['t:blanket'],critical:true,ref:'1223 #4 / ❶'},
+    {label:'Heat ON and move into the warmed ambulance immediately',keys:['x:cold:warm'],critical:true,ref:'1223 #4 / ❶'},
+    {label:'No delay removing wet clothing (simulator target: 30 s)',keys:['!x:cold:wetLate'],critical:true,ref:'Instructor timing target*'},
+    {label:'No delay insulating with blankets (simulator target: 45 s)',keys:['!x:cold:blanketLate'],critical:true,ref:'Instructor timing target*'},
+    {label:'No prolonged cold-scene care (simulator target: warm unit by 60 s)',keys:['!x:cold:sceneLate'],critical:true,ref:'Instructor timing target*'},
+    {label:'Verify unreliable cold-finger SpO2 at a warmer site with compatible sensor',keys:['x:cold:site'],critical:true,ref:'Pulse-ox limitations / standard practice*'},
+    {label:'Assess ventilation and lung sounds, not just the finger number',keys:['a:lungs','a:rr'],all:true,critical:true,ref:'1223 #1-2 / MCG 1302'},
+    {label:'No NRB/BVM just for false-low finger artifact when ventilating adequately',keys:['!x:cold:artifactO2'],critical:true,ref:'MCG 1302 / standard practice*'},
+    {label:'Temperature (hypothermia)',keys:['a:temp'],critical:true,ref:'1223 / standard practice*'},
+    {label:'Blood glucose (rule out a treatable cause of ALOC)',keys:['a:bgl'],critical:true,ref:'1229 / MCG 1320'},
+    {label:'Cardiac monitor (cold-related dysrhythmias)',keys:['a:monitor'],critical:true,ref:'1223 #3'},
+    {label:'Gentle handling during stretcher transfer',keys:['x:cold:gentle'],ref:'Hypothermia / standard practice*'},
+    {label:'Do not rub/massage cold extremities',keys:['!x:cold:rub'],ref:'Cold injury / standard practice*'},
+    {label:'Transport for ongoing rewarming and evaluation',keys:['t:transport'],critical:true,ref:'1223 / standard practice*'},
+  ];
+  const make = altered => {
+    const name = altered ? 'Edith Morales' : 'Lucas Rivera', age = altered ? 70 : 28;
+    const sc = G({
+      id:altered ? 'hypothermia' : 'cold_rain', protocol:'1223', menuGroup:'1223',refs:['1223','1229','1302','1308'],base:altered ? 'hypotherm' : 'coldrain',difficulty:altered?'Intermediate':'Beginner',tag:'ENVIRONMENTAL',
+      dispatchTitle:altered?'70 y/o female, cold and confused after overnight rain':'28 y/o male, soaked and shivering after a hike',
+      dispatchShort:altered?'Highland Park bus shelter, dawn welfare check.':'Wet trailhead in the San Gabriel foothills.',
+      dispatch:altered?'RA 12, Highland Park bus shelter on Figueroa. Elderly female cold and confused after overnight rain, breathing. Time 0622.':'RA 19, San Gabriel foothills trailhead. 28-year-old male, soaked and shivering after hiking in cold rain, conscious and breathing. Time 1730.',
+      scene:altered?'Scene safe. Edith spent the night in a leaking bus shelter, clothing soaked. She is pale, very cold, slow and confused, and is no longer shivering. Her chest rises adequately; no labored breathing. The ambulance is close by.':'Scene safe. Lucas sits by the trailhead in soaking wet hiking clothes, shivering strongly. He is talking in full sentences with normal work of breathing. The ambulance is parked nearby.',
+      approach:{see:altered?'Leaking bus shelter at dawn. Soaked clothing, cold pale hands, no shivering, slow confused speech. Adequate chest rise, no increased work of breathing; lips and central mucosa pink.':'Trailhead in cold rain. Young man in soaked clothes, shivering vigorously, exhausted but talking normally. Cold pale fingers, pink lips; normal chest rise and no increased work of breathing.',track:altered?'Eyes open and tracking slowly; confused but responds in words.':'Eyes open, tracking and answering appropriately.'},
+      patient:{name,age,sex:altered?'F':'M',weightKg:altered?62:78},bystander:{name:altered?'Tom':'Diego',role:altered?'neighbor':'hiking friend',sex:'M'},
+      cold:{finger:altered?82:84},personality:altered?'Slow, confused and cold; short but intelligible answers.':'Cooperative, cold, anxious about the low pulse-ox number.',
+      allergies:[],startSev:0.5,drift0:0.01,pain:[0,0],bgl:altered?86:102,temp:altered?90.5:94.1,
+      vit:{good:{hr:altered?58:88,sbp:altered?116:124,dbp:74,rr:16,spo2:98,etco2:38},bad:{hr:altered?50:104,sbp:altered?104:116,dbp:68,rr:altered?12:20,spo2:98,etco2:38}},
+      txResp:{},flagResp:{},mentalBands:[[9,altered?'confused':'alert']],
+      skin:altered?'Very cold, pale, wet; no shivering. Central mucosa pink.':'Cold, pale wet skin; vigorous shivering. Central mucosa pink.',
+      lungs:'Clear and equal bilaterally, adequate depth; no wheeze, crackles or respiratory distress',airway:'Patent, managing secretions; adequate spontaneous ventilation',pupils:'PERRL, 4 mm',
+      neuro:altered?'Confused, slow but follows simple commands, moves all four limbs, no focal deficit':'Oriented, moves all extremities, no focal deficit',
+      rhythm:altered?'brady':'sinus',rhythmName:altered?'Sinus bradycardia (cold exposure)':'Normal sinus rhythm',
+      twelve:(st,v)=>({st:{},text:`${altered?'Sinus bradycardia':'Sinus rhythm'} ${Math.round(v.hr)}. ${altered?'Small J waves compatible with hypothermia. ':''}No acute ischemic changes.`}),
+      answers:{greet:()=>altered?'...Hello... I am so cold.':'Hi... yes, please help. I am freezing.',name,age:String(age),orient:altered?'...At home? I do not know what year...':'At the trailhead. It is 2026. I got soaked on a hike.',cc:altered?'Cold... cannot think...':'I got drenched in the rain and cannot stop shivering.',onset:altered?'...All night?':'About two hours in the rain.',allergies:'No known allergies.',meds:altered?'Levothyroxine, amlodipine.':'None.',history:altered?'Thyroid... blood pressure...':'No medical problems.',lastoral:altered?'Tea yesterday.':'Lunch four hours ago.',events:altered?'Missed... bus...':'Got caught in rain on the trail.',sob:'No trouble breathing.',chestpain:'No chest pain.',drugs:'No drugs or alcohol.',feelnow:st=>st.events['x:cold:warm']?'Still cold, but the blankets and warm ambulance help.':'I am still freezing.'},
+      bystanderAnswers:{cc:altered?'She missed her bus, stayed here all night in rain. She was shivering earlier; now she is confused and not shivering.':'We got soaked on the hike, no fall, no immersion, no injury.',history:altered?'Hypothyroid and hypertension; normally oriented and independent.':'Healthy, no medications.',events:'Prolonged cold rain exposure. No loss of consciousness or trauma.'},
+      checklist:check.concat(altered?[{label:'12-lead for cold-related bradycardia',keys:['a:12lead'],ref:'1223 #3 / MCG 1308'},{label:'Base contact for persistent ALOC',keys:['t:base'],critical:true,ref:'1229 / 1200.2'}]:[]),
+      pi:{correct:altered?'ALOC':'WEAK',accept:[],differential:altered?['ALOC','HYPO','STRK']:['WEAK','HYPO','ALOC'],clues:{ALOC:'Cold exposure explains confusion; glucose is normal and no focal deficit.',WEAK:'Exhausted, shivering but oriented after prolonged cold rain exposure.',HYPO:'Glucose is normal: check it, do not give empiric dextrose.',STRK:'No focal deficits; cold exposure explains the global changes.'},explain:'Hypothermia / cold injury (TP 1223): immediately remove wet clothing, dry and insulate, move into the heated ambulance, monitor and check glucose. Low finger SpO2 has poor signal from vasoconstriction; forehead-compatible sensor reads 98% on room air with good waveform and adequate ventilation. Oxygen PRN, not reflex NRB/BVM for artifact. More severe cold exposure may be confused and stop shivering. Continue rewarming during transport.',keyFindingKeys:['a:temp','x:cold:site','a:bgl']},
+      expected:'Immediate wet clothing removal → dry insulated blankets → heated ambulance. Verify false-low finger pulse ox at warmer site; assess ventilation. Temperature, glucose, cardiac monitor, gentle handling and transport. No prolonged cold-scene workup.',
+    });
+    sc.drift=st=> st.events['x:cold:warm']&&st.count.blanket&&st.events['x:cold:wet'] ? -0.015 : 0.02;
+    sc.special=st=>({temp:Math.min(altered?93:96,(altered?90.5:94.1)+(st.events['x:cold:warm']&&st.count.blanket&&st.events['x:cold:wet']?Math.max(0,st.t-st.events['x:cold:warm'][0])/600:0))});
+    return sc;
+  };
+  const old = SCENARIOS.findIndex(s=>s.id==='hypothermia'); if(old>=0) SCENARIOS[old]=make(true); else addS(make(true));
+  addS(make(false));
+})();
+
 /* ===== sc_meta.js ===== */
 /* Dispatch-style titles + Provider Impression differentials for the core scenarios */
 const META = {
@@ -15579,6 +15731,7 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     const greetR = await say(AUTOPILOT.INTRO, W("intro"));
     AUTOPILOT.consent(sc, mental(), H.push, (greetR || []).filter(l => l && l.speaker === "patient").map(l => l.text || "").join(" "));
     await PSYW("intro");
+    if (sc.cold && typeof COLD !== "undefined") await COLD.watch(sc, S, say);
     const O = AUTOPILOT.OPENING, greetTxt = (greetR || []).filter(l => l && l.speaker === "patient").map(l => l.text || "").join(" ");
     // responded to the intro with actual words (not just "(mumbles)" / "(picks at the sheets)") -> responsive script
     const responded = canTalk() && /[a-z]{2}/i.test(greetTxt.replace(/\([^)]*\)/g, " ").replace(/\b(mmh?|mm-hm|hmm|uh|huh)\b/gi, " "));
@@ -16606,6 +16759,9 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       if (pr) { pr.hidden = !pv;
         if (pv) { const sig = JSON.stringify([...pv.acts, ...pv.qs].map(c => c.k + (c.done ? 1 : 0)));
           if (sig !== psySig) { psySig = sig; pr.innerHTML = `<span class="lbl" title="${esc(pv.title)}">TP 1209</span>${pv.acts.map(c => `<button type="button" class="${c.done ? "done" : ""}" data-say="${esc(c.say)}" title="${esc(c.say)}">${c.done ? "✔ " : ""}${esc(c.label)}</button>`).join("")}${pv.qs.length ? '<span class="chip-sep" aria-hidden="true"></span>' + pv.qs.map(c => `<button type="button" class="q ${c.done ? "done" : ""}" data-say="${esc(c.say)}" title="${esc(c.say)}">${c.done ? "✔ " : ""}${esc(c.label)}</button>`).join("") : ""}`; } } } }
+    { const row = $("#coldRow"), chips = typeof COLD !== "undefined" && sc ? COLD.chips(sc, st) : null;
+      if (row) { row.hidden = !chips; if (chips) { const html = `<span class="lbl">TP 1223</span>${chips.map(c => `<button type="button" class="${c.done ? "done" : ""}" data-say="${esc(c.say)}">${c.done ? "✔ " : ""}${esc(c.label)}</button>`).join("")}`;
+        if (row.innerHTML !== html) row.innerHTML = html; } } }
     const ae = SIM.aeiou && SIM.aeiou();
     const showAe = !!(ae && ae.altered && !st.x.arrest);
     $("#btnAeiou").hidden = !showAe; if (showAe) $("#btnAeiou").textContent = `AEIOU-TIPS ${ae.n}/${ae.total}`;
@@ -16701,7 +16857,9 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       $("#monStatus").textContent = "MONITORING"; $("#monStatus").style.color = "#2bff88";
     } else if (rv.pulse) { setNum("hr", String(rv.pulse.val), false, rv.pulse.val === 0, "palp " + fmtT(st.t - rv.pulse.t) + " ago"); $("#rhythmLbl").textContent = ""; $("#monStatus").textContent = "NO LEADS"; }
     else { setNum("hr", "--", true, false, "bpm"); $("#rhythmLbl").textContent = ""; $("#monStatus").textContent = "NO LEADS"; $("#monStatus").style.color = ""; }
-    if (rv.spo2) setNum("spo2", v.spo2 == null ? "--" : String(Math.round(jit(v.spo2, 0.8))), false, v.spo2 != null && v.spo2 < 90, "%");
+    const coldOx = typeof COLD !== "undefined" && sc.cold ? COLD.reading(sc, st) : null;
+    if (rv.spo2 && coldOx) setNum("spo2", String(Math.round(coldOx.value)), false, !coldOx.reliable || coldOx.value < 90, "% · " + coldOx.label);
+    else if (rv.spo2) setNum("spo2", v.spo2 == null ? "--" : String(Math.round(jit(v.spo2, 0.8))), false, v.spo2 != null && v.spo2 < 90, "%");
     else setNum("spo2", "--", true);
     if (rv.bp) { setNum("bp", rv.bp.val, false, parseInt(rv.bp.val) < 90, fmtT(st.t - rv.bp.t) + " ago"); } else setNum("bp", "--/--", true, false, "mmHg");
     if (rv.etco2) { setNum("etco2", String(Math.round(jit(v.etco2, 1))), false, v.etco2 > 50 || v.etco2 < 25); setNum("rr", String(Math.round(v.rr)), false, v.rr < 8 || v.rr > 30, "/min (capno)"); }
@@ -16759,13 +16917,13 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   window.MedicUI = { monState: () => monState(), renderDebrief: r => { currentDebrief = r; renderDebrief(r); }, show: id => show(id), pickVoice: (a, b, c) => pickVoice(a, b, c), partnerVoice: (a, b, c) => partnerVoice(a, b, c), instructorVoice: (a, b) => instructorVoice(a, b), voices: () => { if (!voices.length) loadVoices(); return voices; }, spokenFinding: t => spokenFinding(t), settings: () => settings };
   function monState() {
     const st = SIM.state; if (!st || !st.tg) return null;
-    const tg = st.tg, v = st.v;
+    const tg = st.tg, v = st.v, coldOx = typeof COLD !== "undefined" && SIM.scenario.cold ? COLD.reading(SIM.scenario, st) : null;
     const rate = tg.rhythm === "vf" || tg.rhythm === "asystole" ? 0 : tg.rhythm === "pea" ? (tg.peaRate || 40) : (tg.rhythm === "vt" && tg.pulse === false) ? (tg.vtRate || 180) : v.hr || 0;
     const dv = SIM.devMon ? SIM.devMon() : null, pacing = !!(dv && dv.pacing && dv.cap !== "inhibited");
     const ecgRate = pacing && (dv.cap === "elec" || dv.cap === "mech") ? dv.rate : rate;
     return { monitor: !!st.rev.monitor, rhythm: tg.rhythm, rateForBeats: ecgRate, spikes: pacing, paceRate: pacing ? dv.rate : 0, plethRate: pacing && dv.cap === "elec" ? ((dv.under && dv.under.hr) || 0) : null,
       sync: !!(dv && dv.sync && dv.pads), shape: tg.rhythm !== "paced" && /type II/i.test(tg.rhythmName || "") ? "m2" : tg.rhythm === "vt" && /polymorphic|torsade/i.test(tg.rhythmName || "") ? "tdp" : tg.rhythm === "afib" && /pre-excited|wide-complex irregular/i.test(tg.rhythmName || "") ? "afw" : null, shockN: dv ? dv.shockN : 0, stOff: tg.twelve && tg.twelve.st ? ((tg.twelve.st.II || 0) + (tg.st === "anterior" ? 0.18 : 0)) * 1.6 : 0,
-      cpr: !!tg.cpr, artifact: !!tg.artifact, fineVF: /fine/.test(tg.rhythmName || ""), spo2On: !!st.rev.spo2, spo2: v.spo2, sbp: v.sbp || 0, arrest: tg.pulse === false,
+      cpr: !!tg.cpr, artifact: !!tg.artifact, fineVF: /fine/.test(tg.rhythmName || ""), spo2On: !!st.rev.spo2, spo2: coldOx ? (coldOx.reliable ? coldOx.value : null) : v.spo2, sbp: v.sbp || 0, arrest: tg.pulse === false,
       etco2On: !!st.rev.etco2, rr: v.rr, etco2: v.etco2 || 0, shark: tg.capno === "shark" };
   }
 
@@ -17039,6 +17197,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     $("#quick").onclick = e => { if (e.target.tagName === "BUTTON") submit(e.target.textContent); };
     // quick-assess row: a tap goes through exactly the same path as saying the phrase (logged + assessment flow)
     $("#mciPanel").onclick = e => { if (e.target.closest("[data-mci-toggle]")) { mciOpen = !mciOpen; mciSig = ""; renderV29(); return; } const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
+    $("#coldRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
     $("#psyRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
     $("#pedsDexRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b && !b.disabled) submit(b.dataset.say, true); };
     $("#assessRow").onclick = e => { const b = e.target.closest("button[data-say]"); if (b) submit(b.dataset.say, true); };
