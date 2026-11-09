@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<meta name="medicsim-version" content="2.15.2 4dfc650946">
+<meta name="medicsim-version" content="2.16.0 5d6492c5e3">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -786,6 +786,12 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 .mci-tbl tr.bad td{background:#3a1218}
 .mtag{display:inline-block;font-weight:800;border-radius:5px;padding:0 .35em}.mtag.tU{background:#334155}
 .psy-row[hidden],.mci-panel[hidden]{display:none!important}
+/* v2.16.0 protocol system switch (LA County | ICEMA) */
+.sys-switch{display:inline-flex;align-items:center;gap:0;margin:.4em 0 .6em;border:1px solid rgba(255,255,255,.25);border-radius:999px;overflow:hidden;vertical-align:middle}
+.sys-switch .sys-lbl{padding:0 .7em;opacity:.8;font-size:.9em}
+.sys-switch .seg{background:transparent;color:inherit;border:0;border-left:1px solid rgba(255,255,255,.18);padding:.45em 1.1em;font-weight:600;cursor:pointer;border-radius:0;min-height:36px}
+.sys-switch .seg.on{background:#2f7cf6;color:#fff}
+.sys-row{display:flex;align-items:center;justify-content:space-between;gap:.8em}
 
 </style>
 </head>
@@ -794,16 +800,17 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
   <!-- ============ START MENU ============ -->
   <section id="menu" class="screen active">
     <header class="menu-head">
-      <div class="logo">⚕︎ <b>MedicSim</b> <span>LA</span></div>
+      <div class="logo">⚕︎ <b>MedicSim</b> <span id="logoSys">LA</span></div>
       <button class="ghost" id="btnSettings2" title="Settings">⚙︎ Settings</button>
     </header>
     <div class="menu-body">
       <h1>Paramedic Patient Simulator</h1>
-      <p class="sub">Talk to your patient, assess, treat. Expected actions follow the <b>Los Angeles County EMS Agency Treatment Protocols (Ref. 1200 series)</b>. For education and practice only. Always follow your current protocols, your preceptor, and Base/medical direction.</p>
+      <div class="sys-switch" role="group" aria-label="Protocol system"><span class="sys-lbl">Protocols:</span><button type="button" class="seg" data-sys="la" aria-pressed="true">LA County</button><button type="button" class="seg" data-sys="icema" aria-pressed="false">ICEMA</button></div>
+      <p class="sub" id="menuSub">Talk to your patient, assess, treat. Expected actions follow the <b>Los Angeles County EMS Agency Treatment Protocols (Ref. 1200 series)</b>. For education and practice only. Always follow your current protocols, your preceptor, and Base/medical direction.</p>
       <div id="speechSupport" class="banner"></div>
       <div class="watch-cta"><button id="btnWatch">▶ Watch a call</button><span>Watch a model paramedic and EMT run any of the scenarios start to finish, with the protocol reasons for each step.</span></div>
       <div class="grid" id="scenarioGrid"></div>
-      <p class="fine">Protocol text was pulled from dhs.lacounty.gov / file.lacounty.gov on Oct 20, 2026. Each scenario lists the Ref. No. and revision date it uses. Verify against the current Prehospital Care Manual before relying on it.</p>
+      <p class="fine" id="menuFine">Protocol text was pulled from dhs.lacounty.gov / file.lacounty.gov on Oct 20, 2026. Each scenario lists the Ref. No. and revision date it uses. Verify against the current Prehospital Care Manual before relying on it.</p>
     </div>
   </section>
 
@@ -981,11 +988,13 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 <!-- Modals -->
 <div class="modal" id="modalSettings"><div class="card">
   <h2>Settings</h2>
+  <div class="row sys-row"><span>Protocol system</span> <span class="sys-switch" role="group" aria-label="Protocol system"><button type="button" class="seg" data-sys="la" aria-pressed="true">LA County</button><button type="button" class="seg" data-sys="icema" aria-pressed="false">ICEMA</button></span></div>
+  <p class="fine">Switches grading, medication doses and checks, protocol cards, call grouping, Watch, destinations and debrief citations. Same calls in both. Educational use only.</p>
   <label class="row"><input type="checkbox" id="setVoice" checked> Speak patient replies aloud</label>
   <label class="row"><input type="checkbox" id="setAutoSend" checked> Send speech automatically when I stop talking</label>
   <label class="row"><input type="checkbox" id="setHints"> Show instructor hints during the scenario</label>
   <label class="row"><input type="checkbox" id="setInstr" checked> Instructor speaks findings aloud (pulses, skin, pupils, lung sounds…)</label>
-  <label class="row"><input type="checkbox" id="setMedQuiz" checked> Pre-administration medication check (MCG 1317 multiple-choice: dose, repeat time, max dose, contraindications)</label>
+  <label class="row"><input type="checkbox" id="setMedQuiz" checked> <span id="setMedQuizLbl">Pre-administration medication check (MCG 1317 multiple-choice: dose, repeat time, max dose, contraindications)</span></label>
   <label>Overall speech rate <input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="1"></label>
   <h3>Voices</h3>
   <p class="fine">Pick from the voices this device has (English first). Choices are saved on this device. If a saved voice disappears (new device or browser), Auto is used.</p>
@@ -1036,7 +1045,7 @@ body.coding .transcript{-webkit-mask-image:linear-gradient(transparent,#000 16px
 <div class="modal" id="modalPI"><div class="card">
   <h2>🩺 Provider Impression</h2>
   <p id="piEndNote" class="fine" hidden><b>Select your primary Provider Impression before ending.</b> It's graded in the debrief.</p>
-  <p class="fine">LA County Provider Impressions (Ref. 1200.3). Pick the single best primary impression for this patient.</p>
+  <p class="fine" id="piNote">LA County Provider Impressions (Ref. 1200.3). Pick the single best primary impression for this patient.</p>
   <select id="piSelect"></select>
   <div class="actions"><button class="ghost" id="btnEndNoPI">End without PI</button><button id="btnSavePI">Save impression</button></div>
 </div></div>
@@ -1391,6 +1400,223 @@ PROTOCOLS['1223'] = {title:'Hypothermia / Cold Injury',revised:'07-01-24',url:'h
   'Simulation measurement lesson (not quoted from TP 1223): cold vasoconstricted fingers may give falsely low/unreliable SpO2. Confirm waveform and a warmer site with compatible sensor, assess ventilation and central color. Do not assume all low readings in cold patients are artifact.',
   'Instructor simulation timing targets (not county cutoffs): wet clothing off by 30 s, blankets by 45 s, inside heated ambulance by 60 s. Act immediately; avoid prolonged cold-scene assessment.'
 ]};
+
+/* ===== protocols_icema.js ===== */
+/* =====================================================================
+ * v2.16.0 ICEMA (Inland Counties Emergency Medical Agency: San Bernardino,
+ * Inyo, Mono) protocol reference cards, LA -> ICEMA protocol map, ICEMA
+ * destinations (Ref. #9030) and Trauma Triage Criteria (Ref. #9040).
+ * Source: ICEMA Policy and Protocol Manual, October 1, 2026 (icema.sbcounty.gov),
+ * and Reference #11010 Medication - Standard Orders (effective 09/01/26,
+ * supersedes 07/01/26). Each card lists its Reference No. and effective date.
+ * Key points are short paraphrases of the official text (not the full protocol).
+ * Education only: always follow the current ICEMA manual and base hospital direction.
+ * ===================================================================== */
+const ICEMA = (() => {
+  const URL = "https://icema.sbcounty.gov/wp-content/uploads/sites/100/26-10-01-Policy-Manual.pdf";
+  const PAGE = "https://icema.sbcounty.gov/resources/policies-and-protocols/";
+  const C = (title, revised, keyPoints) => ({ title, revised, url: URL, keyPoints });
+  const CARDS = {
+    "14010": C("Respiratory Emergencies - Adult", "11/01/25", [
+      "Asthma / anaphylaxis (LALS): 300 mL NS bolus for poor perfusion, may repeat once; Epinephrine if no response to albuterol, may repeat after 15 min (#11010).",
+      "ALS: Albuterol with Atrovent (#11010); Diphenhydramine for suspected allergic reaction; CPAP; Midazolam 1 mg once for CPAP anxiety if SBP > 90.",
+      "Persistent severe anaphylaxis: Epinephrine 0.1 mg/mL IV/IO per #11010. Base may order Magnesium for severe asthma.",
+      "COPD: Albuterol with Atrovent; CPAP. O2 titrated to SpO2 90% (none if > 91%).",
+      "CHF / pulmonary edema: Nitroglycerin (contraindicated with SBP < 100 or PDE5 within 48 h); albuterol if no improvement after NTG; CPAP."]),
+    "14020": C("Airway Obstruction - Adult", "11/01/25", ["Responsive: abdominal (or chest) thrusts until relieved or unconscious.", "Unresponsive: supine, CPR 30:2 for 2 min, look in the mouth each time the airway is opened; AED.", "ALS: laryngoscope + Magill forceps for a visible foreign body; needle cricothyrotomy if unable to ventilate (#11020)."]),
+    "14025": C("Allergic Reactions - Adult", "07/01/26", ["300 mL NS bolus for hypotension / poor perfusion, repeat as indicated.", "Albuterol with Atrovent for wheezing; Epinephrine 0.3 mg IM (1 mg/mL) if no response, may repeat once after 15 min.", "Anaphylactic shock: Epinephrine IM; persistent severe anaphylaxis: Epinephrine 0.1 mg/mL 0.1 mg slow IV/IO q5 min to 0.5 mg (#11010).", "Diphenhydramine 25 mg IV/IO or 50 mg IM. Base may order additional medications."]),
+    "14030": C("Bradycardias - Adult", "11/01/25", ["Poor perfusion: 300 mL NS bolus, may repeat once.", "Atropine 1 mg IV/IO q5 min, max 3 mg (0.04 mg/kg) (#11010).", "TCP if atropine is ineffective, or immediately for suspected MI, 3rd-degree block with wide complex, or 2nd-degree type II (#11020: start rate 60, lowest output that captures).", "Base: Calcium chloride for suspected hyperkalemia (ESRD/dialysis). Contact base if unsuccessful.", "No ICEMA pediatric bradycardia protocol exists (14030 is adult only)."]),
+    "14040": C("Tachycardias - Adult", "11/01/25", ["HR > 150 with poor perfusion. LALS: AED pads as a precaution; 300 mL NS bolus for poor perfusion; glucose.", "SVT: 300 mL NS bolus, vagal maneuvers, Adenosine 6 mg rapid IVP + 20 mL NS, then 12 mg (may repeat 12 mg once) (#11010), synchronized cardioversion (#11020), contact base.", "VT / WCT: Adenosine only if regular and monomorphic; then Lidocaine 1.5 mg/kg (#11010). Polymorphic VT: immediate UNSYNCHRONIZED defibrillation, consider Magnesium. Contact base.", "AF / flutter: unstable = synchronized cardioversion; contact base.", "Cardioversion (#11020): 100 J, then 200, 300, 360 J (or biphasic equivalent); midazolam / fentanyl for comfort."]),
+    "14050": C("Cardiac Arrest - Adult", "11/01/25", ["High-performance CPR (2–2.5 in, full recoil); BVM preferred, ETT is the advanced airway of choice if BLS airway fails; waveform capnography required.", "VF/pVT: defibrillate 360 J monophasic or biphasic equivalent; Epinephrine 1 mg (0.1 mg/mL) IV/IO q5 min; Lidocaine 1.5 mg/kg after 2 cycles, may repeat 0.75 mg/kg (max 3 mg/kg).", "PEA / asystole: Epinephrine q5 min; 300 mL NS (may repeat); base may order sodium bicarbonate / calcium chloride.", "Base consult for refractory arrest after 20 min. Termination without base if ICEMA criteria are met (e.g., EtCO2 < 15 after 20 min).", "ROSC: 12-lead; transport to the closest STEMI Receiving Center regardless of the ECG (#9030); EtCO2 35–45; push-dose epinephrine for hypotension."]),
+    "14060": C("Altered Level of Consciousness / Seizures - Adult", "11/01/25", ["Blood glucose; Dextrose 10% 250 mL (25 g) IV/IO for BG < 80, or Glucagon 1 mg IM/SC/IN if no IV (#11010).", "Naloxone 0.5 mg IV/IO/IM/IN q2–3 min for suspected opioid with respiratory depression (4 mg IN loading for suspected fentanyl), max 10 mg.", "Active tonic/clonic seizure: Midazolam 2.5 mg IV/IO (repeat in 5 min) or 5 mg IM/IN (repeat in 10 min), max 3 doses, then base.", "Cardiac monitor and 12-lead."]),
+    "14070": C("Burns - Adult (15 years and older)", "11/01/25", ["Stop the burning process; dry sterile dressing; keep warm; Rule of Nines.", "Unstable (BP < 90 / poor perfusion): 2nd IV, NS 500 mL boluses to 1000 mL max. Stable: NS 500 mL/h.", "Pain: #14100. Major burns: closest Burn Center if < 20 min (#9030); respiratory compromise: closest receiving hospital."]),
+    "14080": C("Stroke Treatment - Adult", "11/01/25", ["O2 to SpO2 94%; blood glucose; vascular access; 12-lead if possible.", "mLAPSS: age > 17, no seizure history, onset < 24 h, not wheelchair/bed bound at baseline, BG 60–400, unilateral weakness. LAMS ≥ 4 = suspected LVO.", "Last seen normal + transport < 24 h, or wake-up stroke: closest Stroke Receiving Center (notify early). > 24 h: closest receiving hospital.", "mLAPSS negative but stroke suspected: contact base for destination. Get a family phone number; thrombolytic checklist."]),
+    "14090": C("Trauma - Adult (15 years and older)", "11/01/25", ["Hemorrhage control; SMR as indicated; trauma base hospital contact for triage criteria (#9040).", "Blunt, unstable: NS 250 mL, repeat once (max 500 mL). Stable or penetrating: saline lock, no fluids. Crush: 500 mL, repeat to 1000 mL.", "TXA 2 g slow IV/IO over 1 min (or 1 g IM) within 3 h for SBP < 90, HR ≥ 120 or uncontrolled bleeding (≥ 15 y) (#11010).", "Needle thoracostomy (5th ICS MAL preferred) for SBP < 90 with shock and a tension finding. Pain per #14100.", "Traumatic arrest: closest Trauma Center if < 20 min."]),
+    "14100": C("Pain Management", "11/01/25", ["SBP > 100: Fentanyl (moderate–severe pain), Ketamine (adult) or Tylenol (#11010).", "SBP < 100: Ketamine 0.3 mg/kg (max 30 mg) in 50–100 mL NS IV over 5 min (adult) or Tylenol 1 g IV over 15 min.", "Fentanyl: 50 mcg slow IV/IO q5 min (max 200 mcg), or 100 mcg IM/IN then 50 mcg q10 min. Continuous ECG + capnography; reassess q5 min.", "Switching from one analgesic to another requires base hospital contact."]),
+    "14110": C("Behavioral Emergencies", "11/01/25", ["Scene safety; de-escalation; restraints per #6060; never transport prone.", "Dangerous agitation (potentially fatal): Midazolam 2.5 mg IV/IO or 5 mg IM/IN (IM/IN preferred), max 3 doses (#11010); minors < 9 y base order only.", "Monitor, capnography; base may order sodium bicarbonate. 5150 with a medical complaint: closest acute care hospital (#9030)."]),
+    "14120": C("Respiratory Emergencies - Pediatric (< 15 years)", "07/01/26", ["Albuterol 2.5 mg neb with Atrovent (0.25 mg if < 1 y, 0.5 mg 1–14 y); Epinephrine 0.01 mg/kg IM (max 0.3 mg) if no response.", "Croup with stridor at rest: nebulized Epinephrine 0.5 mg/kg (1 mg/mL), max 5 mg; not permitted over 8 years.", "Vascular access at TKO; base may order more."]),
+    "14130": C("Airway Obstruction - Pediatric", "11/01/25", ["Back blows / chest thrusts (infant) or abdominal thrusts (child); CPR if unresponsive; Magill forceps for visible FB."]),
+    "14140": C("Allergic Reactions - Pediatric (< 15 years)", "11/01/25", ["NS 20 mL/kg (max 300 mL) for hypotension, repeat as indicated.", "Albuterol with Atrovent; Epinephrine 0.01 mg/kg IM (max 0.3 mg) if no response or for anaphylactic shock.", "Diphenhydramine 1 mg/kg IV/IO (max 25 mg) or 2 mg/kg IM (max 50 mg) for age ≥ 2 y."]),
+    "14150": C("Cardiac Arrest - Pediatric (< 15 years)", "11/01/25", ["High-quality CPR; IO preferred; BVM.", "Defibrillation 2 J/kg, then 4 J/kg, then 10 J/kg (not above the adult dose).", "Epinephrine 0.01 mg/kg (1 d–8 y) or 1 mg (9–14 y) q5 min; NS 20 mL/kg (300 mL for 9–14 y); Lidocaine 1 mg/kg, then 0.5 mg/kg (max 3 mg/kg).", "Base contact required for termination. ROSC: closest receiving hospital; push-dose epinephrine for SBP < 70."]),
+    "14160": C("Altered Level of Consciousness - Pediatric", "11/01/25", ["Glucose: D10 0.5 g/kg (5 mL/kg) IV/IO for BG < 60 (neonate < 35); Glucagon 0.03 mg/kg IM if no IV (max 1 mg).", "NS 20 mL/kg (max 300 mL) for poor perfusion. Naloxone 0.1 mg/kg (max 0.5 mg; 9–14 y 0.5 mg)."]),
+    "14170": C("Seizure - Pediatric", "11/01/25", ["Midazolam 0.1 mg/kg IV/IO (max 2.5 mg) or 0.2 mg/kg IM/IN (max 5 mg), max 3 doses.", "Blood glucose (treat per #14160); passive cooling if febrile."]),
+    "14180": C("Trauma - Pediatric", "11/01/25", ["Hemorrhage control; airway; NS 20 mL/kg for poor perfusion; no TXA under 15.", "Pediatric Trauma Center if < 20 min difference from the closest Trauma Center (#9030)."]),
+    "14200": C("Newborn Care", "11/01/25", ["Dry, warm, stimulate; HR < 100: BVM 30 s; HR < 60: compressions 3:1.", "Epinephrine 0.01 mg/kg if HR < 60 after 1 min of compressions and ventilation; glucose for BG < 35."]),
+    "14210": C("Obstetrical Emergencies", "11/01/25", ["Delivery: support the head, suction as needed, dry/warm, clamp and cut the cord.", "Postpartum hemorrhage: fundal massage, 500 mL fluid challenge (repeat), 150 mL/h, 2nd IV; TXA is a base order.", "Eclampsia: Magnesium 4 g slow IV push over 3–4 min, then 10 mg/min; Midazolam for seizures.", "Prolapsed cord: elevate hips, push the presenting part off the cord, knee-chest; consider immediate base notification."]),
+    "14220": C("Nausea and Vomiting", "11/01/25", ["Ondansetron 4 mg slow IV/IO/ODT; age ≥ 9 may repeat ×2 at 10 min (12 mg total); 4–8 y total 4 mg; contraindicated under 4 years."]),
+    "14230": C("Shock (Non-Traumatic)", "11/01/25", ["Adult: NS 500 mL, may repeat once to keep SBP > 90; then push-dose epinephrine 1 mL (0.01 mg/mL) q1–5 min to SBP > 90.", "Pediatric: NS 20 mL/kg, repeat once; push-dose epinephrine 0.1 mL/kg to SBP > 70."]),
+    "14240": C("Suspected Acute Myocardial Infarction (AMI)", "11/01/25", ["Aspirin 325 mg chewed; early IV; 300 mL NS for poor perfusion with clear lungs.", "Nitroglycerin 0.4 mg SL q3 min prn while perfusion is adequate (no NTG with SBP < 100, PDE5 within 48 h, or RV infarct).", "12-lead; V4R for inferior MI / poor perfusion: RVI → 300 mL NS, nitrates contraindicated.", "STEMI: early notification to the STEMI Receiving Center (#4040, #9030). Fentanyl when NTG is contraindicated or with no relief; base for more."]),
+    "14250": C("Determination of Death on Scene", "11/01/25", ["Pulseless and apneic with obvious-death criteria (decomposition, rigor, lividity, decapitation, incineration, massive crush, etc.). Doubt: start CPR and contact base."]),
+    "14280": C("Sepsis - Adult", "11/01/25", ["Two or more: temp > 100.4 °F or < 96.8 °F, HR > 90, EtCO2 < 25, RR > 20, with suspected infection.", "NS 500 mL, may repeat once; push-dose epinephrine for persistent hypotension; early hospital notification."]),
+    "13010": C("Poisonings", "11/01/25", ["500 mL NS fluid challenge for hypotension.", "Phenothiazine 'poisoning' with ataxia / muscle spasms (dystonia): Diphenhydramine 25 mg IV/IO or 50 mg IM (prior to base contact).", "Organophosphate: Atropine 2 mg IV/IO/IM q5 min; Midazolam for nerve-agent seizures.", "Base: sodium bicarbonate for TCA, calcium chloride for calcium channel blocker, glucagon for beta-blocker overdose."]),
+    "13020": C("Heat Related Emergencies", "11/01/25", ["Remove from heat, cooling measures; heat stroke: rapid cooling with cold packs at large vessels, evaporative cooling.", "Adult NS 500 mL bolus, repeat for continued poor perfusion; pediatric 20 mL/kg."]),
+    "13030": C("Cold Related Emergencies", "11/01/25", ["Remove wet clothing, passive warming, heat packs; handle gently.", "Warmed NS 500 mL (≥ 9 y) or 20 mL/kg.", "VF: defibrillate once until rewarmed; contact base."]),
+    "13050": C("Smoke Inhalation / CO Exposure / Suspected Cyanide", "11/01/25", ["Remove from exposure; 100% O2 by non-rebreather (SpO2 unreliable).", "Monitor + 12-lead; IV, consider 300 mL NS; BVM / advanced airway as needed.", "Wheezing: #14010. Rapid transport to the closest receiving ED."]),
+    "13060": C("Drowning / Submersion", "11/01/25", ["Airway, ventilation and oxygenation first; SMR only if trauma suspected; treat arrest per #14050 / #14150."]),
+    "11010": C("Medication - Standard Orders", "09/01/26", ["Adult and pediatric doses for every ICEMA formulary drug. Not in the ICEMA formulary: amiodarone, olanzapine, ketorolac, morphine."]),
+    "11020": C("Procedure - Standard Orders", "11/01/25", ["CPAP (lowest setting, max 15 cmH2O); synchronized cardioversion 100 / 200 / 300 / 360 J; TCP rate 60; needle thoracostomy 5th ICS MAL; ETT only if longer than the Broselow tape."]),
+    "12010": C("Patient Care Guidelines", "11/01/25", ["O2: titrate to SpO2 94% (none if > 95%); COPD 90% (none if > 91%). Assessment, vital signs and documentation standards."]),
+    "9030": C("Destination", "11/01/25", ["Default: closest hospital. STEMI → STEMI Receiving Center; ROSC → closest SRC (> 30 min: closest).", "Stroke (mLAPSS + LAMS, LSN < 24 h or wake-up) → closest Stroke Receiving Center.", "Trauma → closest Trauma Center; pediatric → Pediatric Trauma Center if < 20 min difference. Major burns → Burn Center if < 20 min.", "5150 with a medical complaint → closest acute care hospital."]),
+    "9040": C("Trauma Triage Criteria", "11/01/25", ["Physiologic: GCS ≤ 13; RR < 10 or > 29 (< 20 infant) or ventilatory support; SBP < 90 / tachycardia (peds: poor perfusion).", "Anatomic: penetrating head/neck/torso/proximal extremity; chest wall instability; ≥ 2 proximal long-bone fx; crushed/degloved/mangled/pulseless extremity; amputation proximal to wrist/ankle; pelvic fx; open/depressed skull fx; paralysis.", "Mechanism: falls > 20 ft adult (> 10 ft peds); intrusion > 12 in; ejection; death in same compartment; auto-ped > 20 mph; motorcycle > 20 mph.", "Physiologic or anatomic criteria: closest Trauma Center + trauma base hospital contact. Mechanism / age / comorbid only: trauma base consult for destination."]),
+    "8080": C("Medical Response to a Multiple Casualty Incident", "11/01/25", ["Firescope ICS: first unit establishes command and declares the MCI; START (adults) / JumpSTART (peds) triage with triage tags.", "Hospital coordination through the County Communications Center (CCC) via Med Comm / ReddiNet."]),
+    "6060": C("Patient Restraints", "11/01/25", ["Least restrictive restraint; never prone or hobbled for transport; reassess circulation."]),
+    "6030": C("Reporting Incidents of Suspected Abuse", "11/01/25", ["Mandated reporter: report suspected child / elder / dependent adult abuse to the appropriate agency and law enforcement."]),
+    "6080": C("Patient Refusal of Care - Adult", "11/01/25", ["Capacity assessment, risks explained, base contact for high-risk refusals, documentation."]),
+  };
+  // LA County TP / Ref -> ICEMA Reference No. (menu group = first entry). `note` = no direct ICEMA equivalent / mapping caveat.
+  const MAP = {
+    "1203": ["14060", "11010"], "1203-P": ["14160"], "1204": ["14280", "13020"], "1207": ["14230"], "1207-P": ["14230"], "1209": ["14110"], "1210": ["14050"], "1210-P": ["14150"],
+    "1211": ["14240"], "1212": ["14030"], "1212-P": ["14150", "11010"], "1213": ["14040"], "1214": ["14010"], "1215": ["14210", "14200"], "1216-P": ["14200"], "1217": ["14210"], "1218": ["14210"],
+    "1219": ["14025", "14010"], "1219-P": ["14140"], "1220": ["14070"], "1223": ["13030"], "1229": ["14060"], "1231": ["14060"], "1231-P": ["14170"], "1232": ["14080"], "1233": ["12010"],
+    "1234": ["14020"], "1234-P": ["14130"], "1236": ["13050"], "1237": ["14010"], "1237-P": ["14120"], "1238": ["13050"], "1239": ["13010"], "1241": ["13010", "14060"], "1243": ["14090"], "1244": ["14090", "9040"],
+    "1202": ["12010"], "1205": ["14230"], "1205-P": ["14230"], "1204-P": ["14170"], "1230": ["14220"], "1201": ["12010"], "1200.2": ["base"],
+    "506": ["9040"], "502": ["9030"], "510": ["9030"], "511": ["9030"], "512": ["9030", "14070"], "513": ["9030", "4040"], "521": ["9030", "14080"], "519": ["8080"], "519.2": ["8080"], "526": ["14110"],
+    "808": ["base"], "814": ["14250"], "822": ["6030"], "834": ["6080"], "838": ["6060"],
+    "1302": ["12010"], "1303": ["14240"], "1306": ["14110"], "1308": ["11020"], "1309": ["11010"], "1315": ["11020"], "1317": ["11010"], "1320": ["14060"], "1335": ["11020"], "1345": ["14100"],
+    "1355": ["14230"], "1360": ["14090"], "1365": ["11020"], "1370": ["14090"], "1375": ["11020"],
+  };
+  const NOTE = { "1212-P": "No ICEMA pediatric bradycardia protocol: graded with #14150 (pediatric resuscitation) and #11010 pediatric doses.", "1233": "No ICEMA syncope protocol: graded with #12010 Patient Care Guidelines (assessment, 12-lead, glucose).", "1204": "ICEMA has no general fever protocol: #14280 Sepsis (and #13020 Heat) apply.", "1239": "ICEMA has no separate dystonic-reaction protocol: #13010 Poisonings (phenothiazine reaction) applies." };
+  const TITLES = Object.fromEntries(Object.entries(CARDS).map(([k, v]) => [k, v.title]));
+  // ICEMA #9030 destinations. Internal ids are shared with the LA list where the meaning matches ("mar" = closest receiving hospital, "csc" = Stroke Receiving Center).
+  const DESTINATIONS = [
+    { id: "mar", short: "Closest hospital", label: "Closest Receiving Hospital", ref: "9030", say: "Transport destination: closest receiving hospital" },
+    { id: "src", short: "STEMI (SRC)", label: "STEMI Receiving Center (SRC)", ref: "9030 / 4040", say: "Transport destination: STEMI receiving center" },
+    { id: "csc", short: "Stroke (SRC)", label: "Stroke Receiving Center", ref: "9030 / 14080", say: "Transport destination: Stroke Receiving Center" },
+    { id: "tc", short: "Trauma Center", label: "Trauma Center", ref: "9040 / 9030", say: "Transport destination: Trauma Center" },
+    { id: "ptc", short: "Pediatric Trauma (PTC)", label: "Pediatric Trauma Center", ref: "9030 / 9040", say: "Transport destination: Pediatric Trauma Center" },
+    { id: "burn", short: "Burn Center", label: "Burn Center", ref: "9030 / 14070", say: "Transport destination: Burn Center" },
+  ];
+  // Example Inland Empire receiving facilities (illustrative only: designations change; verify with ICEMA / the base hospital).
+  const HOSPITALS = { mar: "e.g. the closest ED", src: "e.g. Loma Linda University Medical Center", csc: "e.g. Loma Linda University Medical Center", tc: "e.g. ARMC (Colton) or Loma Linda University Medical Center", ptc: "e.g. Loma Linda University Children's Hospital", burn: "e.g. ARMC Burn Center (Colton)" };
+  const CAT_P = "1. Physiologic", CAT_A = "2. Anatomic", CAT_M = "3. Mechanism of Injury", CAT_X = "4. Age / Co-morbid";
+  const TRAUMA_TRIAGE = [
+    { id: "ic_gcs", code: "P-GCS", cat: CAT_P, short: "GCS ≤ 13", label: "GCS less than or equal to 13" },
+    { id: "ic_rr", code: "P-RR", cat: CAT_P, short: "RR < 10 or > 29 / ventilatory support", label: "RR < 10 or > 29 (< 20 in infants < 1 yr) or need for ventilatory support" },
+    { id: "ic_sbp", code: "P-BP", cat: CAT_P, short: "SBP < 90 / tachycardia (peds: poor perfusion)", label: "Adult BP < 90 mmHg / tachycardia; pediatric inadequate tissue perfusion or abnormal vital signs for age" },
+    { id: "ic_pen", code: "A-PEN", cat: CAT_A, short: "Penetrating head/neck/torso/proximal extremity", label: "Penetrating injury to head, neck, torso, or extremities proximal to the knee or elbow" },
+    { id: "ic_chest", code: "A-CHEST", cat: CAT_A, short: "Chest wall instability / deformity", label: "Blunt chest trauma with chest wall instability or deformity (e.g., flail chest)" },
+    { id: "ic_longbone", code: "A-FX", cat: CAT_A, short: "≥ 2 proximal long-bone fractures", label: "Two or more proximal long bone fractures (femur, humerus)" },
+    { id: "ic_extremity", code: "A-EXT", cat: CAT_A, short: "Crushed/degloved/mangled/pulseless extremity or amputation", label: "Crushed, degloved, mangled or pulseless extremity; amputation proximal to the wrist or ankle" },
+    { id: "ic_pelvis", code: "A-PELV", cat: CAT_A, short: "Pelvic fracture", label: "Pelvic fractures" },
+    { id: "ic_skull", code: "A-SKULL", cat: CAT_A, short: "Open or depressed skull fracture", label: "Open or depressed skull fracture" },
+    { id: "ic_paralysis", code: "A-PARA", cat: CAT_A, short: "Paralysis", label: "Paralysis" },
+    { id: "ic_fall", code: "M-FALL", cat: CAT_M, short: "Fall > 20 ft (peds > 10 ft or 2–3× height)", label: "Falls: adults > 20 feet; pediatric > 10 feet or 2–3 times the child's height" },
+    { id: "ic_auto", code: "M-AUTO", cat: CAT_M, short: "High-risk auto crash", label: "High-risk auto crash: intrusion > 12 in, ejection, death in same compartment, telemetry, unrestrained child 0–9" },
+    { id: "ic_autoped", code: "M-PED", cat: CAT_M, short: "Auto vs ped/bike thrown, run over, or > 20 mph", label: "Auto versus pedestrian/bicyclist thrown, run over, or with significant (> 20 mph) impact" },
+    { id: "ic_moto", code: "M-MOTO", cat: CAT_M, short: "Motorcycle crash > 20 mph", label: "Motorcycle crash more than 20 mph" },
+    { id: "ic_age", code: "X-AGE", cat: CAT_X, short: "Age > 65 / anticoagulants / SBP < 110 after 65", label: "Older adult > 65 (anticoagulants / bleeding disorder, SBP < 110 may be shock)" },
+    { id: "ic_peds", code: "X-PEDS", cat: CAT_X, short: "Pediatric ≤ 14 / suspected abuse", label: "Pediatric patient 14 years and younger, or suspicion of child abuse" },
+    { id: "ic_other", code: "X-OTHER", cat: CAT_X, short: "Burns / pregnancy > 20 wk / EMS judgment", label: "Burns, pregnancy > 20 weeks, or EMS provider judgment" },
+  ].map(t => Object.assign(t, { say: "ICEMA trauma triage criteria: " + t.short }));
+  // LA Ref. 506 criterion id -> ICEMA #9040 criterion ids (for scenarios whose expected triage is defined with LA ids)
+  const TRIAGE_MAP = { sbp_lt90: ["ic_sbp"], hr_gt_sbp: ["ic_sbp"], rr_abn: ["ic_rr"], penetrating: ["ic_pen"], penetrating_arrest: ["ic_pen"], head_loc: ["ic_gcs", "ic_skull"], spinal_def: ["ic_paralysis"], flail: ["ic_chest"],
+    abd_tender: ["ic_sbp"], pelvic_fx: ["ic_pelvis"], ext_compromise: ["ic_extremity", "ic_longbone"], tourniquet: ["ic_extremity"], fall_gt10: ["ic_fall"], intrusion_12: ["ic_auto"], ejected: ["ic_auto"], auto_ped_20: ["ic_autoped"],
+    unenclosed_20: ["ic_moto"], burn_trauma: ["ic_other"], anticoag: ["ic_age"], guideline_moi: ["ic_auto"], sbp_110_65: ["ic_age"], special_other: ["ic_peds", "ic_other"] };
+  function refsFor(laRef) { const k = String(laRef || "").replace(/^(TP|Ref\.?|MCG)\s*/i, "").replace(/\s.*$/, ""); return MAP[k] || MAP[k.replace(/\.\d+$/, "")] || null; }
+  return { URL, PAGE, CARDS, MAP, NOTE, TITLES, DESTINATIONS, HOSPITALS, TRAUMA_TRIAGE, TRIAGE_MAP, refsFor, MANUAL: "ICEMA Policy and Protocol Manual (October 1, 2026)", MEDS_EFF: "09/01/26" };
+})();
+if (typeof module !== "undefined") module.exports = ICEMA;
+
+/* ===== proto_sys.js ===== */
+/* =====================================================================
+ * v2.16.0 PROTOCOL SYSTEM switch: "la" (LA County EMS Agency, default) or
+ * "icema" (Inland Counties EMA). Persisted as medicsim.settings.protocolSystem.
+ * The scenarios are shared; only the grading / doses / references / destinations
+ * / Watch lines change. LA mode is untouched by everything in this file: every
+ * hook returns the LA value unchanged when the system is "la".
+ * ===================================================================== */
+const PSYS = (() => {
+  const KEY = "medicsim.settings";
+  let sys = "la"; const subs = [];
+  const LS = () => { try { return typeof localStorage !== "undefined" ? localStorage : null; } catch (e) { return null; } };
+  try { const ls = LS(); const s = ls ? JSON.parse(ls.getItem(KEY) || "{}") : {}; if (s && s.protocolSystem === "icema") sys = "icema"; } catch (e) {}
+  let LA_DEST = null, LA_TRI = null;
+  function apply() {
+    if (typeof PROTOCOLS === "undefined") return;
+    if (!LA_DEST) { LA_DEST = PROTOCOLS.DESTINATIONS; LA_TRI = PROTOCOLS.TRAUMA_TRIAGE; }
+    const ic = sys === "icema" && typeof ICEMA !== "undefined";
+    PROTOCOLS.DESTINATIONS = ic ? ICEMA.DESTINATIONS : LA_DEST;
+    PROTOCOLS.TRAUMA_TRIAGE = ic ? ICEMA.TRAUMA_TRIAGE : LA_TRI;
+  }
+  function set(v, opts) {
+    const nv = v === "icema" ? "icema" : "la", changed = nv !== sys; sys = nv; apply();
+    if (!(opts && opts.noPersist)) { try { const ls = LS(); if (ls) { const s = JSON.parse(ls.getItem(KEY) || "{}"); s.protocolSystem = sys; ls.setItem(KEY, JSON.stringify(s)); } } catch (e) {} }
+    if (changed) subs.forEach(f => { try { f(sys); } catch (e) {} });
+    return sys;
+  }
+  const icema = () => sys === "icema";
+  const name = () => icema() ? "ICEMA" : "LA County";
+  const longName = () => icema() ? "Inland Counties EMS Agency (ICEMA)" : "Los Angeles County EMS Agency";
+  // ---------- references ----------
+  const KEEP = /standard practice|local policy|instructor|simulat|allergy|safety|^Safety/i;
+  // one LA reference token ("1211 #5", "TP 1244 #18", "MCG 1317.19", "Ref. 506 I.H", "1210-P ❿") -> ICEMA ref numbers
+  function mapToken(tok) {
+    const t = String(tok || "").trim(); if (!t) return [];
+    if (/^ICEMA/i.test(t)) return [t.replace(/^ICEMA\s*(Ref(erence)?\.?\s*)?#?/i, "")];
+    if (KEEP.test(t)) return [{ keep: t }];
+    const m = t.match(/(\d{3,4}(?:\.\d+)*(?:-P)?)/); if (!m) return [{ keep: t }];
+    let k = m[1]; if (/^1317/.test(k)) k = "1317";
+    const r = (typeof ICEMA !== "undefined" && (ICEMA.MAP[k] || ICEMA.MAP[k.replace(/\.\d+$/, "")])) || null;
+    if (!r) return [{ keep: "LA " + t }];
+    return r.map(x => x === "base" ? { keep: "base hospital contact" } : x);
+  }
+  // full LA ref string -> "ICEMA #14240 / #11010" (LA string unchanged in LA mode)
+  function mapRef(ref) {
+    if (!icema() || ref == null) return ref;
+    const s = String(ref); if (/^ICEMA\b/.test(s)) return s;
+    const out = [], keep = [];
+    s.split(/\s*\/\s*|\s*;\s*/).forEach(tok => mapToken(tok).forEach(x => { if (typeof x === "string") { if (!out.includes(x)) out.push(x); } else if (!keep.includes(x.keep)) keep.push(x.keep); }));
+    const ic = out.length ? "ICEMA " + out.map(x => "#" + x).join(" / ") : "";
+    return [ic, ...keep.filter(k => !/^LA /.test(k) || !out.length)].filter(Boolean).join(" / ") || s;
+  }
+  // bracket text for instructor notes
+  function refLabel(ref) { return icema() ? mapRef(ref) : "LA County Ref. " + ref; }
+  function refTitle(r) { if (icema()) { const c = typeof ICEMA !== "undefined" && ICEMA.CARDS[r]; return c ? `ICEMA Reference #${r} · ${c.title}` : `ICEMA Reference #${r}`; } const p = typeof PROTOCOLS !== "undefined" && PROTOCOLS[r]; return p ? `Ref. ${r} · ${p.title}` : `Ref. ${r}`; }
+  // ---------- menu grouping ----------
+  const LA_GROUP = sc => sc.menuGroup || sc.protocol || sc.refs[0];
+  function groupOf(sc) {
+    const la = LA_GROUP(sc); if (!icema()) return la;
+    if (la === "519") return "8080"; if (la === "1209") return "14110"; if (la === "1223") return "13030";
+    if (sc.id === "heat_stroke") return "13020";
+    const r = typeof ICEMA !== "undefined" && ICEMA.refsFor(la); return r ? r[0] : la;
+  }
+  function groupTitle(ref) { if (!icema()) { const p = typeof PROTOCOLS !== "undefined" && PROTOCOLS[ref]; return p ? p.title : ref; } const c = ICEMA.CARDS[ref]; return c ? c.title : ref; }
+  function icemaRefs(sc) { const out = []; [sc.protocol, ...(sc.refs || [])].forEach(r => { const m = typeof ICEMA !== "undefined" && ICEMA.refsFor(r); (m || []).forEach(x => { if (x !== "base" && !out.includes(x)) out.push(x); }); }); const g = groupOf(sc); if (!out.includes(g)) out.unshift(g); return out; }
+  // ---------- free-text adaptation (instructor notes / captions that came from LA-era code) ----------
+  const TXT = [
+    [/isn't in the LA County formulary\. The push-dose pressor is push-dose EPINEPHRINE 10 mcg \(1 mL of 0\.01 mg\/mL\)\./, "isn't in the ICEMA formulary (#11010). The push-dose pressor is push-dose epinephrine 1 mL (0.01 mg/mL) IV/IO q1–5 min to SBP > 90."],
+    [/Titrate to 94-98%\./, "Titrate to SpO2 94% (none if > 95%)."], [/COPD: target SpO2 88-92%\./, "COPD: titrate O2 to SpO2 90% (none if > 91%)."], [/\(target 94-98%\)/, "(target 94%)"],
+    [/0\.5 mg \(0\.5 mL of 1 mg\/mL\) lateral thigh/, "0.3 mg (1 mg/mL) IM lateral thigh"], [/0\.5 mg of 1 mg\/mL/, "0.3 mg of 1 mg/mL"],
+    [/Give the MAC the patient counts/, "Give the Coordinated Communication Center (CCC) the patient counts"], [/\bthe MAC\b/g, "the CCC"],
+    [/Olanzapine is given ONCE \(TP 1209 #9\)\.[^]*$/, "Olanzapine is not in the ICEMA formulary (#11010). Dangerous agitation: midazolam per #14110 / #11010."],
+    [/^Not indicated: olanzapine is for[^]*$/, "Olanzapine is not in the ICEMA formulary (#11010). Simple anxiety gets coaching and reassurance (#14110)."],
+    [/^Olanzapine ODT needs a COOPERATIVE[^]*$/, "Olanzapine is not in the ICEMA formulary (#11010). Dangerous agitation: midazolam 5 mg IM/IN (#14110 / #11010)."],
+    [/MCG 1335 2\.1 requires decreased\/absent breath sounds on the affected side AND SBP < 90 AND altered mental status, severe respiratory distress, SpO2 < 90% or cool, pale, moist skin\./, "ICEMA #14090 requires SBP < 90 with signs of shock AND one of: JVD, tracheal deviation, absent breath sounds, or increased ventilation resistance."],
+    [/TCP is for HR ≤ 40 with continued poor perfusion\./, "TCP is for symptomatic bradycardia when atropine is ineffective, or immediately for suspected MI, 3rd-degree block with wide QRS, or 2nd-degree type II (#14030)."],
+    [/Termination of resuscitation requires Base Physician consult unless ALL Ref\. 814 II\.A criteria are met\./, "Termination of resuscitation: meet the ICEMA #14050 termination criteria (e.g., EtCO2 < 15 after 20 min of ALS) or consult the base hospital."],
+    [/^Site not stated; assumed the 2nd ICS MCL\.[^]*$/, "Site not stated. ICEMA #14090: the 5th intercostal space at the midaxillary line is the preferred site."],
+    [/NS 1 L rapid infusion is indicated/, "An NS fluid bolus is indicated"], [/\bNS 1 L\b/g, "an NS fluid bolus"], [/Normal saline 1 L IV rapid infusion \(reassess every 250 mL\)/g, "Normal saline fluid bolus"],
+    [/\(initial 250 mL[^)]*\)/g, "(ICEMA fluid volumes per protocol)"],
+    [/\bLA County\b/g, "ICEMA"],
+    [/\bthe MAC\b/g, "the CCC"], [/\bMAC\b(?! address)/g, "CCC"],
+  ];
+  // returns {text, ref, level} or null (= this LA-only note does not apply under ICEMA)
+  const SUPPRESS = [/^CONTACT BASE concurrent with initiation of TCP/, /^CONTACT BASE concurrent with cardioversion/, /J synchronized: 1213 lists 120 J, 150 J, 200 J/, /^1213 allows the initial cardioversion plus 2 repeats/,
+    /^Unsynchronized shock for polymorphic VT with a pulse/, /^Magnesium for polymorphic VT\/torsades is NOT a standing order/, /^1211 ❹ says inferior MI alone/, /^TP 1209 #10: contact Base concurrently/, /^AFib with poor perfusion: 1213 #14 is CONTACT BASE/, /^Diphenhydramine before Base contact/];
+  function adaptDev(text, ref, level, ctx) {
+    if (!icema()) return { text, ref, level };
+    const t = String(text || "");
+    if (SUPPRESS.some(re => re.test(t))) return null;
+    if (ctx && ctx.pvtPulse && /^Unsynchronized shock to a patient with a pulse/.test(t)) return null; // ICEMA #14040: polymorphic VT = immediate unsynchronized defibrillation
+    let out = t; for (const [re, rep] of TXT) out = out.replace(re, rep);
+    out = out.replace(/\b(TP|MCG|Ref\.)\s*(\d{3,4}(?:\.\d+)?(?:-P)?)(\s*(?:#\d+(?:-\d+)?|[❶-❿⓫-⓴]|I+\.[A-Z](?:\.\d)?)*)/g, (m0, a, num) => { const r = mapToken(num)[0]; return typeof r === "string" ? "ICEMA #" + r : m0; });
+    return { text: out, ref: mapRef(ref), level };
+  }
+  function adaptText(s) { if (!icema() || s == null) return s; let out = String(s); for (const [re, rep] of TXT) out = out.replace(re, rep); return out.replace(/\b(TP|MCG|Ref\.)\s*(\d{3,4}(?:\.\d+)?(?:-P)?)(\s*(?:#\d+(?:-\d+)?|[❶-❿⓫-⓴]|I+\.[A-Z](?:\.\d)?)*)/g, (m0, a, num) => { const r = mapToken(num)[0]; return typeof r === "string" ? "ICEMA #" + r : m0; }); }
+  apply();
+  return { get: () => sys, set, icema, name, longName, onChange: f => subs.push(f), mapRef, refLabel, refTitle, groupOf, groupTitle, icemaRefs, adaptDev, adaptText, LA_GROUP, apply };
+})();
+if (typeof module !== "undefined") module.exports = PSYS;
 
 /* ===== dosing.js ===== */
 /* =====================================================================
@@ -2357,7 +2583,9 @@ const DOSING = (() => {
     return h >>> 0;
   }
 
+  const ICX = () => (typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined"); // v2.16.0 ICEMA medication check
   function quizKeyFor(id, sc, st, tx) {
+    if (ICX()) return ICEMA_RX.quizKeyFor(id, sc, st, tx);
     if (!id) return null;
     if (id === "epi_im") return "epi_im";
     if (id === "epi_arrest") return "epi_arrest";
@@ -2375,6 +2603,7 @@ const DOSING = (() => {
   }
 
   function defaultTxFor(id, sc, st) {
+    if (ICX()) return ICEMA_RX.defaultTxFor(id, sc, st);
     const key = quizKeyFor(id, sc, st);
     const q = key && MED_QUIZ[key];
     if (!q) return null;
@@ -2406,17 +2635,18 @@ const DOSING = (() => {
     repeat: () => "Give 3 doses (3 mL/kg), recheck BG; if still < 60 mg/dL, up to 2 more doses",
     max: () => "5 doses total (5 mL/kg), then contact Base" };
   function getQuiz(id, sc, st, tx) {
-    const key = quizKeyFor(id, sc, st, tx);
-    if (!key || !MED_QUIZ[key]) return null;
-    const entry = MED_QUIZ[key];
+    const key = quizKeyFor(id, sc, st, tx), MQ = ICX() ? ICEMA_RX.QUIZ : MED_QUIZ, icx = ICX();
+    if (!key || !MQ[key]) return null;
+    const entry = MQ[key];
     const seed = hashStr(key + ":" + ((sc && sc.id) || "std"));
     const perm = PERMS[seed % PERMS.length];
     const peds = isPeds(sc);
     const brosColor = (st && st.x && st.x.bros && st.x.bros.color) || null;
     const questions = Q_META.map((m, idx) => {
       let src = entry[m.k];
-      if (peds && key === "d10" && PEDS_D10[m.k]) src = Object.assign({}, src, { correct: PEDS_D10[m.k](st, sc) }); // v2.14.7
-      if (sc && sc.protocol === "1212-P" && ["epi_arrest", "atropine", "ns"].includes(key)) {
+      if (icx && peds && key === "d10" && m.k !== "contra") { const k = pdKg(st, sc); src = Object.assign({}, src, { correct: { dose: `0.5 g/kg = 5 mL/kg D10 IV/IO${k ? ` (${k} kg = ${5 * k} mL)` : ""}`, repeat: "Recheck BG; repeat if indicated", max: "Repeat per BG recheck / base hospital" }[m.k] }); }
+      else if (peds && key === "d10" && PEDS_D10[m.k]) src = Object.assign({}, src, { correct: PEDS_D10[m.k](st, sc) }); // v2.14.7
+      if (!icx && sc && sc.protocol === "1212-P" && ["epi_arrest", "atropine", "ns"].includes(key)) {
         const facts = key === "epi_arrest" ? {dose:"Epinephrine 0.01 mg/kg of 0.1 mg/mL slow IV/IO push (8 kg = 0.08 mg)",repeat:"Every 3–5 minutes for persistent poor perfusion",max:"CONTACT BASE concurrent with initial treatment; further doses per 1212-P / Base",contra:"Not indicated without symptomatic bradycardia / poor perfusion; ventilate first"} : key === "atropine" ? {dose:"Atropine 0.02 mg/kg IV/IO push (8 kg = 0.16 mg)",repeat:"May repeat once in 5 minutes",max:"Two doses, then further Base direction",contra:"Indicated for suspected AV block or unresponsive to epinephrine; do not delay ventilation"} : {dose:"Normal saline 20 mL/kg IV/IO rapid infusion (8 kg = 160 mL)",repeat:"Reassess perfusion / BP after the bolus; further fluids per protocol / Base",max:"Weight-based bolus per 1212-P / MCG 1309; contact Base for ongoing shock",contra:"Monitor for fluid overload; reassess lungs and perfusion"};
         src = Object.assign({}, src, {correct:facts[m.k]});
       }
@@ -2441,7 +2671,8 @@ const DOSING = (() => {
         correctIndex: correctIdx,
         correctText: src.correct,
         autoPeds: peds && m.k === "dose",
-        pedsNote: brosColor ? `${brosColor} zone` : "MCG 1309 color code"
+        pedsNote: icx ? "weight-based dose (ICEMA #11010)" : brosColor ? `${brosColor} zone` : "MCG 1309 color code",
+        ...(src.unverified ? { unverified: true } : {})
       };
     });
     return {
@@ -2485,10 +2716,11 @@ const DOSING = (() => {
         pickedText = rawPick;
         ok = rawPick.trim() === q.correctText.trim();
       }
+      if (q.unverified) ok = true; // v2.16.0: an answer not stated in the ICEMA documents is never graded
       if (peds && q.k === "dose") {
         // [t80u]: Pediatric patients always receive the correct dose
         ok = true;
-        if (!pickedText) pickedText = "MCG 1309 color-code dose (" + (quiz.brosColor || "Broselow") + ")";
+        if (!pickedText) pickedText = ICX() ? "Weight-based dose (ICEMA #11010)" : "MCG 1309 color-code dose (" + (quiz.brosColor || "Broselow") + ")";
       }
       const okField = q.k + "Ok";
       res[okField] = ok;
@@ -2521,7 +2753,7 @@ const DOSING = (() => {
           st.devs.push({
             t: st.t,
             level: "caution",
-            text: `${quiz.name} pre-administration check (${m.label}): you selected "${m.picked}"; LA County ${quiz.ref} is "${m.expected}".`,
+            text: ICX() ? `${quiz.name} pre-administration check (${m.label}): you selected "${m.picked}"; ${quiz.ref} is "${m.expected}".` : `${quiz.name} pre-administration check (${m.label}): you selected "${m.picked}"; LA County ${quiz.ref} is "${m.expected}".`,
             ref: quiz.ref
           });
         });
@@ -2579,6 +2811,457 @@ const DOSING = (() => {
   return { TABLE: T, MED_QUIZ, quizKeyFor, defaultTxFor, getQuiz, gradeQuiz, check, isPeds, conv };
 })();
 if (typeof module !== "undefined") module.exports = DOSING;
+
+/* ===== dosing_icema.js ===== */
+/* =====================================================================
+ * v2.16.0 ICEMA medication rules: dose / route / repeat / max checks, narration,
+ * the pre-administration medication check (quiz) and the extra spoken drug names
+ * (lidocaine, Atrovent, ketamine, Tylenol). Active only when PSYS.icema().
+ * Doses: ICEMA Reference #11010 Medication - Standard Orders, effective 09/01/26
+ * (supersedes 07/01/26); indications from the ICEMA treatment protocols
+ * (Oct 1, 2026 manual). Anything not stated in those documents is marked
+ * `unverified` (shown with "*") and is never a hard grading requirement.
+ * Physiology: the engine's drug effects were tuned on LA doses, so an ICEMA
+ * standard dose is passed to the engine as the LA-equivalent standard dose
+ * (e.g. midazolam 5 mg IM for a seizure acts like the LA 10 mg IM seizure dose).
+ * The learner always sees and is graded on the ICEMA dose.
+ * ===================================================================== */
+const ICEMA_RX = (() => {
+  const R = "ICEMA #11010";
+  const r2 = v => Math.round(v * 100) / 100;
+  const isPeds = sc => !!(sc && sc.patient && sc.patient.age < 15);
+  const kgOf = (sc, st) => (st && st.x && st.x.bros && st.x.bros.measKg) || (sc && sc.patient && sc.patient.weightKg) || 70;
+  const doseIn = (tx, u) => { const d = (tx.doses || []).find(x => x.u === u); if (d) return d.v; if (u === "mg") { const g = (tx.doses || []).find(x => x.u === "mcg"); if (g) return g.v / 1000; const gg = (tx.doses || []).find(x => x.u === "g"); if (gg) return gg.v * 1000; } if (u === "mcg") { const m = (tx.doses || []).find(x => x.u === "mg"); if (m) return m.v * 1000; } if (u === "g") { const m = (tx.doses || []).find(x => x.u === "mg"); if (m) return m.v / 1000; } return null; };
+  const N = (st, id) => (st.count && st.count[id]) || 0;
+  const NOT_FORMULARY = { amio: ["Amiodarone", "Lidocaine 1.5 mg/kg IV/IO is the ICEMA antiarrhythmic for VF/pVT and wide-complex tachycardia"], morphine: ["Morphine", "ICEMA analgesics are fentanyl, ketamine (adult) and Tylenol (#14100)"], ketorolac: ["Ketorolac", "ICEMA analgesics are fentanyl, ketamine (adult) and Tylenol (#14100)"], olanzapine: ["Olanzapine", "dangerous agitation is treated with midazolam (#14110)"] };
+  // ICEMA's own fluid volumes (by protocol)
+  function nsPlan(sc, st) {
+    const p = sc.protocol || "", id = sc.id || "", peds = isPeds(sc), kg = kgOf(sc, st);
+    if (peds) { const ml = Math.round(20 * kg); return { ml: Math.min(ml, /^1219/.test(p) ? 300 : 9999), text: `Normal saline ${Math.min(ml, /^1219/.test(p) ? 300 : 9999)} mL (20 mL/kg${/^1219/.test(p) ? ", max 300 mL" : ""}) IV/IO`, ref: "ICEMA #14140 / #14150 / #14160 / #14230" }; }
+    if (sc.tag === "TRAUMA" || p === "1244") return id === "crush_leg" ? { ml: 500, text: "Normal saline 500 mL IV bolus (crush injury; repeat to 1000 mL)", ref: "ICEMA #14090" } : { ml: 250, text: "Normal saline 250 mL IV bolus (blunt trauma, unstable; may repeat once, max 500 mL)", ref: "ICEMA #14090" };
+    if (p === "1220") return { ml: 500, text: "Normal saline 500 mL IV bolus (unstable burn; may repeat to 1000 mL)", ref: "ICEMA #14070" };
+    if (/^(1211|1212|1213|1219|1237|1236|1238)$/.test(p) || /stemi|svt|brady|anaph/.test(sc.base || "")) return { ml: 300, text: "Normal saline 300 mL IV bolus (may repeat)", ref: p === "1211" ? "ICEMA #14240" : p === "1212" ? "ICEMA #14030" : p === "1213" ? "ICEMA #14040" : /^1219/.test(p) ? "ICEMA #14025" : p === "1236" || p === "1238" ? "ICEMA #13050" : "ICEMA #14010" };
+    if (p === "1210") return { ml: 300, text: "Normal saline 300 mL IV/IO bolus (PEA / asystole; may repeat)", ref: "ICEMA #14050" };
+    if (p === "1204") return { ml: 500, text: "Normal saline 500 mL IV bolus (may repeat once)", ref: id === "heat_stroke" ? "ICEMA #13020" : "ICEMA #14280" };
+    if (p === "1217" || p === "1215") return { ml: 500, text: "Normal saline 500 mL fluid challenge (repeat as needed, then 150 mL/h)", ref: "ICEMA #14210" };
+    if (p === "1241") return { ml: 500, text: "Normal saline 500 mL fluid challenge", ref: "ICEMA #13010" };
+    if (p === "1223") return { ml: 500, text: "Warmed normal saline 500 mL IV bolus", ref: "ICEMA #13030" };
+    return { ml: 500, text: "Normal saline 500 mL IV bolus (may repeat once to keep SBP > 90)", ref: "ICEMA #14230" };
+  }
+  // ---------- quiz (same 4 questions as the LA check; "Max prior to Base" = ICEMA standing-order limit) ----------
+  const Q = (name, shortName, ref, dd, dr, dose, repeat, max, contra) => ({ name, shortName, ref, defaultDose: dd, defaultRoute: dr, dose, repeat, max, contra });
+  const A = (correct, distractors, unverified) => ({ correct, distractors, unverified: !!unverified });
+  const UNV = "ICEMA #11010 lists no specific contraindication (standard practice*: known hypersensitivity)";
+  const QUIZ = {
+    aspirin: Q("Aspirin", "aspirin", "ICEMA #11010 · #14240", { v: 325, u: "mg" }, "PO", A("325 mg PO chewed (1 adult non-enteric aspirin or 4 × 81 mg)", ["81 mg SL dissolved under the tongue", "650 mg PO swallowed whole with water", "162 mg slow IV push over 2 minutes"]),
+      A("Single dose (do not repeat)", ["Every 3–5 minutes as needed for chest pain", "Every 15 minutes up to 3 doses", "Repeat once in 10 minutes if pain persists"]), A("325 mg once", ["650 mg (2 doses)", "975 mg (3 doses)", "162 mg total"]),
+      A("Known aspirin allergy or active GI bleeding (standard practice*)", ["SBP < 100 mmHg or PDE5 use within 48 hours", "Heart rate < 60 bpm", "SpO2 < 94% on room air"], true)),
+    nitro: Q("Nitroglycerin", "nitroglycerin", "ICEMA #11010 · #14240 / #14010", { v: 0.4, u: "mg" }, "SL", A("0.4 mg SL / transmucosal (paste 1 inch once if SL not possible)", ["0.8 mg SL for SBP ≥ 150", "1.2 mg SL for SBP ≥ 200", "0.4 mg IV push"]),
+      A("Every 3 minutes as needed while perfusion stays adequate", ["Every 5 minutes ×2 only", "Every 15–20 minutes", "None (single dose only)"]), A("No fixed dose limit while perfusion is adequate; suspected RV infarct requires base contact", ["3 doses (1.2 mg) then base", "1 dose then base", "5 doses (2.0 mg) then base"]),
+      A("Inadequate perfusion / SBP < 100, sexual-enhancement (PDE5) meds within 48 h, RV infarct (base)", ["Aspirin allergy or GI bleeding", "Heart rate > 100 bpm", "History of asthma or COPD"])),
+    albuterol: Q("Albuterol", "albuterol", "ICEMA #11010 · #14010 / #14120", { v: 2.5, u: "mg" }, "NEB", A("2.5 mg nebulized (MDI: 4 puffs); with Atrovent 0.5 mg (ALS)", ["5 mg (6 mL) nebulized", "0.5 mg IM", "10 mg continuous nebulized"]),
+      A("May repeat ×2 (MDI every 10 minutes)", ["Every 3 minutes until clear", "Single dose only", "Every 30 minutes"]), A("3 treatments (2.5 mg ×3) as standing orders", ["1 treatment", "5 treatments", "15 mg"]),
+      A(UNV, ["Heart rate > 100 bpm", "Age over 65", "Any history of hypertension"], true)),
+    atrovent: Q("Ipratropium (Atrovent)", "Atrovent", "ICEMA #11010 · #14010 / #14120", { v: 0.5, u: "mg" }, "NEB", A("0.5 mg nebulized once, with the albuterol (peds: 0.25 mg if under 1 y, 0.5 mg 1–14 y)", ["2.5 mg nebulized", "0.5 mg IM", "0.02 mg/kg IV"]),
+      A("Once only", ["Every 10 minutes ×3", "Every 20 minutes", "Every 5 minutes until wheezing stops"]), A("0.5 mg (one dose)", ["1.5 mg (3 doses)", "2 mg", "No maximum"]), A(UNV, ["SpO2 below 94%", "Heart rate > 100 bpm", "Age over 65"], true)),
+    epi_im: Q("Epinephrine IM (1 mg/mL)", "epinephrine IM", "ICEMA #11010 · #14010 / #14025", { v: 0.3, u: "mg" }, "IM", A("0.3 mg IM (1 mg/mL); peds 0.01 mg/kg IM, max 0.3 mg", ["0.5 mg IM (1 mg/mL)", "1 mg IV push (0.1 mg/mL)", "0.15 mg SL"]),
+      A("May repeat once after 15 minutes if symptoms do not improve", ["Every 5 minutes", "Every 3 minutes ×3", "No repeat"]), A("2 IM doses (0.6 mg); persistent severe anaphylaxis: 0.1 mg/mL 0.1 mg slow IV/IO q5 min to 0.5 mg", ["1 mg IM", "3 IM doses", "0.3 mg once"]),
+      A(UNV, ["Age over 40", "Heart rate > 100 bpm", "Any cardiac history"], true)),
+    epi_arrest: Q("Epinephrine (0.1 mg/mL), cardiac arrest", "epinephrine", "ICEMA #11010 · #14050 / #14150", { v: 1, u: "mg" }, "IV", A("1 mg (0.1 mg/mL) IV/IO; peds 0.01 mg/kg (1 d–8 y), 1 mg (9–14 y)", ["0.3 mg IM (1 mg/mL)", "0.5 mg IV", "3 mg IV"]),
+      A("Every 5 minutes without interrupting CPR", ["Every 2 minutes", "Every 10 minutes", "Once only"]), A("No maximum stated; base consult after 20 min of refractory VF/pVT", ["3 mg then base", "1 mg then base", "5 mg"]), A("None in cardiac arrest", ["Age over 75", "Hypertension history", "Recent cocaine use"])),
+    pushepi: Q("Push-dose epinephrine (0.01 mg/mL)", "push-dose epi", "ICEMA #11010 · #14230 / #14050", { v: 1, u: "mL" }, "IV", A("1 mL (10 mcg) IV/IO; peds 0.1 mL/kg", ["10 mL (100 mcg) IV", "1 mL of 1 mg/mL IV", "0.3 mg IM"]),
+      A("Every 1–5 minutes to SBP > 90 (peds SBP > 70)", ["Every 10 minutes", "Once only", "Every 15 minutes"]), A("Titrate to SBP > 90; no fixed count stated", ["3 doses", "1 dose then base", "100 mcg"], true), A("Cardiac arrest (use 1 mg 0.1 mg/mL); hypertension", ["Age over 65", "Hypoglycemia", "Any wheezing"], true)),
+    adenosine: Q("Adenosine", "adenosine", "ICEMA #11010 · #14040", { v: 6, u: "mg" }, "IV", A("6 mg rapid IV push with 20 mL NS flush; then 12 mg if no conversion", ["12 mg rapid IV push first", "3 mg slow IV over 2 minutes", "6 mg IM"]),
+      A("12 mg if no conversion, may repeat 12 mg once", ["Every 5 minutes ×5", "No repeat", "6 mg every minute"]), A("3 doses: 6 mg, 12 mg, 12 mg", ["2 doses: 12 mg, 12 mg", "1 dose", "30 mg"]),
+      A("Unstable patient, irregular or polymorphic wide-complex tachycardia", ["Age over 60", "Heart rate 150–180", "History of asthma only"])),
+    lidocaine: Q("Lidocaine", "lidocaine", "ICEMA #11010 · #14050 / #14040", { v: 1.5, u: "mg/kg" }, "IV", A("1.5 mg/kg IV/IO (peds arrest 1 mg/kg)", ["300 mg IV push", "0.5 mg/kg IM", "100 mg IV for every patient"]),
+      A("0.75 mg/kg once in 5–10 minutes (peds 0.5 mg/kg)", ["1.5 mg/kg every 3 minutes", "No repeat", "Every 2 minutes"]), A("3 mg/kg total", ["1.5 mg/kg", "5 mg/kg", "450 mg"]), A(UNV, ["Age over 65", "Hypertension", "Asthma"], true)),
+    atropine: Q("Atropine", "atropine", "ICEMA #11010 · #14030", { v: 1, u: "mg" }, "IV", A("1 mg IV/IO (organophosphate: 2 mg)", ["0.5 mg IV", "3 mg IV once", "1 mg IM"]),
+      A("Every 5 minutes", ["Every 1 minute", "Every 15 minutes", "No repeat"]), A("3 mg or 0.04 mg/kg (organophosphate: repeat q5 min)", ["1 mg", "2 mg", "No maximum"]), A(UNV, ["Heart rate under 50", "Age over 70", "SBP under 100"], true)),
+    midaz: Q("Midazolam", "midazolam", "ICEMA #11010 · #14060 / #14110 / #14170", { v: 5, u: "mg" }, "IM", A("2.5 mg IV/IO or 5 mg IM/IN (peds seizure 0.1 mg/kg IV max 2.5, 0.2 mg/kg IM/IN max 5)", ["10 mg IM/IN or 5 mg IV", "1 mg IV for every indication", "20 mg IM"]),
+      A("IV/IO: repeat in 5 min; IM/IN: repeat in 10 min", ["Every 2 minutes", "No repeat", "Every 30 minutes"]), A("3 doses, then contact base", ["1 dose", "10 mg total", "20 mg total"]), A(UNV, ["Fever", "Any seizure history", "Age over 65"], true)),
+    naloxone: Q("Naloxone", "naloxone", "ICEMA #11010 · #14060", { v: 0.5, u: "mg" }, "IN", A("0.5 mg IV/IO/IM/IN (suspected fentanyl: 4 mg IN loading); peds 0.1 mg/kg max 0.5", ["2 mg IN, then 2 mg IM", "4 mg IV push", "0.04 mg IM"]),
+      A("Every 2–3 minutes as needed (4 mg IN may repeat once)", ["Every 15 minutes", "No repeat", "Every 30 seconds"]), A("10 mg total, all routes", ["2 mg", "8 mg", "No maximum"]), A(UNV, ["Altered mental status", "Respiratory rate under 12", "Pinpoint pupils"], true)),
+    diphen: Q("Diphenhydramine", "diphenhydramine", "ICEMA #11010 · #14025 / #13010", { v: 25, u: "mg" }, "IV", A("25 mg IV/IO or 50 mg IM (peds 2–14 y: 1 mg/kg IV max 25, 2 mg/kg IM max 50)", ["50 mg IV", "100 mg IM", "12.5 mg PO"]),
+      A("Single dose", ["Every 5 minutes", "Every 15 minutes ×3", "Every 30 minutes"]), A("25 mg IV/IO or 50 mg IM (one dose)", ["100 mg", "75 mg", "200 mg"]), A(UNV, ["Wheezing", "Hives", "Age over 60"], true)),
+    d10: Q("Dextrose 10%", "dextrose", "ICEMA #11010 · #14060 / #14160", { v: 250, u: "mL" }, "IV", A("250 mL (25 g) IV/IO bolus for BG < 80 (peds 0.5 g/kg = 5 mL/kg)", ["125 mL, then 125 mL", "50 mL of D50", "1 mL/kg ×5"]),
+      A("Recheck BG; repeat if indicated", ["Every 2 minutes", "No repeat ever", "Every 30 minutes regardless of BG"]), A("Repeat per BG recheck (no fixed maximum stated)", ["125 mL", "500 mL", "1 L"], true), A("Normal or high blood glucose (threshold < 80 mg/dL adult)", ["Any seizure", "Age over 65", "SBP under 100"])),
+    oralglucose: Q("Oral glucose", "oral glucose", "ICEMA #11010 · #14060", { v: 1, u: "tube" }, "PO", A("1 tube PO (BG < 80, intact gag reflex)", ["15 g IV", "3 tubes at once", "1/2 tube SL"]),
+      A("Recheck BG; repeat per protocol", ["Every 2 minutes", "Never repeat", "Every 30 minutes"], true), A("1 tube", ["3 tubes", "No maximum", "45 g"], true), A("No intact gag reflex / cannot swallow / altered", ["BG under 80", "Age over 65", "Diabetes"])),
+    glucagon: Q("Glucagon", "glucagon", "ICEMA #11010 · #14060 / #14160", { v: 1, u: "mg" }, "IM", A("1 mg IM/SC/IN when an IV cannot be started (peds 0.03 mg/kg, max 1 mg)", ["0.5 mg IV", "2 mg IM", "1 mg PO"]),
+      A("Adult: once only (peds: may repeat once after 20 min)", ["Every 5 minutes", "Every 10 minutes ×3", "Every 20 minutes ×3"]), A("1 mg", ["2 mg", "3 mg", "No maximum"]), A("Vascular access available (give dextrose instead)", ["BG under 80", "Age over 65", "Seizure"])),
+    ondansetron: Q("Ondansetron", "ondansetron", "ICEMA #11010 · #14220", { v: 4, u: "mg" }, "IV", A("4 mg slow IV/IO/ODT", ["8 mg IV push", "0.15 mg/kg IM", "2 mg PO"]),
+      A("Age 9+: may repeat ×2 at 10-minute intervals", ["Every 5 minutes", "No repeat", "Every 30 minutes"]), A("12 mg (age 9+); 4 mg total age 4–8", ["8 mg", "16 mg", "4 mg for everyone"]), A("Under 4 years of age; sensitivity to 5-HT3 antagonists", ["Pregnancy", "Age over 65", "Vomiting"])),
+    fentanyl: Q("Fentanyl", "fentanyl", "ICEMA #11010 · #14100 / #14240", { v: 50, u: "mcg" }, "IV", A("50 mcg slow IV/IO over 1 min, or 100 mcg IM/IN (peds 0.5 mcg/kg IV, 1 mcg/kg IM/IN)", ["100 mcg IV push", "1 mcg/kg IV for adults", "25 mcg IM"]),
+      A("IV/IO every 5 min; IM/IN: 50 mcg every 10 min", ["Every 2 minutes", "No repeat", "Every 30 minutes"]), A("200 mcg, then base for more", ["150 mcg", "100 mcg", "400 mcg"]), A("SBP < 100 for pain management (use ketamine or Tylenol, #14100)", ["Heart rate > 100", "Age over 65", "Pain under 6/10"])),
+    ketamine: Q("Ketamine", "ketamine", "ICEMA #11010 · #14100", { v: 0.3, u: "mg/kg" }, "IV", A("0.3 mg/kg (max 30 mg) in 50–100 mL NS IV over 5 minutes", ["1 mg/kg IV push", "4 mg/kg IM", "50 mg IN"]),
+      A("May repeat once after 15 min if pain ≥ 5", ["Every 5 minutes", "No repeat", "Every 2 minutes"]), A("2 doses (30 mg each max)", ["1 dose", "100 mg", "No maximum"]), A("Under 15 years; IVP, IO, IM or IN routes not permitted", ["SBP < 100", "Age over 65", "Trauma"])),
+    acetaminophen: Q("Acetaminophen (Tylenol)", "Tylenol", "ICEMA #11010 · #14100", { v: 1000, u: "mg" }, "IV", A("1 g IV/IO infusion over 15 minutes (peds 2–14 y: 15 mg/kg, max 1 g)", ["1 g IV push", "650 mg PO", "15 mg/kg IM"]),
+      A("Single dose only", ["Every 4 hours", "Every 15 minutes", "Every 30 minutes"]), A("1 g", ["2 g", "4 g", "500 mg"]), A(UNV, ["SBP < 100", "Trauma", "Age over 65"], true)),
+    txa: Q("Tranexamic acid", "TXA", "ICEMA #11010 · #14090", { v: 2, u: "g" }, "IV", A("2 g slow IV/IO over 1 minute, or 1 g IM (2 × 5 mL)", ["1 g in 100 mL over 10 minutes", "4 g IV", "0.5 g IM"]),
+      A("Single dose", ["Every 10 minutes", "Every 30 minutes ×2", "Every 3 hours"]), A("2 g IV/IO (or 1 g IM), once; postpartum hemorrhage = base order only", ["1 g", "4 g", "3 g"]), A("Under 15 years of age; more than 3 hours from injury", ["SBP < 90", "Heart rate ≥ 120", "Uncontrolled bleeding"])),
+    calcium: Q("Calcium chloride", "calcium chloride", "ICEMA #11010", { v: 1, u: "g" }, "IV", A("1 g IV/IO (peds CCB: 20 mg/kg)", ["10 g IV", "100 mg IV", "1 g IM"]),
+      A("Per base order", ["Every 5 minutes", "Every 2 minutes", "Every 30 minutes"], true), A("Standing order only for crush hyperkalemia; CCB overdose, arrest with hyperkalemia and ESRD bradycardia = base order", ["Standing order for all hyperkalemia", "Never in the field", "Standing order for all bradycardia"]), A(UNV, ["Hyperkalemia", "Dialysis", "Crush injury"], true)),
+    bicarb: Q("Sodium bicarbonate", "sodium bicarbonate", "ICEMA #11010", { v: 50, u: "mEq" }, "IV", A("TCA: 1 mEq/kg (base); arrest: 50 mEq (base); crush: 50 mEq", ["8.4 mEq IV", "100 mEq IM", "5 mEq/kg"]),
+      A("Per base order", ["Every 5 minutes", "Every 2 minutes", "Every 30 minutes"], true), A("Base order (except crush injury)", ["Standing order for every overdose", "3 doses", "No limit"]), A(UNV, ["Wide QRS", "Crush injury", "TCA overdose"], true)),
+    magnesium: Q("Magnesium sulfate", "magnesium", "ICEMA #11010 · #14040 / #14210", { v: 2, u: "g" }, "IV", A("Polymorphic VT: 2 g IV over 5 min; eclampsia: 4 g slow IV push over 3–4 min then 10 mg/min", ["10 g IM for every indication", "1 g IV push", "4 g IV for torsades"]),
+      A("Once (eclampsia: followed by the 10 mg/min infusion)", ["Every 5 minutes", "Every 10 minutes ×3", "Every 2 minutes"]), A("Single dose; severe asthma (2 g over 20 min) is a base order", ["10 g", "6 g", "No maximum"]), A(UNV, ["Pregnancy", "Seizure", "Torsades"], true)),
+  };
+  function quizKeyFor(id, sc, st, tx) {
+    if (!id) return null;
+    if (NOT_FORMULARY[id]) return null;
+    if (id === "epi_im") return "epi_im"; if (id === "epi_arrest") return "epi_arrest";
+    if (id === "alb_nrb" || id === "alb_cpap") return "albuterol"; if (id === "adenosine12") return "adenosine"; if (id === "dextrose") return "d10"; if (id === "glucose") return "oralglucose"; if (id === "midazolam") return "midaz"; if (id === "mag") return "magnesium";
+    if (id === "epi") { const ar = !!(st && st.x && st.x.arrest) || (tx && (tx.route === "IV" || tx.route === "IO")); return ar ? "epi_arrest" : "epi_im"; }
+    return QUIZ[id] ? id : null;
+  }
+  function defaultTxFor(id, sc, st) {
+    const key = quizKeyFor(id, sc, st); const q = key && QUIZ[key]; if (!q) return null;
+    let dose = q.defaultDose && /^(mg|mcg|g|mL|mEq)$/.test(q.defaultDose.u) ? { ...q.defaultDose } : null, route = q.defaultRoute || null;
+    const kg = kgOf(sc, st);
+    if (id === "adenosine" && st && st.count && st.count.adenosine >= 1) dose = { v: 12, u: "mg" };
+    if (id === "atropine" && sc && sc.id === "organophos") dose = { v: 2, u: "mg" };
+    if (id === "midaz") { if (st && st.flags && st.flags.iv && !(sc && (sc.psych || sc.protocol === "1209"))) { dose = { v: 2.5, u: "mg" }; route = "IV"; } else { dose = { v: 5, u: "mg" }; route = "IM"; } }
+    if (id === "magnesium" && sc && (sc.id === "ob_eclampsia" || sc.protocol === "1217" || sc.tag === "OB")) dose = { v: 4, u: "g" };
+    if (id === "lidocaine") { const k = st && st.count && st.count.lidocaine ? 0.75 : 1.5; dose = { v: Math.round(k * kg), u: "mg" }; }
+    if (id === "ketamine") dose = { v: Math.min(30, Math.round(0.3 * kg)), u: "mg" };
+    if (id === "naloxone") route = "IN";
+    return { dose, route };
+  }
+  // ---------- spoken drug names that LA mode doesn't parse (added only in ICEMA mode) ----------
+  const NLU_X = [["lidocaine", /\blidocaine\b|\blido\b|xylocaine/], ["atrovent", /atrovent|ipratropium|duo ?neb/], ["ketamine", /\bketamine\b|ketalar/], ["acetaminophen", /acetaminophen|tylenol|ofirmev|\bapap\b/]];
+  function nlu(t, out, hasGive, isQuestion, doses) {
+    const ids = out.tx.map(x => x.id);
+    for (const [id, re] of NLU_X) {
+      if (!re.test(t) || ids.includes(id)) continue;
+      if (id === "lidocaine" && ids.includes("magnesium")) continue; // "magnesium IM with lidocaine" = the Mg diluent
+      if (id === "ketamine" && /\b(for|before|during) (the )?(sedation|pacing|cardioversion|intubation)\b/.test(t)) continue;
+      if (!(hasGive || (doses && doses.length) || !isQuestion)) continue;
+      out.tx.push({ id });
+      if (id === "atrovent" && /duo ?neb/.test(t) && !ids.includes("albuterol")) out.tx.push({ id: "albuterol" });
+    }
+    const added = out.tx.some(x => NLU_X.some(n => n[0] === x.id));
+    if (added) out.tx = out.tx.filter(x => !((x.id === "iv" || x.id === "io") && !/start|establish|access|\bline\b|gauge|get (an? )?(iv|io)|place (an? )?(iv|io)|drill/.test(t)));
+  }
+  // ---------- the per-drug ICEMA rules (run BEFORE the engine's LA switch; the LA notes for these drugs are then dropped) ----------
+  // C: { sc, st, mental, alert, sbp, bpKnown, PEDS, isAO4, headInjury, traumaCall, lastText, sedCtx }
+  // returns { tx, drop: true | [regex], narr, notes: [[text, ref, level]], effectAs, block, lines }
+  function pre(tx0, C) {
+    const sc = C.sc, st = C.st, id = tx0.id, peds = C.PEDS != null ? !!C.PEDS : isPeds(sc), kg = kgOf(sc, st), route = tx0.route || null, base = !!st.events["t:base"], n = N(st, id);
+    const notes = [], note = (t, r, l) => notes.push([t, r || R, l || "deviation"]);
+    let tx = Object.assign({}, tx0), narr = null, drop = true, effectAs = null;
+    const setDose = (v, u) => { tx.doses = [{ v, u }].concat((tx.doses || []).filter(d => d.u !== u && !(u === "mg" && (d.u === "mcg" || d.u === "g")))); };
+    if (NOT_FORMULARY[id]) { const [nm, alt] = NOT_FORMULARY[id]; return { block: true, notes: [[`${nm} is not in the ICEMA formulary (Reference #11010). ${alt}.`, R, "deviation"]], lines: [{ speaker: "narrator", text: `✗ ${nm} is not carried under ICEMA protocols (not given).` }] }; }
+    switch (id) {
+      case "aspirin": { const mg = doseIn(tx, "mg");
+        if (!st.x.asaQ && !st.events["q:asa_q"]) note("Ask the aspirin screening questions (allergy, active GI bleeding / ulcers, aspirin already taken today) before giving aspirin.", "ICEMA #14240 / standard practice*", "caution");
+        if (mg && mg !== 325) note(`ICEMA aspirin dose is 325 mg chewed (1 adult tablet or 4 × 81 mg); you said ${mg} mg.`, R, "note");
+        if (!C.alert) note("Aspirin PO only for a patient who is alert and can chew and swallow.", "ICEMA #14240 / standard practice*", "deviation");
+        if (n >= 1) note("Aspirin already given (single dose).", R, "note");
+        narr = "Aspirin 325 mg PO chewed"; break; }
+      case "nitro": { let mg = doseIn(tx, "mg") || 0.4; const chf = sc.base === "chf";
+        const pr = chf ? "ICEMA #14010" : "ICEMA #14240";
+        if (!C.bpKnown) note("Nitroglycerin given without a current blood pressure: assess perfusion / BP before each dose.", pr + " / #11010", "deviation");
+        if (!st.x.ntgQ && !st.events["q:ntg_q"] && !st.events["q:pde5"] && !st.events["q:ed"] && !(sc.pde5Hours != null && sc.pde5Hours <= 48)) note("Ask about sexual-enhancement (PDE5) medications in the last 48 hours before giving nitroglycerin.", pr + " / #11010", "caution");
+        if (!chf && st.tg && st.tg.twelve && st.tg.twelve.rv) note(`CRITICAL: nitroglycerin with a suspected RIGHT VENTRICULAR infarct (ST elevation in V4R)${st.events["a:v4r"] ? "" : "; you didn't obtain V4R first"}. ICEMA #14240: nitrates are contraindicated with RVI (#11010: base contact required); give a 300 mL NS bolus.`, "ICEMA #14240 / #11010", "deviation");
+        if (C.sbp < 100) note(`Nitroglycerin with SBP ${Math.round(C.sbp)} (< 100 mmHg / inadequate perfusion): contraindicated.`, pr + " / #11010", "deviation");
+        if (sc.pde5Hours != null && sc.pde5Hours <= 48) note(`Patient took a sexual-enhancement (PDE5) medication ~${sc.pde5Hours} h ago: nitroglycerin is contraindicated within 48 h${st.events["q:pde5"] ? "" : "; you did not ask"}.`, pr + " / #11010", "deviation");
+        if (Math.abs(mg - 0.4) > 0.001) note(`ICEMA nitroglycerin dose is 0.4 mg SL every 3 minutes (no high-dose regimen); you said ${mg} mg.`, R, "note");
+        if (st.last.nitro != null && st.t - st.last.nitro < 165) note(`Nitro repeated after ${Math.round(st.t - st.last.nitro)} s: ICEMA interval is every 3 minutes.`, R, "caution");
+        if (sc.base === "stroke") note("Nitroglycerin is not part of the stroke protocol.", "ICEMA #14080", "deviation");
+        setDose(0.4, "mg"); narr = "Nitroglycerin 0.4 mg SL" + (chf ? " (CHF)" : ""); break; }
+      case "albuterol": { const mg = doseIn(tx, "mg");
+        drop = [/Albuterol is 5 mg, may repeat x2/, /a 4th dose needs a Base order/];
+        if (n >= 3) note("Albuterol: ICEMA standing order is 2.5 mg, may repeat ×2 (3 treatments). Contact base for more.", R, "deviation");
+        if (mg && !peds && Math.abs(mg - 2.5) > 0.01 && !(mg === 7.5 && sc.id === "crush_leg")) note(`ICEMA albuterol dose is 2.5 mg nebulized (you said ${mg} mg).`, R, "note");
+        if (!mg) setDose(2.5, "mg"); break; }
+      case "atrovent": { const mg = doseIn(tx, "mg"), exp = peds ? (sc.patient.age < 1 ? 0.25 : 0.5) : 0.5;
+        if (n >= 1) note("Atrovent is a single dose (once, with the albuterol).", R, "deviation");
+        if (mg && Math.abs(mg - exp) > 0.001) note(`ICEMA Atrovent dose is ${exp} mg nebulized${peds ? " for this age" : ""} (you said ${mg} mg).`, R, "note");
+        if (!/^(1237|1237-P|1219|1219-P|1214|1241)$/.test(sc.protocol || "") && !/wheez/i.test(String(st.tg.lungs || ""))) note("Atrovent is given with albuterol for bronchospasm (asthma / COPD / allergic wheezing).", "ICEMA #14010 / #14120", "caution");
+        narr = `Ipratropium (Atrovent) ${mg || exp} mg nebulized with the albuterol`; break; }
+      case "epi": {
+        const mg = doseIn(tx, "mg"), neb = /nebuli|\bneb\b|\bhhn\b|racemic/i.test(String(tx.raw || "")) || route === "NEB";
+        if (st.x.arrest) {
+          drop = [/Arrest epinephrine dose is 1 mg/, /In VF, epinephrine begins after defibrillation x2/, /Max epinephrine 3 mg without Base/, /Epinephrine repeat interval is every 5 min/];
+          const exp = peds ? (sc.patient.age <= 8 ? r2(0.01 * kg) : 1) : 1;
+          if (mg && Math.abs(mg - exp) > 0.001 && !peds) note(`ICEMA arrest epinephrine is 1 mg (0.1 mg/mL) IV/IO every 5 minutes (you said ${mg} mg).`, "ICEMA #14050 / #11010", "deviation");
+          if (st.last.epi != null && st.t - st.last.epi < 240) note("Epinephrine in arrest is every 5 minutes.", "ICEMA #14050", "caution");
+          if (peds) narr = `Epinephrine ${exp} mg (0.1 mg/mL) IV/IO (${sc.patient.age <= 8 ? "0.01 mg/kg" : "9–14 y: 1 mg"}, ICEMA #14150)`;
+          else narr = route === "IM" ? null : `Epinephrine ${mg || 1} mg (0.1 mg/mL) IV/IO`;
+          break; }
+        if (neb) { const ex = Math.min(5, r2(0.5 * kg));
+          if (peds && sc.patient.age > 8) note("Nebulized epinephrine is not permitted for pediatric patients over 8 years of age.", "ICEMA #14120", "deviation");
+          narr = peds ? `Epinephrine ${ex} mg (1 mg/mL) nebulized, mixed with NS to at least 3 mL (0.5 mg/kg, max 5 mg)` : "Epinephrine nebulized (ICEMA #14120 lists nebulized epinephrine for pediatric croup only)";
+          if (!peds) note("ICEMA lists nebulized epinephrine for pediatric croup with stridor at rest only.", "ICEMA #14120", "caution");
+          break; }
+        if (peds && (route === "IV" || route === "IO")) { // ICEMA #11010 pediatric 0.1 mg/mL: 0.01 mg/kg IV/IO, max 0.1 mg per dose with a pulse (anaphylaxis with no radial pulse / ALOC; arrest; newborn HR < 60)
+          const ex = Math.min(0.1, r2(0.01 * kg));
+          if (mg && mg > 0.1 + 1e-9) note(`Pediatric IV/IO epinephrine with a pulse is 0.01 mg/kg of 0.1 mg/mL, no more than 0.1 mg per dose (you said ${mg} mg).`, R, "critical");
+          return { tx, drop: [/in a patient with a pulse|^Adult IM epinephrine dose|^Repeat IM epinephrine|^IM epi repeat interval/], narr: `Epinephrine ${mg && mg <= 0.1 ? mg : ex} mg (0.1 mg/mL) IV/IO (0.01 mg/kg, max 0.1 mg per dose)`, notes };
+        }
+        if ((route === "IV" || route === "IO") && mg != null && mg <= 0.1 + 1e-9 && !peds) { // ICEMA #11010: epinephrine 0.1 mg/mL 0.1 mg slow IV/IO for persistent severe anaphylaxis
+          if (!(sc.base === "anaph" || /^1219/.test(sc.protocol || ""))) note("Epinephrine 0.1 mg/mL slow IV/IO is for persistent severe anaphylaxis only.", "ICEMA #14025 / #11010", "deviation");
+          if (!N(st, "epi")) note("Give IM epinephrine 0.3 mg first; IV 0.1 mg/mL is for anaphylaxis that persists.", "ICEMA #14025 / #11010", "caution");
+          tx = Object.assign({}, tx, { id: "pushepi", doses: [{ v: 10, u: "mcg" }], route: "IV", rerouted: true });
+          return { tx, drop: true, narr: `Epinephrine 0.1 mg (0.1 mg/mL) slow IV/IO (persistent severe anaphylaxis; q5 min to a total of 0.5 mg)`, notes };
+        }
+        drop = [/^Adult IM epinephrine dose is 0\.5 mg/, /^Repeat IM epinephrine requires Base contact/, /^IM epi repeat interval is every 10 min/, /in a patient with a pulse: IM-formulation\/arrest-dose epi IV/];
+        const exp = peds ? Math.min(0.3, r2(0.01 * kg)) : 0.3;
+        if ((route === "IV" || route === "IO") || (mg && mg >= 1)) note(`Epinephrine ${mg ? mg + " mg " : ""}${route === "IV" || route === "IO" ? route + " " : ""}in a patient with a pulse: the 1 mg/mL IM dose (or the 1 mg arrest dose) given IV is a massive overdose (severe hypertension, dysrhythmia, possible cerebral hemorrhage). ICEMA: 0.3 mg (1 mg/mL) IM; persistent severe anaphylaxis 0.1 mg of 0.1 mg/mL slow IV; shock: push-dose 1 mL of 0.01 mg/mL.`, "ICEMA #11010 / #14025", "critical");
+        else if (mg && !peds && Math.abs(mg - 0.3) > 0.001) note(`ICEMA adult IM epinephrine dose is 0.3 mg (1 mg/mL) (you said ${mg} mg).`, R, mg > 0.3 ? "deviation" : "note");
+        if (n >= 2 && !base) note("ICEMA allows IM epinephrine to be repeated once after 15 minutes; a third dose needs base contact.", R, "deviation");
+        if (st.last.epi != null && st.t - st.last.epi < 885) note(`IM epinephrine repeated after ${Math.round(st.t - st.last.epi)} s: ICEMA repeat is once after 15 minutes.`, R, "caution");
+        if (!(route === "IV" || route === "IO") && !(mg && mg >= 1)) setDose(exp, "mg");
+        narr = route === "IV" || route === "IO" ? null : `Epinephrine ${mg && !peds ? mg : exp} mg (1 mg/mL) IM lateral thigh${peds ? " (0.01 mg/kg, max 0.3 mg)" : ""}`;
+        break; }
+      case "pushepi": drop = [/^CONTACT BASE concurrently with the initial dose of push-dose epinephrine/, /^Bradycardia: push-dose epi needs a Base order/, /^Push-dose epi adult dose is 1 mL/];
+        if (peds) narr = `Push-dose epinephrine (0.01 mg/mL) ${r2(0.1 * kg)} mL IV/IO (0.1 mL/kg, titrate to SBP > 70)`;
+        { const d = tx.doses || [], mL = (d.find(x => x.u === "mL") || {}).v, mcg = doseIn(tx, "mcg"), amt = mL != null ? mL * 10 : mcg != null ? mcg : 10;
+          if (!peds && d.length && amt < 100 && Math.abs(amt - 10) > 0.01) note(`ICEMA push-dose epinephrine is 1 mL (10 mcg) of 0.01 mg/mL every 1–5 minutes to SBP > 90; you said ${+amt.toFixed(1)} mcg.`, R, amt > 10 ? "deviation" : "note"); }
+        break;
+      case "lidocaine": {
+        const mg = doseIn(tx, "mg"), first = n === 0, per = st.x.arrest ? (peds ? (first ? 1 : 0.5) : (first ? 1.5 : 0.75)) : (first ? 1.5 : 0.75), exp = Math.round(per * kg);
+        const shockable = st.x.arrest && /^(vf|vt|pvt)$/.test(String(st.tg.rhythm || ""));
+        const wct = !st.x.arrest && /^1213/.test(sc.protocol || "") && /\bvt\b|wide|ventricular/i.test(String(st.tg.rhythmName || "") + " " + String(st.tg.rhythm || "") + " " + sc.id);
+        if (!shockable && !wct) note("Lidocaine is for VF / pulseless VT (after 2 cycles of CPR) or a wide-complex tachycardia with a pulse when adenosine fails or is contraindicated.", "ICEMA #14050 / #14040", "deviation");
+        if (st.x.arrest && shockable && (st.x.code ? st.x.code.shockLog.length : (st.x.shocks || 0)) < 2) note("ICEMA #14050: consider lidocaine after two cycles of high-performance CPR.", "ICEMA #14050", "caution");
+        if (n >= 2) note("Lidocaine: initial dose plus one repeat (max 3 mg/kg).", R, "deviation");
+        if (st.last.lidocaine != null && st.t - st.last.lidocaine < 285) note("Lidocaine repeat is in 5–10 minutes.", R, "caution");
+        if (mg && Math.abs(mg - exp) / exp > 0.15) note(`ICEMA lidocaine dose here is ${per} mg/kg = about ${exp} mg (you said ${mg} mg).`, R, "note");
+        if (!st.flags.iv && !st.flags.io) note("Lidocaine needs IV/IO access.", R, "caution");
+        narr = `Lidocaine ${mg || exp} mg IV/IO (${per} mg/kg${first ? "" : ", repeat"}${st.x.arrest ? "" : ", slow"})`; break; }
+      case "adenosine": { const mg = doseIn(tx, "mg"), exp = n === 0 ? 6 : 12;
+        if (!sc.allow || !sc.allow.adenosine) note("Adenosine is for a stable regular narrow-complex SVT (or a regular monomorphic wide-complex tachycardia); contraindicated for unstable, irregular or polymorphic rhythms.", "ICEMA #14040", "deviation");
+        if (!st.flags.iv) note("Adenosine requires IV access (antecubital preferred).", "ICEMA #14040", "caution");
+        if (mg && mg !== exp) note(`ICEMA adenosine is 6 mg rapid IVP first, then 12 mg (may repeat 12 mg once); this dose should be ${exp} mg (you said ${mg} mg).`, R, "note");
+        if (n >= 3) note("Adenosine maximum is 3 doses (6, 12, 12 mg).", R, "deviation");
+        narr = `Adenosine ${mg || exp} mg rapid IV push + 20 mL NS flush`; break; }
+      case "atropine": drop = [/^Atropine max 3 mg\./, /^Atropine may repeat once in 5 minutes/, /^Atropine maximum two doses/];
+        if (sc.id === "organophos") { narr = "Atropine 2 mg IV/IO (organophosphate; repeat every 5 minutes)"; break; }
+        if (!peds && N(st, "atropine") >= 3) note("Atropine maximum is 3 mg (or 0.04 mg/kg).", R, "deviation");
+        if (st.last.atropine != null && st.t - st.last.atropine < 285) note("ICEMA atropine interval is every 5 minutes.", R, "caution");
+        if (!peds) narr = "Atropine 1 mg IV/IO"; break;
+      case "d10": {
+        drop = [/^LA County uses Dextrose 10%/, /protocol threshold < 60 mg\/dL/, /^D10 total 250 mL reached/, /^Dextrose IV\/IO requires vascular access\. Without IV, use glucagon 1 mg IM/];
+        if (peds) { const g = r2(0.5 * kg), ml = Math.round(5 * kg); narr = `Dextrose 10% ${ml} mL (${g} g; 0.5 g/kg = 5 mL/kg) IV/IO`; if (!(tx.doses || []).some(d => d.u === "mL") && !/per ?k|\/ ?kg/i.test(String(tx.raw || ""))) setDose(ml, "mL"); break; }
+        if (/d50|d25/.test(tx.raw || "")) note("ICEMA uses Dextrose 10% 250 mL (25 g) IV/IO, not D50/D25.", R, "note");
+        if (!st.flags.iv) note("Dextrose IV/IO needs vascular access; without IV use glucagon 1 mg IM/SC/IN.", R, "caution");
+        if (st.events["a:bgl"] && st.v.bgl >= 80) note(`Dextrose for BG ${Math.round(st.v.bgl)} (ICEMA threshold: BG < 80 mg/dL).`, "ICEMA #14060 / #11010", "deviation");
+        { const said = (tx.doses || []).find(d => d.u === "mL"); if (said && said.v && Math.round(said.v) !== 250 && !/d50|d25/.test(tx.raw || "")) { note(`ICEMA adult dextrose 10% dose is 250 mL (25 g) IV/IO (you said ${said.v} mL).`, R, "deviation"); narr = `Dextrose 10% ${said.v} mL IV/IO`; effectAs = said.v >= 200 ? ["d10", "d10"] : ["d10"]; break; } }
+        narr = "Dextrose 10% 250 mL (25 g) IV/IO bolus"; effectAs = ["d10", "d10"]; /* engine: = the LA 125 mL ×2 */ break; }
+      case "oralglucose": narr = "Oral glucose 1 tube PO"; drop = false; break;
+      case "glucagon": drop = [/^Glucagon is for when venous access/];
+        if (st.flags.iv) note("Glucagon is for when an IV can't be started; you have access, so use dextrose 10%.", R, "note");
+        if (!peds && n >= 1) note("Adult glucagon is a single dose.", R, "deviation");
+        narr = peds ? `Glucagon ${Math.min(1, r2(0.03 * kg))} mg IM (0.03 mg/kg, max 1 mg)` : "Glucagon 1 mg IM"; break;
+      case "naloxone": { const mg = doseIn(tx, "mg"), rt = route || "IN";
+        drop = [/^Adult naloxone dose/, /^Naloxone maximum is 8 mg/, /^Partial response with strong suspicion of opioid OD: CONTACT BASE/];
+        const exp = peds ? (sc.patient.age <= 8 ? Math.min(0.5, r2(0.1 * kg)) : 0.5) : 0.5;
+        if (!peds && mg && !(Math.abs(mg - 0.5) < 0.001 || (rt === "IN" && mg === 4))) note(`ICEMA naloxone is 0.5 mg IV/IO/IM/IN every 2–3 minutes (4 mg IN loading for suspected fentanyl); you said ${mg} mg ${rt}.`, R, "note");
+        const tot = (st.x.icNal || 0) + (mg || exp); st.x.icNal = tot; if (!peds && tot > 10) note(`Naloxone maximum is 10 mg total (now ${tot} mg).`, R, "deviation");
+        if (!mg) setDose(exp, "mg");
+        narr = `Naloxone ${mg || exp} mg ${rt}`; break; }
+      case "midaz": {
+        const m = C.mental, ivR = route === "IV" || route === "IO" || (!route && st.flags.iv), rt = route || (st.flags.iv ? "IV" : "IM"), mg = doseIn(tx, "mg");
+        const psych = !!(sc.psych || sc.protocol === "1209"), seizing = m === "seizing", ctx = C.sedCtx ? "sed" : psych ? "psych" : "sz";
+        drop = [/dose|overdose|underdose|repeat|Max 10 mg|exceeds the 20 mg|only once|Base contact|Base orders|EXISTING access|10 mg IM\/IN|contact Base concurrently/i];
+        const exp = peds ? (ivR ? Math.min(2.5, r2(0.1 * kg)) : Math.min(5, r2(0.2 * kg))) : (ivR ? 2.5 : 5);
+        if (peds && psych && !base) note("Pediatric behavioral sedation with midazolam is a base hospital order (minors under 9: base only).", "ICEMA #14110 / #11010", "deviation");
+        if (!peds && mg) { const r = mg / exp; if (r >= 4 || r <= 0.25) note(`Midazolam ${mg} mg ${rt} is a ${r >= 4 ? Math.round(r) + "-fold overdose" : Math.round(1 / r) + "-fold underdose"}. ICEMA dose: 2.5 mg IV/IO or 5 mg IM/IN.`, R, "critical"); else if (Math.abs(mg - exp) > 0.01) note(`ICEMA midazolam dose is 2.5 mg IV/IO or 5 mg IM/IN (you said ${mg} mg ${rt}).`, R, "deviation"); }
+        if (ivR && !st.flags.iv) note("IV midazolam needs existing access: give 5 mg IM/IN instead of delaying for an IV.", ctx === "sz" ? "ICEMA #14060 / #11010" : "ICEMA #14110 / #11010", "caution");
+        const prevN = (st.x.icMidaz || []).length, lastT = (st.x.icMidaz || []).slice(-1)[0];
+        if (prevN >= 3 && !base) note("Midazolam: maximum 3 doses on standing orders, then contact base.", R, "deviation");
+        if (lastT && st.t - lastT.t < (lastT.iv ? 285 : 585)) note(`Midazolam repeated after ${Math.round(st.t - lastT.t)} s: ICEMA repeat is ${lastT.iv ? "5 minutes (IV/IO)" : "10 minutes (IM/IN)"}.`, R, "caution");
+        (st.x.icMidaz = st.x.icMidaz || []).push({ t: st.t, iv: ivR, mg: mg || exp });
+        // engine equivalence: ICEMA standard seizure / IV doses act like the LA standard doses
+        const given = mg || exp, scale = peds ? 1 : ctx === "sz" ? 2 : ivR ? 2 : 1;
+        tx.doses = [{ v: given * scale, u: "mg" }].concat((tx.doses || []).filter(d => d.u !== "mg"));
+        narr = `Midazolam ${given} mg ${rt}${rt === "IN" ? " via atomizer (MAD)" : rt === "IM" ? " (lateral thigh)" : ""}${peds ? ` (${ivR ? "0.1" : "0.2"} mg/kg, max ${ivR ? "2.5" : "5"} mg)` : ""}${ctx === "sed" ? " (sedation)" : ctx === "psych" ? " for dangerous agitation" : ""}`;
+        break; }
+      case "ondansetron": { const mg = doseIn(tx, "mg"), a = sc.patient.age;
+        if (a < 4) note("Ondansetron is contraindicated under 4 years of age.", "ICEMA #14220", "deviation");
+        if (mg && mg !== 4) note(`ICEMA ondansetron dose is 4 mg slow IV/IO/ODT (you said ${mg} mg).`, R, "note");
+        if (a < 9 && n >= 1) note("Age 4–8: a total of 4 mg ondansetron prior to base contact.", R, "deviation");
+        else if (n >= 3) note("Ondansetron: 4 mg, may repeat ×2 (12 mg total) prior to base contact.", R, "deviation");
+        if (st.last.ondansetron != null && st.t - st.last.ondansetron < 585) note("Ondansetron repeat interval is 10 minutes.", R, "caution");
+        narr = `Ondansetron 4 mg ${route === "IV" || route === "IO" ? "slow IV" : route === "PO" ? "ODT" : "slow IV/ODT"}`; break; }
+      case "fentanyl": { const mcg = doseIn(tx, "mcg"), imin = route === "IM" || route === "IN";
+        const cardiac = /^(1211|1212|1213)$/.test(sc.protocol || "") || /stemi|cardiac|acs/.test(sc.base || "");
+        if (!cardiac && !C.sedCtx && C.sbp != null && C.sbp <= 100) note(`Fentanyl for pain needs SBP > 100 (SBP ${Math.round(C.sbp)}): ICEMA #14100 uses ketamine (adult) or Tylenol when SBP < 100.`, "ICEMA #14100", "deviation");
+        if (peds) { const exp = imin ? Math.min(100, Math.round(kg)) : Math.min(50, r2(0.5 * kg)); if (n >= 4) note("Pediatric fentanyl: maximum 4 doses / 200 mcg.", R, "deviation"); narr = `Fentanyl ${exp} mcg ${route || "IV"} (${imin ? "1 mcg/kg IM/IN, max 100" : "0.5 mcg/kg IV/IO, max 50"} mcg)`; }
+        else { const exp = imin && n === 0 ? 100 : 50; if (mcg && mcg !== exp) note(`ICEMA fentanyl is 50 mcg slow IV/IO q5 min, or 100 mcg IM/IN then 50 mcg q10 min (you said ${mcg} mcg ${route || "IV"}).`, R, "note");
+          const tot = (st.x.icFent || 0) + (mcg || exp); st.x.icFent = tot; if (tot > 200 && !base) note(`Fentanyl total ${tot} mcg exceeds 200 mcg: contact base for further fentanyl.`, "ICEMA #11010 / #14240", "deviation");
+          if (st.last.fentanyl != null && st.t - st.last.fentanyl < (imin ? 585 : 285)) note(`Fentanyl repeated after ${Math.round(st.t - st.last.fentanyl)} s (${imin ? "IM/IN: every 10 min" : "IV/IO: every 5 min"}).`, R, "caution");
+          if ((st.events["t:ketamine"] || st.events["t:acetaminophen"]) && !base) note("Switching from one analgesic to another requires base hospital contact.", "ICEMA #14100", "deviation");
+          if (!mcg) setDose(exp, "mcg");
+          narr = `Fentanyl ${mcg || exp} mcg ${route || "IV"}${!imin ? " slow over 1 min" : ""}`; }
+        break; }
+      case "ketamine": { const mg = doseIn(tx, "mg"), exp = Math.min(30, Math.round(0.3 * kg));
+        if (peds) note("Ketamine is adult only (15 years and older).", "ICEMA #14100 / #11010", "deviation");
+        if (route && route !== "IV") note(`Ketamine is IV only, diluted in 50–100 mL NS over 5 minutes; do not give IVP, IO, IM or IN (you said ${route}).`, R, "deviation");
+        if (mg && mg > 30) note(`Ketamine maximum is 30 mg (0.3 mg/kg); you said ${mg} mg.`, R, "deviation");
+        if (n >= 2) note("Ketamine may be repeated only once (after 15 minutes).", R, "deviation");
+        if (st.last.ketamine != null && st.t - st.last.ketamine < 885) note("Ketamine repeat is after 15 minutes (pain still ≥ 5).", R, "caution");
+        if (!st.flags.iv) note("Ketamine requires IV access.", R, "caution");
+        if (st.events["t:fentanyl"] && !base) note("Switching from one analgesic to another requires base hospital contact.", "ICEMA #14100", "deviation");
+        const qd = re => (st.pq || []).some(x => re.test(String(x.id || ""))); if (!(st.rev.monitor || qd(/monitor/)) || !(st.rev.etco2 || qd(/etco2|capno/))) note("Continuous ECG and capnography monitoring is required for ketamine.", "ICEMA #14100", "caution");
+        narr = `Ketamine ${mg || exp} mg (0.3 mg/kg, max 30 mg) in 100 mL NS IV over 5 minutes`; effectAs = "fentanyl"; break; }
+      case "acetaminophen": { const exp = peds ? Math.min(1000, Math.round(15 * kg)) : 1000;
+        if (peds && sc.patient.age < 2) note("IV Tylenol is for patients 2 years and older.", R, "deviation");
+        if (n >= 1) note("Tylenol is a single dose only.", R, "deviation");
+        if (!st.flags.iv && !st.flags.io) note("Tylenol is an IV/IO infusion: establish access.", R, "caution");
+        narr = `Acetaminophen (Tylenol) ${exp >= 1000 ? "1 g" : exp + " mg"} IV/IO infusion over 15 minutes`; effectAs = "fentanyl"; break; }
+      case "diphen": { const mg = doseIn(tx, "mg"), rt = route === "IM" ? "IM" : route === "IV" || route === "IO" ? "IV" : sc.dystonic ? "IM" : "IV";
+        drop = [/Tip:|deep IM|If unable to obtain access, give 50 mg deep IM/];
+        const exp = peds ? (rt === "IM" ? Math.min(50, Math.round(2 * kg)) : Math.min(25, Math.round(kg))) : rt === "IM" ? 50 : 25;
+        if (peds && sc.patient.age < 2) note("Pediatric diphenhydramine is for age 2 years and older.", "ICEMA #14140", "deviation");
+        if (!peds && mg && mg !== exp) note(`ICEMA diphenhydramine is 25 mg IV/IO or 50 mg IM (you said ${mg} mg ${rt}).`, R, mg > exp ? "deviation" : "note");
+        if (rt === "IV" && !st.flags.iv) note("IV diphenhydramine needs access; otherwise give 50 mg IM.", R, "caution");
+        if (n >= 1) note("Diphenhydramine is a single dose.", R, "deviation");
+        if (!route) tx.route = rt;
+        narr = `Diphenhydramine ${exp} mg ${rt === "IM" ? "IM" : "slow IV/IO"}`; break; }
+      case "calcium": case "bicarb": {
+        drop = [/is for specific indications/, /here requires Base contact\/order/];
+        const crush = sc.id === "crush_leg", nm = id === "calcium" ? "Calcium chloride" : "Sodium bicarbonate";
+        const ok = sc.allow && sc.allow[id];
+        if (!ok) note(`${nm} is for specific indications (crush hyperkalemia; otherwise base order: CCB overdose / arrest with hyperkalemia / ESRD bradycardia${id === "bicarb" ? " / TCA overdose" : ""}).`, R, "note");
+        else if (!crush && !base) note(`${nm} here is a base hospital order under ICEMA (standing order only for crush injury).`, id === "calcium" ? "ICEMA #11010 / #14030 / #13010" : "ICEMA #11010 / #13010 / #14050", "caution");
+        narr = id === "calcium" ? (peds ? `Calcium chloride ${Math.round(20 * kg)} mg IV/IO (20 mg/kg)` : "Calcium chloride 1 g IV/IO") : sc.id === "tca_od" ? `Sodium bicarbonate ${Math.round(kg)} mEq IV (1 mEq/kg)` : "Sodium bicarbonate 50 mEq IV/IO"; break; }
+      case "magnesium": {
+        const g = doseIn(tx, "g"), ecl = !!sc.preeclampsia || sc.id === "ob_eclampsia" || sc.protocol === "1217";
+        const pvt = !!sc.mgBase || /tdp|torsade|polymorph/i.test(sc.id + String(st.tg.rhythmName || ""));
+        if (ecl) { if (g && g !== 4) note(`ICEMA eclampsia magnesium is 4 g slow IV push over 3–4 minutes, then 10 mg/min (you said ${g} g).`, "ICEMA #14210 / #11010", "note"); narr = "Magnesium sulfate 4 g slow IV push over 3–4 minutes, then 10 mg/min infusion"; }
+        else if (pvt) { if (g && g !== 2) note(`ICEMA polymorphic VT magnesium is 2 g IV over 5 minutes (you said ${g} g).`, "ICEMA #14040 / #11010", "note"); narr = "Magnesium sulfate 2 g IV over 5 minutes (polymorphic VT)"; }
+        else if (/^1237/.test(sc.protocol || "")) { if (!base) note("Magnesium for severe asthma is a base hospital order (2 g over 20 min).", "ICEMA #14010 / #11010", "deviation"); narr = "Magnesium sulfate 2 g IV over 20 minutes"; }
+        else { note("Magnesium is for eclampsia, polymorphic VT, or (base order) severe asthma.", R, "deviation"); narr = "Magnesium sulfate"; }
+        break; }
+      case "txa": {
+        if (peds) note("TXA is for patients 15 years and older.", R, "deviation");
+        else if ((sc.ob || sc.protocol === "1217" || sc.protocol === "1215") && !base) note("TXA for postpartum hemorrhage is a base hospital order only.", "ICEMA #14210 / #11010", "deviation");
+        else if (!sc.txaOk) note("ICEMA TXA indications: trauma within 3 hours with SBP < 90, HR ≥ 120, or uncontrolled bleeding (age ≥ 15).", "ICEMA #14090 / #11010", "deviation");
+        narr = route === "IM" ? "Tranexamic acid 1 g IM (2 × 5 mL)" : "Tranexamic acid 2 g slow IV/IO over 1 minute"; break; }
+      case "ns": drop = false; break; // the engine's fluid logic stays; ICEMA volume shown in the narration (post)
+      case "defib": drop = false; { const j = doseIn(tx, "J"); if (peds) { const nS = N(st, "defib"), kk = nS === 0 ? 2 : nS === 1 ? 4 : 10; narr = `Defibrillation ${Math.round(kk * kg)} J (${kk} J/kg${kk === 10 ? ", not above the adult dose" : ""})`; } else narr = `Defibrillation ${j || 360} J${j ? "" : " (360 J monophasic or the manufacturer's biphasic equivalent)"}`; } break;
+      case "cardiovert": drop = false; { const j = doseIn(tx, "J"); narr = `Synchronized cardioversion ${j || 100} J`; } break;
+      default: return null;
+    }
+    return { tx, drop, narr, notes, effectAs };
+  }
+  function rec(st, k) { (st.events[k] = st.events[k] || []).push(st.t); }
+  // narration fix-ups that need the engine's own result (NS volume)
+  function post(id, narr, C) {
+    if (id === "ns" && /^Normal saline 1 L IV rapid infusion/.test(narr || "")) { const p = nsPlan(C.sc, C.st); return p.text + (/partner already spiked/.test(narr) ? ", running from the bag your partner already spiked and primed" : ""); }
+    return narr;
+  }
+  const OWN = new Set(["aspirin", "nitro", "albuterol", "atrovent", "epi", "pushepi", "lidocaine", "adenosine", "atropine", "d10", "oralglucose", "glucagon", "naloxone", "midaz", "ondansetron", "fentanyl", "ketamine", "acetaminophen", "diphen", "calcium", "bicarb", "magnesium", "txa", "ns", "defib", "cardiovert", "amio", "morphine", "ketorolac", "olanzapine"]);
+  return { QUIZ, quizKeyFor, defaultTxFor, nlu, pre, post, nsPlan, OWN, NOT_FORMULARY, isPeds, kgOf };
+})();
+if (typeof module !== "undefined") module.exports = ICEMA_RX;
+/* ---------- ICEMA checklist / destination / Watch wording (v2.16.0) ---------- */
+Object.assign(ICEMA_RX, (() => {
+  // Watch / chip phrases in ICEMA mode (the LA phrases are restored on switching back)
+  const TXSAY = {
+    epi: ["Epi 0.3 IM", "Epinephrine 0.3 milligrams IM"], albuterol: ["Albuterol 2.5 neb", "Albuterol 2.5 milligrams nebulized"], alb_cpap: ["Albuterol in-line CPAP", "Albuterol 2.5 milligrams in line with CPAP"],
+    alb_hhn: ["Albuterol neb alone", "Albuterol 2.5 milligrams by itself, handheld neb"], alb_nrb: ["Albuterol + NRB", "Albuterol 2.5 milligrams with the nonrebreather"], alb_bvm: ["Albuterol in-line BVM", "Albuterol 2.5 milligrams in line with the BVM"],
+    alb_rep: ["Repeat albuterol", "Repeat albuterol 2.5 milligrams"], diphen: ["Benadryl 25 mg IV", "Diphenhydramine 25 milligrams slow IV push"], diphen_im: ["Benadryl 50 mg IM", "Diphenhydramine 50 milligrams IM"],
+    d10: ["D10 250 mL", "Dextrose 10 percent 250 milliliters IV"], oralglucose: ["Oral glucose", "Oral glucose one tube"], naloxone: ["Naloxone 0.5 mg IN", "Naloxone 0.5 milligrams intranasal"], nal_rep: ["Repeat naloxone", "Repeat naloxone 0.5 milligrams intranasal"],
+    midaz: ["Midazolam 5 mg IN", "Midazolam 5 milligrams intranasal"], mid_im10: ["Midazolam 5 mg IM", "Midazolam 5 milligrams IM"], mid_iv5: ["Midazolam 2.5 mg IV", "Midazolam 2.5 milligrams IV"], mid_peds: ["Midazolam IN (0.2 mg/kg)", "Midazolam intranasal, weight-based dose"],
+    amio: ["Lidocaine 1.5 mg/kg", "Lidocaine 1.5 milligrams per kilogram IV"], magnesium: ["Magnesium 2 g IV", "Magnesium sulfate 2 grams IV over 5 minutes"], txa: ["TXA 2 g", "TXA 2 grams slow IV"],
+    defib: ["Shock 360 J", "Defibrillate at 360 joules"], ns: ["NS bolus", "Normal saline fluid bolus IV"], ns_peds: ["NS 20 mL/kg", "Normal saline 20 milliliters per kilogram IO"],
+    epi_peds: ["Epi IO 0.01 mg/kg", "Epinephrine IO, weight-based dose"], epi_im_peds: ["Epi IM 0.01 mg/kg", "Epinephrine IM, weight-based dose"],
+    needle: ["Needle decompression", "Needle decompression, 5th intercostal space midaxillary line"],
+    lidocaine: ["Lidocaine 1.5 mg/kg", "Lidocaine 1.5 milligrams per kilogram IV"], atrovent: ["Atrovent 0.5 mg neb", "Atrovent 0.5 milligrams nebulized with the albuterol"],
+    ketamine: ["Ketamine 0.3 mg/kg IV", "Ketamine 0.3 milligrams per kilogram IV in 100 milliliters over 5 minutes"], acetaminophen: ["Tylenol 1 g IV", "Tylenol 1 gram IV over 15 minutes"],
+  };
+  const DEL = ["morphine", "ketorolac", "olanzapine", "mid_im5"]; // not ICEMA (morphine / ketorolac / olanzapine); the agitation 5 mg IM line is mid_im10 in ICEMA
+  // ---------- checklist ----------
+  const LABEL = [
+    [/Aspirin 325 mg chewable PO/g, "Aspirin 325 mg PO chewed"],
+    [/Epinephrine 0\.5 mg \(1 mg\/mL\) IM/g, "Epinephrine 0.3 mg (1 mg/mL) IM"], [/Epinephrine 0\.5 mg IM/g, "Epinephrine 0.3 mg IM"], [/0\.5 mg of 1 mg\/mL/g, "0.3 mg of 1 mg/mL"], [/\bepi(nephrine)? 0\.5 mg\b/gi, "epinephrine 0.3 mg"],
+    [/Albuterol 5 mg \(6 mL\) neb/g, "Albuterol 2.5 mg neb"], [/[Aa]lbuterol 5 mg/g, "Albuterol 2.5 mg"],
+    [/Nitroglycerin, high dose by SBP \([^)]*\)/g, "Nitroglycerin 0.4 mg SL q3 min (no high-dose regimen in ICEMA)"], [/\b(0\.8|1\.2) mg (SL|nitro)/g, "0.4 mg $2"],
+    [/Adenosine 12 mg/g, "Adenosine 6 mg rapid IVP (then 12 mg)"], [/Midazolam 10 mg IM\/IN/g, "Midazolam 5 mg IM/IN (2.5 mg IV/IO)"], [/[Mm]idazolam 10 mg/g, "Midazolam 5 mg"],
+    [/Naloxone 2(-4)? mg IN/g, "Naloxone 0.5 mg (4 mg IN for suspected fentanyl)"], [/[Nn]aloxone 2 mg/g, "Naloxone 0.5 mg"],
+    [/Diphenhydramine 50 mg (slow )?IV/g, "Diphenhydramine 25 mg IV (50 mg IM)"], [/D10 125 mL/g, "D10 250 mL"], [/Dextrose 10% 125 mL/g, "Dextrose 10% 250 mL"],
+    [/TXA 1 g( IV)?( in 100 mL over 10 min)?/g, "TXA 2 g slow IV/IO (or 1 g IM)"], [/NS 1 L/g, "NS bolus"], [/\b1 L NS\b/g, "NS bolus"],
+    [/Oral glucose 15 g/g, "Oral glucose 1 tube"], [/Defibrillat(e|ion) (at )?200 J( biphasic)?/g, "Defibrillation 360 J (or biphasic equivalent)"], [/120 J/g, "100 J"],
+    [/\bL-HABBO\b/g, "mLAPSS"], [/\bMAR\b/g, "closest hospital"], [/\bCSC\b/g, "Stroke Receiving Center"], [/\bPSC\b/g, "Stroke Receiving Center"], [/\bthe MAC\b/g, "the CCC"],
+  ];
+  const isBaseOnly = c => c.keys.length && c.keys.every(k => /^t:(base|transport|notify)$/.test(k) || /^q:refusal|^q:hospital|^t:leavebehind/.test(k)) && c.keys.includes("t:base");
+  const keepBase = (c, sc) => /506|1244 ❶|Trauma Center|Burn Center/.test(c.label + " " + c.ref) || /mLAPSS negative/.test(c.label) || /^1213/.test(sc.protocol || "") || /^1212/.test(sc.protocol || "") || /^1210/.test(sc.protocol || "") && /refractory/i.test(c.label);
+  function checklist(base, sc, st) {
+    const out = [];
+    const peds = !!(sc.peds || (sc.patient && sc.patient.age < 15));
+    for (const c0 of base) {
+      const c = { ...c0, keys: [...c0.keys], laRef: c0.ref, laLabel: c0.label };
+      if (c.lhabbo) continue; // L-HABBO is LA County only (ICEMA #14080 uses mLAPSS / LAMS)
+      if (c.keys.some(k => /^!t:(ketorolac|morphine|olanzapine)$/.test(k))) continue; // not carried under ICEMA (blocked if ordered)
+      if (c.keys.some(k => /^!?x:mgnobase$/.test(k))) continue;
+      if (c.keys.includes("!x:cvnobase")) { c.keys = c.keys.filter(k => k !== "!x:cvnobase"); c.label = "Synchronized cardioversion for hemodynamically unstable AF (standing order)"; c.ref = "ICEMA #14040 / #11020"; }
+      if (c.keys.includes("x:needlesite")) { c.label = "Approved site named (ICEMA #14090: 5th intercostal space, midaxillary line preferred)"; c.ref = "ICEMA #14090"; } // ICEMA #14040: Mg for polymorphic VT is a standing order
+      if (c.keys.length === 1 && c.keys[0] === "t:olanzapine") continue;
+      if (c.keys.includes("x:mgdose")) { c.keys = ["t:magnesium"]; c.label = "Polymorphic VT: magnesium sulfate 2 g IV over 5 minutes (consider)"; c.ref = "ICEMA #14040 / #11010"; c.optional = true; out.push(c); continue; }
+      // antiarrhythmic: lidocaine replaces amiodarone
+      c.keys = c.keys.flatMap(k => k === "t:amio" ? ["t:lidocaine"] : k === "t:amio#2" ? ["t:lidocaine#2"] : [k]);
+      if (c.keys.includes("t:lidocaine") || c.keys.includes("t:lidocaine#2")) { c.label = c.keys.includes("t:lidocaine#2") ? "Lidocaine 0.75 mg/kg repeat (max 3 mg/kg)" : "Lidocaine 1.5 mg/kg IV/IO after 2 cycles of CPR (refractory VF/pVT)"; c.ref = "ICEMA #14050 / #11010"; } // keeps the scenario's own required / optional status
+      // analgesia: ICEMA #14100 fentanyl (SBP > 100), ketamine (adult) or Tylenol; no morphine / ketorolac
+      if (c.keys.includes("t:fentanyl") || c.keys.includes("t:morphine")) { c.keys = c.keys.filter(k => k !== "t:morphine" && k !== "t:ketorolac"); if (!c.keys.includes("t:fentanyl")) c.keys.unshift("t:fentanyl");
+        if (!/^(1211|1212|1213)$/.test(sc.protocol || "")) { if (!peds) c.keys.push("t:ketamine"); c.keys.push("t:acetaminophen"); c.label = c.label.replace(/\s*\((fentanyl[^)]*)\)/, " (fentanyl 50 mcg if SBP > 100; otherwise ketamine / Tylenol)"); } }
+      if (c.keys.length === 1 && /^t:(morphine|ketorolac)$/.test(c.keys[0])) continue;
+      // pediatric dextrose: one 0.5 g/kg (5 mL/kg) dose
+      if (c.keys.some(k => /^t:d10#[35]$/.test(k))) { if (c.keys.includes("t:d10#5")) continue; c.keys = ["t:d10"]; c.label = "D10 0.5 g/kg (5 mL/kg) IV/IO, then recheck BG"; c.ref = "ICEMA #14160 / #11010"; }
+      if (c.keys.includes("x:d10recheck3") || c.keys.includes("x:d10recheck5")) { c.keys = c.keys.map(k => /^x:d10recheck/.test(k) ? "a:bgl" : k); }
+      // Base contact: required where ICEMA requires it (trauma #9040, tachycardia #14040, bradycardia #14030, refractory VF #14050, stroke destination); otherwise optional
+      if (isBaseOnly(c) && !keepBase(c, sc)) { c.optional = true; c.label = c.label.replace(/^Base contact\b[^(]*/, "Base hospital contact (as needed) ").replace(/\s+$/, ""); }
+      if (isBaseOnly(c) && keepBase(c, sc)) c.label = c.label.replace(/ concurrent with (TCP|cardioversion|management)/i, "").replace(/\(WCT; concurrent with cardioversion\)/, "(WCT)");
+      if (/^Magnesium\b/.test(c.label) && /1317\.24/.test(c.ref) && !sc.preeclampsia) continue;
+      for (const [re, rep] of LABEL) c.label = c.label.replace(re, rep);
+      c.label = PSYS.adaptText(c.label);
+      if (!/^ICEMA/.test(c.ref || "")) c.ref = PSYS.mapRef(c.ref);
+      out.push(c);
+    }
+    // Atrovent with albuterol for bronchospasm (ICEMA #14010 / #14120 ALS)
+    if (/^(1237|1237-P)$/.test(sc.protocol || "") || sc.copd || sc.base === "copd") { const i = out.findIndex(c => c.keys.includes("t:albuterol")); if (i >= 0 && !out.some(c => c.keys.includes("t:atrovent"))) out.splice(i + 1, 0, { label: `Atrovent ${peds && sc.patient.age < 1 ? "0.25" : "0.5"} mg nebulized with the albuterol (once)`, keys: ["t:atrovent"], ref: peds ? "ICEMA #14120 / #11010" : "ICEMA #14010 / #11010", optional: true }); }
+    return out;
+  }
+  // ---------- destinations (ICEMA #9030) ----------
+  function dest(scn, st, la) {
+    const id = scn.id || "", proto = scn.protocol || "", tag = scn.tag || "", peds = !!scn.peds;
+    const R = (primary, accept, ref, reason) => ({ primary, accept, ref, reason, laRef: la && la.ref });
+    if (tag === "TRAUMA" || proto === "1244" || id === "peds_arrest_nat") {
+      if (peds) return R("ptc", ["ptc", "tc"], "ICEMA #9030 / #9040", "Pediatric trauma patient meeting ICEMA #9040 criteria: closest Pediatric Trauma Center if the difference in transport time is 20 minutes or less (otherwise the closest Trauma Center).");
+      return R("tc", ["tc"], "ICEMA #9030 / #9040", "Meets ICEMA #9040 trauma triage criteria: transport to the closest Trauma Center.");
+    }
+    if (/^stemi/.test(id)) return R("src", ["src"], "ICEMA #9030 / #14240", "STEMI on the 12-lead: transport to the closest STEMI Receiving Center (SRC).");
+    if (tag === "ARREST" && !peds) return R("src", ["src", "mar"], "ICEMA #9030 / #14050", "Adult cardiac arrest / ROSC: transport to the closest STEMI Receiving Center.");
+    if (id === "nstemi" || id === "dissection") return R("mar", ["mar", "src"], "ICEMA #9030 / #14240", "Chest pain without STEMI on the 12-lead: closest receiving hospital (an SRC is acceptable).");
+    if (id === "stroke" || id === "stroke_lams5") return R("csc", ["csc"], "ICEMA #9030 / #14080", "mLAPSS positive with last seen normal under 24 hours: transport to the closest Stroke Receiving Center.");
+    if (id === "stroke_post" || id === "tia") return R("csc", ["csc", "mar"], "ICEMA #9030 / #14080", "Suspected stroke / TIA: closest Stroke Receiving Center (base hospital may assist with destination when mLAPSS is negative).");
+    if (/burn/i.test(id) || proto === "1220") return R("burn", ["burn", "tc"], "ICEMA #9030 / #14070", "Major burn: transport to a Burn Center if the difference in transport time is 20 minutes or less.");
+    return R("mar", ["mar", ...(proto === "1212" || proto === "1213" || id === "chf_cp" ? ["src"] : []), ...(id === "focal_sz" ? ["csc"] : [])], "ICEMA #9030", "No specialty center criteria: transport to the closest receiving hospital.");
+  }
+  // ---------- trauma triage (ICEMA #9040) ----------
+  function triage(scn, st, la) {
+    if (!la) return null; const M = ICEMA.TRIAGE_MAP, map = ids => [...new Set(ids.flatMap(k => M[k] || []))];
+    const primary = [...new Set(la.primary.map(k => (M[k] || [])[0]).filter(Boolean))], accept = [...new Set([...primary, ...map(la.accept)])];
+    const T = ICEMA.TRAUMA_TRIAGE, lbl = id => { const t = T.find(x => x.id === id); return t ? t.short || t.label : id; };
+    return { primary, accept, explain: "ICEMA #9040: " + primary.map(lbl).join("; ") + ".", laExplain: la.explain };
+  }
+  // ---------- arrest summary (ICEMA #14050) ----------
+  function codeSummary(sum, st, c, fm) {
+    const sh = st.events["t:defib"] || [], epi = st.events["t:epi"] || [], lido = st.events["t:lidocaine"] || [];
+    sum.items = sum.items.filter(it => !/^Amiodarone/.test(it.label)).map(it => {
+      const o = { ...it, ref: PSYS.mapRef(it.ref) };
+      if (/^Epinephrine after defibrillation ×2/.test(it.label)) { o.label = "Epinephrine 1 mg IV/IO (every 5 minutes)"; o.ok = epi.length > 0; o.ref = "ICEMA #14050 / #11010"; }
+      if (/^Epinephrine every 5 min/.test(it.label)) { const gaps = epi.slice(1).map((t, i) => t - epi[i]); o.label = "Epinephrine every 5 min (no maximum stated)"; o.ok = gaps.every(g => g >= 240 && g <= 420); o.detail = `intervals ${gaps.map(g => fm(g)).join(", ")} · ${epi.length} dose(s)`; o.ref = "ICEMA #14050"; }
+      if (/^Base contact/.test(it.label)) { o.ok = !!st.events["t:base"] || c.roscT != null || (st.t - c.t0) < 1200; o.ref = "ICEMA #14050 (base consult if VF/pVT persists after 20 min of CPR; termination per #14050)"; }
+      return o; });
+    if (sh.length >= 2 || lido.length) { const shB = lido.length ? sh.filter(t => t <= lido[0]).length : sh.length; sum.items.push({ label: "Lidocaine 1.5 mg/kg after two cycles of CPR (refractory VF/pVT, consider)", ok: !lido.length || shB >= 2, detail: lido.length ? `lidocaine at ${fm(lido[0] - c.t0)} after ${shB} shock(s)` : "not given (optional)", ref: "ICEMA #14050 / #11010" }); }
+    sum.lido = lido.length; return sum;
+  }
+  return { TXSAY, TXSAY_DEL: DEL, checklist, dest, triage, codeSummary };
+})());
 
 /* ===== device.js ===== */
 /* =====================================================================
@@ -3718,6 +4401,7 @@ const NLU = (() => {
     });
     const route = parseRoute(t);
     const deep = /\bdeep\b/.test(t), site = (t.match(/\b(deltoid|lateral thigh|thigh|glutes?|gluteal|gluteus|buttocks?|butt|vastus)\b/) || [])[1] || null;
+    if (typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined") ICEMA_RX.nlu(t, out, hasGive, isQuestion, doses); // v2.16.0 lidocaine / Atrovent / ketamine / Tylenol (ICEMA formulary only)
     out.tx.forEach(x => { x.doses = doses; x.route = route; x.deep = deep; x.site = site; });
     for (const [id, re] of A) if (re.test(t)) out.assess.push(id);
     if (out.tx.some(x => ["d10", "oralglucose", "glucagon"].includes(x.id)) && !/check|level|sugar is|finger/.test(t)) out.assess = out.assess.filter(a => a !== "bgl");
@@ -4732,9 +5416,9 @@ const SIM = (() => {
   function roscRecognized(how) { const c = st.x.code; if (!c || c.roscT == null || c.roscRecT) return false; c.roscRecT = st.t; c.roscHow = how; st.flags.cpr = false; rec("x:roscrec"); return true; }
   function codeState() {
     const c = st && st.x.code; if (!c) return null;
-    const epi = st.events["t:epi"] || [], amio = st.events["t:amio"] || [], sh = c.shockLog;
+    const epi = st.events["t:epi"] || [], amio = st.events["t:amio"] || [], sh = c.shockLog, lido = st.events["t:lidocaine"] || [];
     return { active: !!st.x.arrest, rosc: !!st.x.rosc, t: st.t - c.t0, cpr: !!st.flags.cpr, byCpr: !!st.x.byCpr, cycle: c.cycleT0 != null ? st.t - c.cycleT0 : null, epiN: epi.length, epiLast: epi.length ? st.t - epi[epi.length - 1] : null,
-      amioN: amio.length, shocks: sh, ccf: c.cprT + c.off > 0 ? c.cprT / (c.cprT + c.off) : null, longest: c.longest, cur: c.cur, comp: c.compT0 != null ? st.t - c.compT0 : null, tired: c.tired, etco2: st.v.etco2, roscT: c.roscT, roscRecT: c.roscRecT };
+      amioN: amio.length, lidoN: lido.length, shocks: sh, ccf: c.cprT + c.off > 0 ? c.cprT / (c.cprT + c.off) : null, longest: c.longest, cur: c.cur, comp: c.compT0 != null ? st.t - c.compT0 : null, tired: c.tired, etco2: st.v.etco2, roscT: c.roscT, roscRecT: c.roscRecT };
   }
   function codeSummary() {
     const c = st && st.x.code; if (!c) return null;
@@ -4759,7 +5443,9 @@ const SIM = (() => {
       ch({ label: "Length-based tape (Broselow) before medications", ok: !!st.x.bros && (!epi.length || (st.events["a:broselow"] || [9e9])[0] <= epi[0]), detail: st.x.bros ? `${st.x.bros.color}, ${st.x.bros.measKg} kg` : "not measured", ref: "MCG 1309 G1" });
       if (sc.patient.age < 3) ch({ label: sc.neutralAlign ? "Airway padding for neutral alignment (trauma)" : "Shoulder roll for chest rise (infant/toddler)", ok: !!st.x.roll || !!st.flags.sga, detail: st.x.roll ? `placed at ${fm(st.x.roll.t - c.t0)}` : st.flags.sga ? "i-gel placed" : "not placed: poor chest rise / low EtCO2", ref: "standard practice* / 1210-P ❺" });
       ch({ label: "Trauma assessment during CPR", ok: !!st.events["x:traumacpr"], detail: st.events["x:traumacpr"] ? `at ${fm(st.events["x:traumacpr"][0] - c.t0)}` : "not done", ref: "1210-P ❶ / standard practice*" }); }
-    return { items, ccf, longest: c.longest, shocks: sh.length, epi: epi.length, amio: amio.length, rosc: c.roscT != null };
+    const sum = { items, ccf, longest: c.longest, shocks: sh.length, epi: epi.length, amio: amio.length, rosc: c.roscT != null };
+    if (typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined") return ICEMA_RX.codeSummary(sum, st, c, fm);
+    return sum;
   }
   // ---------- v2.13.0 condition change → reassessment (HABBO → ABCs → BP → SpO2 → RR → rest) ----------
   const REASSESS_CUE = "↻ Condition change: REASSESS now: HABBO (H seizure/epilepsy hx · A age ≥ 40 · B bed/wheelchair-bound · B blood glucose 60–400 · O obvious asymmetry), then ABCs, then BP, SpO₂, RR, then the rest of the vitals.";
@@ -4882,7 +5568,17 @@ const SIM = (() => {
   // v2.10.7: pediatric arrest (TP 1210-P) - adult TP 1210 item numbers mapped onto 1210-P numbering
   const P1210 = { "#3": "#6", "#4": "#3-4", "#5": "#3-4", "#6": "#7", "#8": "#14", "#9": "#8", "#10": "#15", "#12": "#16", "#13": "#11", "#14": "#12", "#15": "#13", "#17": "#17", "#18": "#17", "#19": "#18", "❼": "❽", "❻": "❽", "❸": "❸", "❷": "❷" };
   function pedsRef(ref) { if (!ref || !sc || sc.protocol !== "1210-P") return ref; return String(ref).replace(/\b1210(?!-P)((?:\s*(?:#\d+|[❶-❿⓫-⓴])(?:\s*[,/]\s*|\s+)?)*)/g, (m, items) => "1210-P" + (items || "").replace(/#\d+|[❶-❿⓫-⓴]/g, x => P1210[x] || x)).replace(/1210-P(\S)/, "1210-P $1"); }
-  function dev(text, ref, level = "deviation") { ref = pedsRef(ref); st.devs.push({ t: st.t, text, ref, level }); const own = /^standard practice\*\s*\((.+)\)$/.exec(ref || ""), safety = !own && /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${own ? "standard practice*: " + own[1] : safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${own ? "standard practice*: " + own[1] + "; LA County protocols are silent" : safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
+  function dev(text, ref, level = "deviation") { if (typeof PSYS !== "undefined" && PSYS.icema()) return devIcema(text, ref, level); ref = pedsRef(ref); st.devs.push({ t: st.t, text, ref, level }); const own = /^standard practice\*\s*\((.+)\)$/.exec(ref || ""), safety = !own && /^Safety|standard practice\*/.test(ref); log("warn", `${level.toUpperCase()}: ${text} [${own ? "standard practice*: " + own[1] : safety ? "standard practice*: defibrillator safety" : "Ref. " + ref}]`); return { speaker: "warn", text: `Instructor note (${level}): ${text} [${own ? "standard practice*: " + own[1] + "; LA County protocols are silent" : safety ? "standard practice*: defibrillator safety; LA County protocols are silent" : "LA County Ref. " + ref}]` }; }
+  // v2.16.0 ICEMA: same note, adapted to ICEMA references / suppressed when the LA-only rule doesn't apply; muted while the LA drug switch runs for a drug ICEMA_RX grades itself
+  function devIcema(text, ref, level) {
+    if (st && st.x && st.x._mute) { const o = { speaker: "warn", text: "", muted: true, args: [text, ref, level] }; st.x._mute.push(o); return o; }
+    const a = PSYS.adaptDev(text, pedsRef(ref), level, { pvtPulse: !!(sc && st && !st.x.arrest && (sc.mgBase || /tdp|torsade|polymorph/i.test(sc.id + " " + String(st.tg.rhythmName || "")))) });
+    if (!a) return { speaker: "warn", text: "", suppressed: true };
+    const own = /^standard practice\*\s*\((.+)\)$/.exec(a.ref || ""), safety = !own && /^Safety|^standard practice\*/.test(a.ref || "");
+    const br = own ? "standard practice*: " + own[1] + "; ICEMA protocols are silent" : safety ? "standard practice*: defibrillator safety; ICEMA protocols are silent" : a.ref;
+    st.devs.push({ t: st.t, text: a.text, ref: a.ref, level: a.level }); log("warn", `${a.level.toUpperCase()}: ${a.text} [${br}]`);
+    return { speaker: "warn", text: `Instructor note (${a.level}): ${a.text} [${br}]` };
+  }
   // device (monitor/defibrillator) context
   function devC() { return { st, sc, mental, treat: tx => treat(tx), dev: (t, r, l) => dev(t, r, l), devQuiet: (t, r, l) => { dev(t, r, l); }, rec, log, event: (t, k) => event(t, k),
     say: l => { l.filter(x => x.speaker === "patient").forEach(x => log("patient", x.text)); ui.say(l); }, partner: t => ui.say([pSay(t)]) }; }
@@ -5302,6 +5998,11 @@ const SIM = (() => {
     return tx;
   }
   function treat(tx) {
+    if (!(typeof PSYS !== "undefined" && PSYS.icema())) return treatCore(tx);
+    const prevMute = st.x._mute; st.x._mute = null;
+    try { return treatCore(tx).filter(l => l && !l.muted && !l.suppressed).map(l => (l.speaker === "narrator" || l.speaker === "find") && l.text ? Object.assign({}, l, { text: PSYS.adaptText(l.text) }) : l); } finally { st.x._mute = prevMute; }
+  }
+  function treatCore(tx) {
     tx = epiRoute(tx);
     if (typeof DOSING !== "undefined" && DOSING.quizKeyFor && st && st.x && st.x.medQuizDone) {
       const qk = DOSING.quizKeyFor(tx.id, sc, st, tx);
@@ -5314,6 +6015,16 @@ const SIM = (() => {
         }
       }
     }
+    let icx = null; // v2.16.0 ICEMA medication rules (ICEMA_RX); LA mode: always null
+    if (typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined" && ICEMA_RX.OWN.has(tx.id) && !(OB_TX.has(tx.id))) {
+      const m0 = mental(), dvs = st.x.dv;
+      const C = { sc, st, mental: m0, alert: ["alert", "anxious", "aphasic"].includes(m0), sbp: st.v.sbp, bpKnown: !!(st.rev.bp && st.t - st.rev.bp.t < 300), PEDS: PEDS(),
+        sedCtx: tx.id === "midaz" && m0 !== "seizing" && (!!(dvs && (dvs.pace.on || dvs.sync || dvs.charged || dvs.charging)) || ["1212", "1213"].includes(sc.protocol) || (typeof COURSE !== "undefined" && (COURSE.allowed(st, "pace") || COURSE.allowed(st, "cardiovert")))) };
+      icx = ICEMA_RX.pre(tx, C);
+      if (icx) icx.C = C;
+      if (icx && icx.block) { log("tx", "(not done) " + tx.id); const ls = (icx.lines || []).slice(); icx.notes.forEach(q => ls.push(dev(q[0], q[1], q[2]))); return ls; }
+      if (icx && icx.tx) tx = icx.tx;
+    }
     const id = tx.id, out = [], notes = [], m = mental(), alert = ["alert", "anxious", "aphasic"].includes(m);
     const sbp = st.v.sbp, bpKnown = st.rev.bp && st.t - st.rev.bp.t < 300;
     let narr = TX_LABEL[id] || id, pedsD10 = null;
@@ -5322,6 +6033,7 @@ const SIM = (() => {
     { const wd = wuCheck(id, tx); if (wd) notes.push(wd); }
     if (OB_TX.has(id) && !sc.ob) { log("assess", "N/A: " + id); return [{ speaker: "find", text: "Not applicable on this call: there's no delivery or newborn here." }]; }
     if (sc.preTreat) { const r = sc.preTreat(id, st, tx, H); if (r && r.block) { log("tx", "(not done) " + id); return r.lines || []; } if (r && r.narr) narr = r.narr; if (r && r.notes) notes.push(...r.notes); }
+    if (icx) st.x._mute = [];
     if (id === "magnesium") { narr = /\bim\b|buttock/i.test(tx.raw || "") ? "Magnesium sulfate 10 g IM (5 g with 1 mL lidocaine 2% in each buttock)" : "Magnesium sulfate 4 g in 100 mL NS IV over 20 minutes"; if (sc.mgBase) { { const g0 = (tx.doses || []).find(d => /^g$|gram/i.test(d.u || "")); if (g0 && !/\bim\b|buttock/i.test(tx.raw || "")) narr = `Magnesium sulfate ${g0.v} g IV`; } // MCG 1317.24 Prehospital considerations: polymorphic VT / torsades "may be indicated, only with Base Physician order"
         if (!st.x.baseOrd) { rec("x:mgnobase"); notes.push(dev("Magnesium for polymorphic VT/torsades is NOT a standing order: it may be given only with a Base Physician order. Contact Base first.", "MCG 1317.24", "deviation")); }
         else { const g = (tx.doses || []).find(d => /^g$|gram/i.test(d.u || "")); if (g && Math.abs(g.v - 4) > 0.01) notes.push(dev(`Base ordered magnesium sulfate 4 g IV over 20 min (the MCG 1317.24 dose); you said ${g.v} g.`, "MCG 1317.24", g.v > 4 ? "deviation" : "note")); else rec("x:mgdose"); } }
@@ -5688,7 +6400,8 @@ const SIM = (() => {
         st.flags.transport = true; st.x.transportT = st.t;
         narr = "Packaged for transport";
         if (!st.x.dest) {
-          notes.push({ speaker: "find", text: (sc.tag === "TRAUMA" || sc.protocol === "1244")
+          if (typeof PSYS !== "undefined" && PSYS.icema()) notes.push({ speaker: "find", text: (sc.tag === "TRAUMA" || sc.protocol === "1244") ? "Transport initiated — select your receiving destination (Trauma Center, Pediatric Trauma Center, closest hospital, STEMI, Stroke or Burn Center) and tap the ICEMA #9040 trauma triage criteria that apply." : "Transport initiated — select your receiving destination (closest receiving hospital, STEMI Receiving Center, Stroke Receiving Center, Trauma Center or Burn Center; ICEMA #9030)." });
+          else notes.push({ speaker: "find", text: (sc.tag === "TRAUMA" || sc.protocol === "1244")
             ? "Transport initiated — select your receiving destination (e.g., Trauma Center, MAR, STEMI, Stroke, Burn, PMC) and tap the Trauma Triage Protocol (Ref. 506) criteria that apply."
             : "Transport initiated — select your receiving destination (MAR, STEMI Receiving Center, Trauma Center, Primary or Comprehensive Stroke Center, Burn Center, PMC, or Perinatal Center)." });
         }
@@ -5709,7 +6422,18 @@ const SIM = (() => {
       case "gurney": narr = "Gurney brought to the patient's side"; break;
       case "removeheat": if (!sc.heatPad) { log("assess", "No heating pad"); return [{ speaker: "find", text: "There's no heating pad or heat source on the patient." }]; } st.x.heatOff = st.t; narr = "Heating pad switched off and removed from under the patient"; break;
     }
-    if (PEDS() && PEDS_DOSE_TX.has(id)) { // v2.10.7: pediatric patients ALWAYS receive the correct MCG 1309 color-code dose (no dose grading); indication/route/timing still graded
+    if (icx) { // v2.16.0 ICEMA: re-emit the LA notes ICEMA keeps (adapted), drop the ones ICEMA_RX replaced, add the ICEMA notes and narration
+      const muted = st.x._mute || []; st.x._mute = null;
+      for (let i = notes.length - 1; i >= 0; i--) if (notes[i] && notes[i].muted) notes.splice(i, 1);
+      const dropRe = icx.drop === true ? null : icx.drop || [];
+      for (const o of muted) { const t = String(o.args[0] || ""); if (dropRe === null || dropRe.some(re => re.test(t))) continue; notes.push(dev(o.args[0], o.args[1], o.args[2])); }
+      for (const q of icx.notes || []) notes.push(dev(q[0], q[1], q[2]));
+      if (icx.narr) narr = icx.narr;
+      narr = ICEMA_RX.post(id, narr, icx.C);
+      for (let i = notes.length - 1; i >= 0; i--) if (notes[i] && notes[i].suppressed) notes.splice(i, 1);
+    }
+    if (PEDS() && PEDS_DOSE_TX.has(id) && icx) { st.x.epiOd = false; st.x.pedsDoses = (st.x.pedsDoses || 0) + 1; if (id === "midaz") st.x.midazW = 1; }
+    else if (PEDS() && PEDS_DOSE_TX.has(id)) { // v2.10.7: pediatric patients ALWAYS receive the correct MCG 1309 color-code dose (no dose grading); indication/route/timing still graded
       const route = tx.route || "", drug = (TX_LABEL[id] || id).replace(/\s*\d.*$/, "").replace(/\s*\(.*$/, "").trim();
       narr = `${drug}${route ? " " + route : ""}, ${st.x.bros ? st.x.bros.color + " color-code dose" : "color-code dose (MCG 1309)"}`;
       st.x.epiOd = false; st.x.pedsDoses = (st.x.pedsDoses || 0) + 1;
@@ -5725,12 +6449,12 @@ const SIM = (() => {
       if (id === "midaz") st.x.midazW = 1;
       if (pedsD10) { narr = pedsD10.narr; for (const q of pedsD10.iss) notes.push(dev(q[0], q[1], q[2])); }
     }
-    if (typeof DOSING !== "undefined") for (const d of DOSING.check(id, tx, sc, st, { wheeze: /wheez/i.test(String(st.tg.lungs || "")), headTrauma: /head|multisystem/i.test(String(st.tg.trauma || "")) && !/no signs/i.test(String(st.tg.trauma || "")) })) notes.push(dev(d.text, d.ref, d.level));
+    if (typeof DOSING !== "undefined" && !icx) for (const d of DOSING.check(id, tx, sc, st, { wheeze: /wheez/i.test(String(st.tg.lungs || "")), headTrauma: /head|multisystem/i.test(String(st.tg.trauma || "")) && !/no signs/i.test(String(st.tg.trauma || "")) })) notes.push(dev(d.text, d.ref, d.level));
     if (id !== "midaz" && id !== "permhypo") { st.count[id] = (st.count[id] || 0) + 1; rec("t:" + id); if (id === "albuterol" && n(st, "albuterol") >= 2) rec("t:albuterol#2"); if (n(st, id) >= 2) rec("t:" + id + "#2"); if (id === "d10" && n(st, id) >= 3) rec("t:d10#" + Math.min(5, n(st, id))); }
     if (st.x.rosc) rec("t:" + id + "@rosc");
     st.last[id] = st.t;
     if ((id === "epi" || id === "pushepi") && st.x.epiOd) { addEffect("epiod"); st.x.epiOd = false; }
-    if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : id === "diphen" ? (tx.route === "IM" ? 900 : 120) : undefined);
+    if (sc.txResp && sc.txResp[id] && sc.txResp[id].onset) addEffect(id, sc.txResp[id].onset); else if (icx && icx.effectAs) [].concat(icx.effectAs).forEach(k => addEffect(k)); else if (EFFECTS[id] && id !== "midaz") addEffect(id, id === "naloxone" && tx.route === "IV" ? 45 : id === "diphen" ? (tx.route === "IM" ? 900 : 120) : undefined);
     if (typeof COURSE !== "undefined") COURSE.onTreat(id, st, sc);
     if (sc.cold && typeof COLD !== "undefined") notes.push(...COLD.onTreat(id, devC()));
     if (sc.onTreat) { const r = sc.onTreat(id, st, tx, H); if (r && r.lines) notes.push(...r.lines); }
@@ -5993,7 +6717,7 @@ const SIM = (() => {
     const pre = (st.x.preLines || []).map(t => ({ speaker: "patient", text: t })); st.x.preLines = [];
     pre.forEach(p => log("patient", p.text));
     let reactions = [];
-    if (parsed.nonFormulary) { const d = dev(`${parsed.nonFormulary[0].toUpperCase() + parsed.nonFormulary.slice(1)} isn't in the LA County formulary. The push-dose pressor is push-dose EPINEPHRINE 10 mcg (1 mL of 0.01 mg/mL).`, "MCG 1317.17 / 1207 #11", "note"); reactions.push({ speaker: "find", text: `Not given: ${parsed.nonFormulary} isn't carried in LA County. Push-dose epinephrine is the push-dose pressor (MCG 1317.17).` });
+    if (parsed.nonFormulary) { const d = dev(`${parsed.nonFormulary[0].toUpperCase() + parsed.nonFormulary.slice(1)} isn't in the LA County formulary. The push-dose pressor is push-dose EPINEPHRINE 10 mcg (1 mL of 0.01 mg/mL).`, "MCG 1317.17 / 1207 #11", "note"); reactions.push({ speaker: "find", text: typeof PSYS !== "undefined" && PSYS.icema() ? `Not given: ${parsed.nonFormulary} isn't carried under ICEMA. Push-dose epinephrine is the push-dose pressor (ICEMA #11010).` : `Not given: ${parsed.nonFormulary} isn't carried in LA County. Push-dose epinephrine is the push-dose pressor (MCG 1317.17).` });
       if (!parsed.tx.length && !parsed.assess.length && !parsed.questions.length) { log("find", reactions[0].text); return [...pOut.lines, ...reactions]; } }
     if (parsed.held && parsed.held.length) {
       reactions.push(heldAck(parsed));
@@ -6049,24 +6773,29 @@ const SIM = (() => {
     const iAsa = base.findIndex(c => (c.keys || []).includes("t:aspirin"));
     if ((iAsa >= 0 || n(st, "aspirin") > 0) && !base.some(c => (c.keys || []).includes("q:asa_q"))) {
       const item = { label: "Ask aspirin questions before ASA (allergy, GI bleed/ulcers, ASA today)", keys: ["q:asa_q"], ref: "MCG 1317.3 / MCG 1317.7 / 1211 #5 / local policy*" };
+      if (typeof PSYS !== "undefined" && PSYS.icema()) item.ref = "ICEMA #14240 / #11010 / local policy*";
       if (iAsa >= 0) base.splice(iAsa, 0, item); else base.push(item);
     }
     const iNtg = base.findIndex(c => (c.keys || []).includes("t:nitro"));
     if ((iNtg >= 0 || n(st, "nitro") > 0) && !base.some(c => (c.keys || []).some(k => k === "q:pde5" || k === "q:ntg_q" || k === "q:ed"))) {
       const item = { label: "Ask nitro questions before NTG (ED / PDE5 meds in last 48 hours, nitro allergy/today)", keys: ["q:ntg_q", "q:pde5", "q:ed"], ref: "MCG 1317.31 / " + (sc.base === "chf" || sc.protocol === "1214" ? "1214 #8" : "1211 #6") };
+      if (typeof PSYS !== "undefined" && PSYS.icema()) item.ref = "ICEMA #11010 / " + (sc.base === "chf" || sc.protocol === "1214" ? "#14010" : "#14240");
       if (iNtg >= 0) base.splice(iNtg, 0, item); else base.push(item);
     }
     if ((v14Dep(st.tg) || (st.x && st.x.hadV14Dep)) && !base.some(c => (c.keys || []).includes("a:v789"))) {
       base.push({ label: "Posterior leads (V7, V8, V9: move V4–V6 to back) obtained for V1–V4 ST depression", keys: ["a:v789"], ref: "standard practice* (instructor standard: ST depression in V1–V4)", critical: true });
     }
+    const ICX = typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined"; // v2.16.0
+    if (ICX) { const t = ICEMA_RX.checklist(base, sc, st); base.length = 0; base.push(...t); }
     // v2.13.0 L-HABBO on every stroke-protocol call (graded per letter)
-    if (typeof LHABBO !== "undefined" && LHABBO.strokeCall(sc) && !base.some(c => c.keys.includes("lh:L"))) {
+    if (!ICX && typeof LHABBO !== "undefined" && LHABBO.strokeCall(sc) && !base.some(c => c.keys.includes("lh:L"))) {
       const item = { label: "L-HABBO stroke screen (L last known well, H seizure hx, A age ≥ 40, B bed/wheelchair, B glucose 60–400, O asymmetry)", keys: LHABBO.ITEMS.map(i => i.key), all: true, ref: "1232 #7 (mLAPSS criteria)", lhabbo: true };
       const iL = base.findIndex(c => c.keys.some(k => /^a:(neuro|smile|grip|drift)$/.test(k))); if (iL >= 0) base.splice(iL, 0, item); else base.push(item);
     }
     // v2.13.0 unconscious + wheezing: IM epinephrine first
     if (st.x.wu && !st.x.arrest && !base.some(c => c.keys.includes("x:wuEpiFirst"))) {
       const ep = base.findIndex(c => c.keys.includes("t:epi")), item = { label: `Unconscious + wheezing: IM epinephrine FIRST (${PEDS() ? "1 mg/mL by color code, MCG 1309" : "0.5 mg of 1 mg/mL"}) before any other med`, keys: ["x:wuEpiFirst"], ref: "1219 #4 / 1237 / MCG 1317.17", critical: true };
+      if (ICX) { item.label = `Unconscious + wheezing: IM epinephrine FIRST (${PEDS() ? "0.01 mg/kg of 1 mg/mL, max 0.3 mg" : "0.3 mg of 1 mg/mL"}) before any other med`; item.ref = "ICEMA #14025 / #14010 / #11010"; }
       if (ep >= 0) base.splice(ep, 0, item); else base.unshift(item);
     }
     // v2.13.0 reassessment after each condition change
@@ -6124,8 +6853,13 @@ const SIM = (() => {
     const seq = S.filter(s => s.done && !s.na).sort((a, b) => a.i - b.i).map(s => s.label.split(" (")[0].split(",")[0]);
     return { steps: S, flags, seq, abcNeeded, altered };
   }
-  function nextHint() { const c = checklist().find(c => !c.done && !c.optional && !c.keys[0].startsWith("!")); return c ? `${c.label} (Ref. ${c.ref})` : null; }
+  function nextHint() { const c = checklist().find(c => !c.done && !c.optional && !c.keys[0].startsWith("!")); return c ? (typeof PSYS !== "undefined" && PSYS.icema() ? `${c.label} (${c.ref})` : `${c.label} (Ref. ${c.ref})`) : null; }
   function expectedDest(scn, state) {
+    const la = expectedDestLA(scn, state);
+    if (typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined" && (scn || sc)) return ICEMA_RX.dest(scn || sc, state || st, la);
+    return la;
+  }
+  function expectedDestLA(scn, state) {
     scn = scn || sc; state = state || st; if (!scn) return { primary: "mar", accept: ["mar"], ref: "Ref. 502", reason: "Most Accessible Receiving (MAR) facility." };
     const id = scn.id || "", proto = scn.protocol || "", tag = scn.tag || "";
     if (id === "peds_arrest_nat") return { primary: "ptc", accept: ["ptc", "pmc", "mar"], ref: "Ref. 506 / Ref. 510 / Ref. 822", reason: "Pediatric non-accidental trauma / arrest — transport to a Pediatric Trauma Center (PTC) or Pediatric Medical Center (PMC / EDAP)." };
@@ -6144,6 +6878,11 @@ const SIM = (() => {
     return { primary: "mar", accept: ["mar", ...(proto === "1212" || proto === "1213" || id === "chf_cp" ? ["src"] : []), ...(id === "focal_sz" ? ["psc", "csc"] : [])], ref: "Ref. 502 (Patient Destination)", reason: "General medical emergency without specialty center criteria — transport to the Most Accessible Receiving (MAR) facility per Ref. 502." };
   }
   function expectedTraumaTriage(scn, state) {
+    const la = expectedTraumaTriageLA(scn, state);
+    if (la && typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined") return ICEMA_RX.triage(scn || sc, state || st, la);
+    return la;
+  }
+  function expectedTraumaTriageLA(scn, state) {
     scn = scn || sc; state = state || st; if (!scn) return null;
     const id = scn.id || "";
     const M = {
@@ -6218,14 +6957,15 @@ const SIM = (() => {
     const exp = expectedTraumaTriage(sc, st);
     const isMatch = exp ? exp.accept.includes(id) : true;
     if (exp && list.some(k => exp.accept.includes(k))) rec("x:triageOk");
-    log("tx", `Trauma Triage (Ref. 506) ${added ? "selected" : "removed"}: [${T.code}] ${T.label}`);
+    const TT = typeof PSYS !== "undefined" && PSYS.icema() ? "ICEMA #9040" : "Ref. 506";
+    log("tx", `Trauma Triage (${TT}) ${added ? "selected" : "removed"}: [${T.code}] ${T.label}`);
     if (!forceAdd && ui && ui.render) ui.render();
     return {
       speaker: !added ? "narrator" : isMatch ? "narrator" : "warn",
       text: !added
         ? `Removed Trauma Triage criterion: [${T.code}] ${T.label}.`
         : isMatch
-        ? `✓ Trauma Triage (Ref. 506 ${T.code}): ${T.label} recorded.`
+        ? `✓ Trauma Triage (${TT} ${T.code}): ${T.label} recorded.`
         : `Note: [${T.code}] ${T.label} is not a primary finding on this call. (${exp ? exp.explain : ""})`,
     };
   }
@@ -8403,7 +9143,7 @@ const BRADY = (() => {
     phase('reassess');await cmd('I am checking blood pressure','Capture at 100/min but BP still ~54/30: inadequate perfusion.');
     for(const rate of [110,120]){await cmd('Increase the pacing rate by 10',`Increase RATE stepwise to ${rate}/min; pediatric ceiling 120.`,6);H.tick(15,true);await cmd('I am checking blood pressure',rate===110?'Still hypotensive at 110/min.':'At protocol maximum 120/min, BP now ~82/45 and perfusion improving.');}
     await cmd('Check a femoral pulse','Reconfirm pulse at 120/min.');await cmd('I am listening to lung sounds','Reassess air entry; continue ventilation.');await cmd('I am feeling the forehead, checking skin signs','Reassess perfusion after increasing rate.');await cmd("I'm going to reassess",'Age-appropriate infant reassessment: responsiveness, ABCs, pulse/perfusion and vitals.');
-    S.setPI('DYSR');S.selectDest('pmc',true);phase('dest');await cmd('Notify the receiving hospital','Pre-alert EDAP/PMC.');await cmd("Let's transport, load and go",'Prompt transport with pacing, continuous ventilation, ongoing BP/pulse checks.');
+    const ic=typeof PSYS!=='undefined'&&PSYS.icema();S.setPI('DYSR');S.selectDest(ic?'mar':'pmc',true);phase('dest');await cmd('Notify the receiving hospital',ic?'Pre-alert the closest receiving hospital (ICEMA #9030).':'Pre-alert EDAP/PMC.');await cmd("Let's transport, load and go",'Prompt transport with pacing, continuous ventilation, ongoing BP/pulse checks.');
   }
   return {is,recovered,preTreat,tick,next,watch};
 })();
@@ -9101,7 +9841,7 @@ SCENARIOS.push({
     if (id === "defib") {
       if (!["vf", "vt"].includes(st.x.rhythm) || !st.x.arrest) return;
       st.x.shocks++;
-      const epi = n(st, "epi"), amio = n(st, "amio");
+      const epi = n(st, "epi"), amio = n(st, "amio") + n(st, "lidocaine"); // v2.16.0: lidocaine is the ICEMA antiarrhythmic (count is 0 in LA mode)
       const success = this.roscRule ? this.roscRule(st) : ((st.x.shocks >= 3 && epi >= 1 && st.flags.cpr) || (st.x.shocks >= 4 && amio >= 1) || st.x.shocks >= 6);
       if (success) { st.x.rosc = true; st.x.arrest = false; st.flags.cpr = false; st.x.roscT = st.t; st.x.rhythm = "sinus"; setTimeout(() => SIM.event(this.roscMsg || "ROSC! Organized rhythm with a palpable carotid pulse. Patient remains unresponsive.", "find"), 2500); }
       else setTimeout(() => SIM.event(`Shock #${st.x.shocks} delivered. Resume compressions immediately. Next rhythm check: still ${st.x.rhythm === "vt" ? "pulseless VT" : "VF"}.`, "find"), 1200);
@@ -12072,7 +12812,7 @@ addS(clone("vf", {
     history: "High blood pressure, he smokes. His dad died of a heart attack.", meds: "Blood pressure pills, I think.", allergies: "I don't know.", name: "Gary Pruitt, 52.", age: "52.",
     events: "He was lifting boxes. Said his chest was tight and he felt sweaty.", lastoral: "Lunch at noon.", drugs: "No.", lkw: "Talking to me five minutes before.",
   },
-  roscRule: st => (st.x.shocks >= 5 && n(st, "amio") >= 1 && (st.x.vector || 0) >= 1) || (st.x.shocks >= 7 && n(st, "amio") >= 1),
+  roscRule: st => (st.x.shocks >= 5 && n(st, "amio") + n(st, "lidocaine") >= 1 && (st.x.vector || 0) >= 1) || (st.x.shocks >= 7 && n(st, "amio") + n(st, "lidocaine") >= 1), // v2.16.0 + ICEMA lidocaine (0 in LA mode)
   roscMsg: "ROSC after the shock! Organized rhythm with a carotid pulse. Unresponsive.",
   tickArrest(st) { if (st.x.arrest && ["vf", "vt"].includes(st.x.rhythm) && st.x.shocks >= 3 && !st.x.refNote) { st.x.refNote = true; setTimeout(() => SIM.event("Still VF after 3 shocks (refractory).", "find"), 2600); } },
   checklist: [
@@ -15552,9 +16292,24 @@ const NEXT = (() => {
     out = out.slice(0, Math.min(lim, Math.max(2, 10 - prefix.length)));
     return [...prefix, ...out, C("Contact Base", "Base, this is Medic 12, how copy?", "radio"), C("Transport", "Let's transport, load and go", "radio")];
   }
-  function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.map(([l, s]) => pedsFix(sim, { label: l, say: pron(s, F) }))]); }
+  function all(sim) { const F = !!(sim && sim.scenario && sim.scenario.patient && sim.scenario.patient.sex === "F"); return ALL.map(([cat, list]) => [cat, list.filter(x => !HIDDEN.has(x)).map(([l, s]) => pedsFix(sim, { label: l, say: pron(s, F) }))]); }
+  // v2.16.0 protocol system: ICEMA phrases / doses swapped into the same TXSAY arrays (so every list that holds them follows); LA restored exactly
+  const LA_TX = {}, LA_SLOTS = JSON.parse(JSON.stringify(SLOTS)), HIDDEN = new Set(), ADDED = [];
+  function applySys() {
+    const ic = typeof PSYS !== "undefined" && PSYS.icema() && typeof ICEMA_RX !== "undefined";
+    for (const k of Object.keys(LA_TX)) { if (TXSAY[k]) { TXSAY[k][0] = LA_TX[k][0]; TXSAY[k][1] = LA_TX[k][1]; } else TXSAY[k] = LA_TX[k].arr; }
+    ADDED.splice(0).forEach(k => { delete TXSAY[k]; }); HIDDEN.clear();
+    for (const k of Object.keys(SLOTS)) SLOTS[k] = JSON.parse(JSON.stringify(LA_SLOTS[k]));
+    if (!ic) return;
+    for (const [k, v] of Object.entries(ICEMA_RX.TXSAY)) {
+      if (TXSAY[k]) { if (!LA_TX[k]) LA_TX[k] = [TXSAY[k][0], TXSAY[k][1]]; TXSAY[k][0] = v[0]; TXSAY[k][1] = v[1]; }
+      else { TXSAY[k] = [v[0], v[1]]; ADDED.push(k); } }
+    for (const k of ICEMA_RX.TXSAY_DEL) if (TXSAY[k]) { if (!LA_TX[k]) LA_TX[k] = [TXSAY[k][0], TXSAY[k][1]]; LA_TX[k].arr = TXSAY[k]; HIDDEN.add(TXSAY[k]); delete TXSAY[k]; }
+    for (const k of Object.keys(SLOTS)) SLOTS[k] = SLOTS[k].map(sl => { const o = []; for (const id of sl) { if (id === "amio") { o.push("lidocaine"); continue; } o.push(id); if (id === "albuterol" && !sl.includes("atrovent")) o.push("atrovent"); if (id === "fentanyl") o.push("ketamine", "acetaminophen"); } return o.filter(id => !ICEMA_RX.TXSAY_DEL.includes(id)); });
+  }
+  applySys(); if (typeof PSYS !== "undefined") PSYS.onChange(applySys);
   function aeiouChips() { return AE_SAY; }
-  return { pedsDex, suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS, BASE_ID, BASE_ID2, STROKE_CH, PN_SCRIPT, AE_SAY, pron, hypoAltered, codeChips };
+  return { applySys, pedsDex, suggest, all, aeiouChips, TXSAY, ALL, SLOTS, shuffle, txChips, LHABBO_CH, LHABBO_RUN, REASSESS, BASE_ID, BASE_ID2, STROKE_CH, PN_SCRIPT, AE_SAY, pron, hypoAltered, codeChips };
 })();
 
 /* ===== autopilot.js ===== */
@@ -15606,6 +16361,7 @@ const AUTOPILOT = (() => {
     fowler: "positioning", supine: "positioning", recovery: "recovery position", smr: "SMR", gurney: "gurney", transport: "packaging", cooling: "cooling", ivsetup: "IV setup", shoulderroll: "shoulder roll", removepatch: "patch", removeheat: "heating pad" };
   const ACK = { vitals: "Copy, getting a set of vitals.", o2: "Copy, oxygen going on.", bgl: "Copy, checking a sugar.", leads: "Copy, placing the electrodes.", ivsetup: "Copy, setting up your IV and spiking a bag.", cpr: "Copy, starting compressions.", bvm: "Copy, bagging.", cspine: "Copy, holding c-spine.", bleed: "Copy, controlling the bleeding.", splint: "Copy, splinting.", broselow: "Copy, running the tape.", gurney: "Copy, bringing in the gurney.", roll: "Copy, padding the shoulders.", airway: "Copy.", temp: "Copy, getting a temp.", task: "Copy." };
 
+  const ICX = () => (typeof PSYS !== "undefined" && PSYS.icema()); // v2.16.0 Watch follows the selected protocol system
   async function run(sc, opts) {
     opts = opts || {};
     const S = opts.sim || SIM, N = NEXT, F = !!(sc.patient && sc.patient.sex === "F"), P = s => N.pron ? N.pron(s, F) : s;
@@ -15620,7 +16376,8 @@ const AUTOPILOT = (() => {
       // v2.14.4: what the EMT is doing right now (engine partner queue), so Watch can show the EMT busy while Adrian talks
       function emtState(s) { const q = (s.pq || []).slice().sort((a, b) => a.due - b.due), hands = s.x.pTask === "bvm" && s.flags.o2 === "bvm" && !s.flags.sga ? "bvm" : s.x.pTask === "cpr" && s.flags.cpr ? "cpr" : null;
         return { q: q.map(x => x.id), task: q.length ? q[0].id : hands, due: q.length ? q[0].due : null, busy: !!(q.length || hands), hands }; }
-      const push = (o) => { const s = Object.assign({ phase, ph: PH[phase] || phase }, o, { snap: snap() }); steps.push(s); if (opts.onStep) opts.onStep(s); return s; };
+      const push = (o) => { if (ICX() && o) { o = Object.assign({}, o); if (o.ref) o.ref = PSYS.mapRef(String(o.ref).replace(/^LA County Ref\. /, "")); if (o.why) o.why = PSYS.adaptText(o.why); if (o.text && o.actor !== "medic") o.text = PSYS.adaptText(o.text); }
+        const s = Object.assign({ phase, ph: ICX() ? PSYS.adaptText(PH[phase] || phase) : PH[phase] || phase }, o, { snap: snap() }); steps.push(s); if (opts.onStep) opts.onStep(s); return s; };
       const outs = (lines, parent) => lines.forEach(l => { if (!l || !l.text && !l.html) return; push({ actor: l.speaker === "partner" ? "emt" : l.speaker === "me" ? "medic" : l.speaker || "system", text: l.text || String(l.html || "").replace(/<[^>]+>/g, ""), lung: l.lungAudio || l.lung || (typeof LUNGS !== "undefined" && l.speaker !== "me" && /\bLung sounds(?:\s+are|\s*:)/i.test(l.text || "") ? (() => { try { return LUNGS.classify(sc, st(), l.text); } catch (e) { return null; } })() : null), raw: l, reply: true, emt: parent && parent.emt || null }); });
       const flush = () => { if (pend.length) { const l = pend.splice(0); outs(l); } };
       // a condition change interrupts the wait so the medic reassesses right away (before queued partner reports land)
@@ -15632,7 +16389,7 @@ const AUTOPILOT = (() => {
         let quiz = null; if (S.pendingMedQuiz) { try { quiz = S.pendingMedQuiz(text); } catch (e) { quiz = null; } }
         if (quiz) { const ans = {}; quiz.questions.forEach(q => { ans[q.id] = q.correctIndex; }); let g = null; try { g = S.gradeMedQuiz(quiz.key, ans, sc, st(), quiz); } catch (e) {}
           quizzes.push({ key: quiz.key, name: quiz.name, ok: g ? g.score === g.total || g.ok !== false : true, g });
-          const fact = q => q.correctText; push({ actor: "medic", kind: "medcheck", text: `${quiz.name} check: ${quiz.questions.map(q => `${q.label}: ${fact(q)}`).join(". ")}.`, why: `Medication check before giving ${quiz.shortName || quiz.name}: dose, repeat interval, max prior to Base, contraindications`, ref: `MCG ${quiz.ref || "1317"}`, anim: "med" }); }
+          const fact = q => q.correctText; push({ actor: "medic", kind: "medcheck", text: `${quiz.name} check: ${quiz.questions.map(q => `${q.label}: ${fact(q)}`).join(". ")}.`, why: `Medication check before giving ${quiz.shortName || quiz.name}: dose, repeat interval, max prior to Base, contraindications`, ref: ICX() ? quiz.ref : `MCG ${quiz.ref || "1317"}`, anim: "med" }); }
         const me = push({ actor: "medic", text, why: meta.why || null, ref: meta.ref || null, anim: meta.anim || animOf(text), emt, order: !!emt, task: meta.task || null, quiet: !!meta.quiet });
         let r = []; try { r = await S.handle(text) || []; } catch (e) { push({ actor: "system", text: "[engine error] " + e.message, error: true }); }
         // closed loop: the engine's own partner line when it gives one, otherwise a plain acknowledgement
@@ -15783,7 +16540,8 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     return null; }
   const tried = {};
   async function doKey(key, meta) { const s = sayFor(key, meta && meta.why); if (!s) return false; tried[key] = (tried[key] || 0) + 1; await say(s, meta); return true; }
-  const lbl = c => ({ why: c.label, ref: c.ref ? "LA County Ref. " + c.ref : null });
+  const ICX = () => (typeof PSYS !== "undefined" && PSYS.icema());
+  const lbl = c => ({ why: c.label, ref: c.ref ? (ICX() ? c.ref : "LA County Ref. " + c.ref) : null });
   const pending = () => S.checklist().filter(c => !c.done && !c.optional);
   const posKeys = c => c.keys.filter(k => !k.startsWith("!"));
   const mental = () => S.mental ? S.mental() : "alert";
@@ -15964,18 +16722,23 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
     // and there it means CONTACT BASE for initial orders, not "never".
     { const pk = ["t:fentanyl", "t:morphine"].find(k => pending().some(c => posKeys(c).includes(k))),
         headBase = () => !!(S.headInjury && S.headInjury()) && !(S.isAO4 && S.isAO4()), // TP 1244 #25: Base first (handled in the treatment loop, BASE_FIRST)
-        opOk = k => !headBase() && (k !== "t:morphine" || !(st().v.sbp < 90));
+        opOk = k => ICX() ? true : !headBase() && (k !== "t:morphine" || !(st().v.sbp < 90));
       const nsOk = () => pending().some(c => posKeys(c).includes("t:ns")) && st().v.sbp < 90 && !(sc.internalBleed && S.isAO4 && S.isAO4());
       if (pk && sc.tag === "TRAUMA" && (sc.drift0 || 0) > 0 && (opOk(pk) || nsOk())) {
         phase("tx");
         if (!st().flags.iv && !st().flags.io) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); await doKey("t:iv", { why: "Vascular access for analgesia / fluids", ref: "MCG 1375", dt: 8 }); }
         if (nsOk()) await doKey("t:ns", { why: "Shock with altered mental status: normal saline to keep SBP > 90 (permissive hypotension is only for A&O×4)", ref: "TP 1244 #15", dt: 8 });
-        if (opOk(pk)) await doKey(pk, pk === "t:fentanyl"
+        if (opOk(pk) && ICX()) { const sbpOk = st().v.sbp > 100, k2 = sbpOk ? "t:fentanyl" : sc.peds ? "t:acetaminophen" : "t:ketamine", kg = Math.round(sc.patient.weightKg || 70);
+          const ph = k2 === "t:fentanyl" ? (sc.peds ? `Fentanyl ${Math.min(50, Math.round(0.5 * kg))} micrograms IV` : "Fentanyl 50 micrograms IV") : k2 === "t:ketamine" ? `Ketamine ${Math.min(30, Math.round(0.3 * kg))} milligrams IV in 100 milliliters over 5 minutes` : `Tylenol ${Math.min(1000, Math.round(15 * kg))} milligrams IV over 15 minutes`;
+          if (k2 === "t:ketamine" && !(st().rev.monitor && st().rev.etco2)) { await say("Partner, put him on the monitor and put capno on", { why: "Ketamine: continuous ECG and capnography monitoring required", ref: "ICEMA #14100", dt: 4 }); await waitPartner(40); }
+          await say(ph, { why: sbpOk ? "Pain management early: fentanyl 50 mcg slow IV/IO (SBP > 100), continuous ECG and capnography" : `Pain management early: SBP ${Math.round(st().v.sbp)} (not > 100), so no fentanyl; ${k2 === "t:ketamine" ? "ketamine 0.3 mg/kg (max 30 mg) in 100 mL NS IV over 5 minutes" : "Tylenol 15 mg/kg IV over 15 minutes"}`, ref: "ICEMA #14100 / #11010", dt: 8 }); }
+        else if (opOk(pk)) await doKey(pk, pk === "t:fentanyl"
           ? { why: "Pain management early (TP 1244 #18). Fentanyl 50 mcg slow IV: no blood-pressure limit and no mental-status contraindication (contraindications are only hypersensitivity and pregnancy in labor); push slowly and monitor respiratory status. Head injury is the exception: standing order only if A&O with GCS 15, otherwise Base orders first (TP 1244 #25)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.19", dt: 8 }
           : { why: "Pain management early, SBP ≥ 90 (morphine is contraindicated with hypotension or poor perfusion)", ref: "TP 1244 #18 / MCG 1345 / MCG 1317.27", dt: 8 }); } }
     if (altered || !S.isAO4 || !S.isAO4()) { phase("why"); const ae = S.aeiou(); for (const i of ae.items) if (!i.done && N.AE_SAY[i.id]) await say(N.AE_SAY[i.id][1], { why: `Altered: AEIOU-TIPS (${i.id.replace("I2", "I")})`, ref: "standard practice*" }); }
     const stroke = (typeof LHABBO !== "undefined" && LHABBO.strokeCall && LHABBO.strokeCall(sc)) || sc.protocol === "1232";
-    if (stroke) { phase("why"); await say(N.LHABBO_RUN[1], { why: "L-HABBO in order: Last known well, History of seizure, Age ≥40, Bed/wheelchair bound, Blood glucose 60–400, Obvious asymmetry", ref: "Ref. 521 / TP 1232" });
+    if (stroke && ICX()) { phase("why"); for (const x of N.STROKE_CH) if (!has(x[2])) await say(x[1], { why: "mLAPSS / LAMS: " + x[0], ref: "ICEMA #14080" }); }
+    else if (stroke) { phase("why"); await say(N.LHABBO_RUN[1], { why: "L-HABBO in order: Last known well, History of seizure, Age ≥40, Bed/wheelchair bound, Blood glucose 60–400, Obvious asymmetry", ref: "Ref. 521 / TP 1232" });
       for (const x of N.LHABBO_CH) if (!has(x[2])) await say(x[1], { why: "L-HABBO: " + x[0], ref: "Ref. 521" });
       for (const x of N.STROKE_CH) if (!has(x[2])) await say(x[1], { why: "LAMS: " + x[0], ref: "Ref. 521 / TP 1232" }); }
     phase("hx");
@@ -15996,6 +16759,7 @@ AUTOPILOT.setPolicy(async function adrianFlow(sc, S, say0, H) {
 /* ---------- second half: monitor/12-lead, code, treatment, impression, destination, Base, transport ---------- */
 AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   const st = H.st, N = NEXT, { pending, posKeys, lbl, has, phase, tick, doKey, tried, mental } = C;
+  const ICX = () => (typeof PSYS !== "undefined" && PSYS.icema()); // v2.16.0
   const want = k => pending().some(c => posKeys(c).some(x => x.replace(/#\d+$/, "").replace(/@.*$/, "") === k));
   const inCl = k => S.checklist().some(c => c.keys.some(x => x.replace(/^!/, "").replace(/#\d+$/, "").replace(/@.*$/, "") === k));
   const SHOCK = ["vf", "vt", "pvt"];
@@ -16016,8 +16780,11 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     if (!has("t:iv") && !has("t:io")) await say("Start an IO", { why: "Vascular access: IO if any delay", ref: peds ? "TP 1210-P" : "TP 1210 #9", dt: 10 });
     for (let guard = 0; guard < 14 && !st().x.rosc && !st().x.terminated; guard++) {
       const cs = S.code() || {}, a = INTERP.actual(st().tg, st().v.hr), shockable = SHOCK.includes(a.cls);
-      if ((cs.epiLast == null || cs.epiLast >= 240) && (!shockable || (cs.shocks || []).length >= 2) && (cs.epiN || 0) < (peds ? 9 : 3)) await say(peds ? "Epinephrine IO, color code dose" : "Epinephrine 1 milligram IV push", { why: shockable ? "Shockable: epi after the 2nd shock, then every 3–5 min" : "Non-shockable: epinephrine as early as possible, then every 3–5 min", ref: peds ? "TP 1210-P / MCG 1309" : "TP 1210 #13", dt: 4 });
-      if (shockable && (cs.shocks || []).length >= 3 && (cs.amioN || 0) < 2 && want("t:amio")) await say((cs.amioN || st().count.amio) ? "Amiodarone 150 milligrams IV push" : "Amiodarone 300 milligrams IV push", { why: "Refractory VF/pVT after 3 shocks: amiodarone 300 mg, then 150 mg", ref: "TP 1210 #12", dt: 4 });
+      if (ICX() && (cs.epiLast == null || cs.epiLast >= 240) && (!shockable || (cs.shocks || []).length >= 2) && (cs.epiN || 0) < (peds ? 9 : 3)) await say(peds ? "Epinephrine IO, weight-based dose" : "Epinephrine 1 milligram IV push", { why: peds ? "Epinephrine 0.01 mg/kg (0.1 mg/mL) IV/IO (9–14 y: 1 mg), every 5 minutes" : "Epinephrine 1 mg (0.1 mg/mL) IV/IO every 5 minutes", ref: peds ? "ICEMA #14150 / #11010" : "ICEMA #14050 / #11010", dt: 4 });
+      else if ((cs.epiLast == null || cs.epiLast >= 240) && (!shockable || (cs.shocks || []).length >= 2) && (cs.epiN || 0) < (peds ? 9 : 3)) await say(peds ? "Epinephrine IO, color code dose" : "Epinephrine 1 milligram IV push", { why: shockable ? "Shockable: epi after the 2nd shock, then every 3–5 min" : "Non-shockable: epinephrine as early as possible, then every 3–5 min", ref: peds ? "TP 1210-P / MCG 1309" : "TP 1210 #13", dt: 4 });
+      if (ICX() && shockable && (cs.shocks || []).length >= 2 && (st().count.lidocaine || 0) < 2 && want("t:lidocaine")) { const kg = (st().x.bros && st().x.bros.measKg) || sc.patient.weightKg || 70, rep = !!st().count.lidocaine, per = peds ? (rep ? 0.5 : 1) : (rep ? 0.75 : 1.5);
+        await say(`Lidocaine ${Math.round(per * kg)} milligrams IV push`, { why: `Refractory VF/pVT after two cycles of CPR: lidocaine ${per} mg/kg${rep ? " (repeat)" : ""}, max 3 mg/kg`, ref: "ICEMA #14050 / #11010", dt: 4 }); }
+      if (!ICX() && shockable && (cs.shocks || []).length >= 3 && (cs.amioN || 0) < 2 && want("t:amio")) await say((cs.amioN || st().count.amio) ? "Amiodarone 150 milligrams IV push" : "Amiodarone 300 milligrams IV push", { why: "Refractory VF/pVT after 3 shocks: amiodarone 300 mg, then 150 mg", ref: "TP 1210 #12", dt: 4 });
       await treatLoop(4, true);
       const cyc = (S.code() || {}).cycle; if (cyc != null && cyc < 118) tick(118 - cyc);
       await rhythmCheck();
@@ -16025,7 +16792,9 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   }
   async function defib() {
     const peds = !!sc.peds, nS = st().count.defib || 0, kg = (st().x.bros && st().x.bros.measKg) || sc.patient.weightKg || 20;
-    const J = peds ? Math.round((nS ? 4 : 2) * kg) : 200, R = { ref: peds ? "TP 1210-P / MCG 1309" : "TP 1210 #7", anim: "defib" };
+    const J = ICX() ? (peds ? Math.min(360, Math.round((nS === 0 ? 2 : nS === 1 ? 4 : 10) * kg)) : 360) : peds ? Math.round((nS ? 4 : 2) * kg) : 200, R = { ref: ICX() ? (peds ? "ICEMA #14150" : "ICEMA #14050") : peds ? "TP 1210-P / MCG 1309" : "TP 1210 #7", anim: "defib" };
+    if (ICX()) { await say(`Charge to ${J}`, Object.assign({ why: peds ? `Shockable rhythm: ${nS === 0 ? "2" : nS === 1 ? "4" : "10"} J/kg (${J} J), compressions continue while charging` : "Shockable rhythm: 360 J monophasic or the manufacturer's biphasic equivalent, compressions continue while charging", dt: 4 }, R));
+      await say("Everyone clear", Object.assign({ why: "Clear call: nobody touching the patient, O2 away", dt: 1 }, R)); await say("Shock", Object.assign({ why: "Defibrillate, then resume CPR immediately", dt: 2 }, R)); return; }
     await say(`Charge to ${J}`, Object.assign({ why: peds ? `Shockable rhythm: charge ${nS ? "4" : "2"} J/kg (${J} J), compressions continue while charging` : "Shockable rhythm: charge 200 J biphasic, compressions continue while charging", dt: 4 }, R));
     await say("Everyone clear", Object.assign({ why: "Clear call: nobody touching the patient, O2 away", dt: 1 }, R));
     await say("Shock", Object.assign({ why: "Defibrillate, then resume CPR immediately", dt: 2 }, R));
@@ -16058,10 +16827,11 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     await baseReport(D, ask); phase("tx"); }
   // v2.14.2: TP 1244 #25 head injury: pain medication by standing order only for an A&O patient with GCS 15; otherwise Base first
   const HEAD_BASE = k => /^t:(fentanyl|morphine)$/.test(k) && !!(S.headInjury && S.headInjury()) && !(S.isAO4 && S.isAO4());
-  const BASE_FIRST = k => HEAD_BASE(k) || /^t:(pace|cardiovert)$/.test(k) || (/^t:(calcium|bicarb)$/.test(k) && sc.allow && sc.allow[k.slice(2)] === "base") || (k === "t:diphen" && sc.protocol === "1239");
+  const BASE_FIRST = k => ICX() ? ((/^t:(calcium|bicarb)$/.test(k) && sc.id !== "crush_leg") || (k === "t:txa" && (sc.ob || /^121[57]$/.test(sc.protocol || "")))) : HEAD_BASE(k) || /^t:(pace|cardiovert)$/.test(k) || (/^t:(calcium|bicarb)$/.test(k) && sc.allow && sc.allow[k.slice(2)] === "base") || (k === "t:diphen" && sc.protocol === "1239");
   async function pace(c) {
-    await padsOn(); await baseFirst("initiating transcutaneous pacing"); const R = { why: c.label, ref: "TP 1212 / MCG 1365" };
-    await say("Start pacing at 70", Object.assign({}, R, { anim: "monitor", dt: 2 }));
+    await padsOn(); if (!ICX()) await baseFirst("initiating transcutaneous pacing"); const R = { why: c.label, ref: ICX() ? "ICEMA #14030 / #11020" : "TP 1212 / MCG 1365" };
+    if (ICX()) await say("Start pacing at 60", Object.assign({}, R, { why: c.label + " (ICEMA #11020: rate 60, lowest output that captures)", anim: "monitor", dt: 2 }));
+    else await say("Start pacing at 70", Object.assign({}, R, { anim: "monitor", dt: 2 }));
     await say("Start at 40 milliamps", Object.assign({}, R, { anim: "monitor", dt: 3 }));
     for (let i = 0; i < 16 && DEVICE.capture(st(), sc) !== "mech"; i++) {
       if (DEVICE.capture(st(), sc) === "elec" && !has("a:ecapread")) await say("I have electrical capture", { why: "Electrical capture: every pacer spike followed by a wide QRS", ref: "MCG 1365", anim: "monitor", dt: 2 });
@@ -16074,22 +16844,26 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   }
   async function cardiovert(c) {
     await padsOn();
-    await baseFirst("requesting an order for synchronized cardioversion");
-    for (const J of [120, 150, 200]) {
+    if (!ICX()) await baseFirst("requesting an order for synchronized cardioversion");
+    for (const J of (ICX() ? [100, 200, 300, 360] : [120, 150, 200])) {
       if (dv() && dv().convT != null) break;
-      await say(`Cardiovert at ${J} joules`, { why: c.label + (J > 120 ? " (escalate, SYNC re-enabled)" : ""), ref: "TP 1213 #12 / MCG 1375", anim: "monitor", dt: 3 });
+      await say(`Cardiovert at ${J} joules`, { why: c.label + (J > (ICX() ? 100 : 120) ? " (escalate, SYNC re-enabled)" : ""), ref: ICX() ? "ICEMA #14040 / #11020" : "TP 1213 #12 / MCG 1375", anim: "monitor", dt: 3 });
       await say("All clear", { why: "Call CLEAR before every shock", ref: "MCG 1375", anim: "defib", dt: 1 });
       await say("Shock", { why: "Synchronized shock delivered", ref: "TP 1213", anim: "defib", dt: 10 });
     }
   }
   const ok4 = k => { // hold a med the current state contraindicates (it stays on the list and is retried when the patient allows)
     const s = st(), m = mental();
+    if (ICX()) { const cardiac = /^(1211|1212|1213)$/.test(sc.protocol || ""), fOk = cardiac || s.v.sbp > 100;
+      if (k === "t:fentanyl") return fOk; if (k === "t:ketamine") return !sc.peds && !fOk; if (k === "t:acetaminophen") return !fOk && !!sc.peds;
+      if (k === "t:nitro") return !(s.v.sbp < 100); return true; }
     if (k === "t:fentanyl") return true; // MCG 1317.19: no SBP limit; v2.14.2: no ALOC hold (head injury -> Base first, BASE_FIRST)
     if (k === "t:morphine") return !(s.v.sbp < 90); // MCG 1317.27: hypotension / poor perfusion
     if (k === "t:nitro") return !(s.v.sbp < 100);
     return true; };
   async function preMed(k) {
     const s = st();
+    if (ICX() && k === "t:ketamine" && !(s.rev.monitor && s.rev.etco2)) { await say("Partner, put him on the monitor and put capno on", { why: "Ketamine: continuous ECG and capnography monitoring required", ref: "ICEMA #14100", dt: 4 }); await C.waitPartner(40); }
     if (k === "t:aspirin" && !has("q:asa_q")) await say(C.sayFor("q:asa_q"), { why: "Aspirin screen: allergy, GI bleed/ulcers, aspirin already taken today", ref: "TP 1211 / MCG 1317.7" });
     if (k === "t:nitro") {
       if (!has("q:ntg_q") && !has("q:pde5")) await say(C.sayFor("q:ntg_q"), { why: "Nitro screen: ED / pulmonary-hypertension meds (PDE5) within 48 h, nitro already taken", ref: "TP 1211 #6 / MCG 1317.31" });
@@ -16097,21 +16871,34 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     }
   }
   function medSay(k) {
+    if (ICX()) { const kg = (st().x.bros && st().x.bros.measKg) || Math.round(sc.patient.weightKg || 70);
+      if (k === "t:adenosine") return (st().count.adenosine || 0) ? "Adenosine 12 milligrams rapid IV push" : "Adenosine 6 milligrams rapid IV push";
+      if (k === "t:midaz" && (sc.psych || sc.protocol === "1209")) return "Midazolam 5 milligrams IM";
+      if (k === "t:ns" && sc.psych && sc.psych.midaz === "severe") return "Normal saline fluid bolus IV";
+      if (k === "t:nitro") return "Nitroglycerin 0.4 milligrams sublingual";
+      if (k === "t:lidocaine") return `Lidocaine ${Math.round((st().count.lidocaine ? 0.75 : 1.5) * kg)} milligrams IV`;
+      if (k === "t:ketamine") return `Ketamine ${Math.min(30, Math.round(0.3 * kg))} milligrams IV in 100 milliliters over 5 minutes`;
+      if (k === "t:acetaminophen") return sc.peds ? `Tylenol ${Math.min(1000, Math.round(15 * kg))} milligrams IV over 15 minutes` : "Tylenol 1 gram IV over 15 minutes";
+      if (k === "t:magnesium" && !sc.preeclampsia) return "Magnesium sulfate 2 grams IV over 5 minutes";
+      if (k === "t:magnesium") return "Magnesium sulfate 4 grams slow IV push";
+      if (k === "t:defib" && !(st().x.arrest)) return null;
+      return null; }
     if (k === "t:adenosine") return "Adenosine 12 milligrams rapid IV push";
     if (k === "t:midaz" && (sc.psych || sc.protocol === "1209")) return "Midazolam 5 milligrams IM";
     if (k === "t:ns" && sc.psych && sc.psych.midaz === "severe") return "Normal saline 1 liter IV rapid infusion"; // TP 1209 #11 (reassess every 250 mL) // v2.15.0 TP 1209 #11 (IM preferred, ❼)
     if (k === "t:nitro" && (sc.protocol === "1214" || sc.base === "chf")) { const sbp = st().v.sbp, mg = sbp >= 200 ? "1.2" : sbp >= 150 ? "0.8" : "0.4"; return `Nitroglycerin ${mg} milligrams sublingual`; }
     return null; }
   // ---------- treatment: the scenario's own checklist, in protocol slot order ----------
-  const lastTry = {}, IVMED = /^t:(ns|txa|fentanyl|morphine|d10|amio|adenosine|calcium|bicarb|ondansetron|ketorolac|diltiazem|lidocaine|mag|atropine)(#\d+)?$/;
+  const lastTry = {}, IVMED = /^t:(ns|txa|fentanyl|morphine|d10|amio|adenosine|calcium|bicarb|ondansetron|ketorolac|diltiazem|lidocaine|mag|atropine|ketamine|acetaminophen)(#\d+)?$/;
   // v2.14.7: pediatric dextrose by weight (Adrian): BG, Broselow kg, IV, D10 1 mL/kg × 3, recheck BG, still < 60 → doses 4-5, recheck
   async function pedsDexAP() {
     const s = st(), R = "TP 1203-P / MCG 1309 (instructor workflow)"; if (s.x.apDex) return false; s.x.apDex = 1;
     if (!has("a:bgl")) { await say("Partner, check a blood sugar", { why: "Blood glucose before dextrose", ref: "TP 1203-P", dt: 4 }); await C.waitPartner(60); }
     if (st().x.bglM && st().x.bglM.v >= 60) return false;
-    if (!has("a:broselow")) await doKey("a:broselow", { why: "Length-based tape for the weight in kg", ref: "MCG 1309", dt: 6 });
+    if (!has("a:broselow") && !ICX()) await doKey("a:broselow", { why: "Length-based tape for the weight in kg", ref: "MCG 1309", dt: 6 });
     if (!st().flags.iv && !st().flags.io) { if (!st().x.apIvSetup) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); } await doKey("t:iv", { why: "Vascular access before IV dextrose", ref: "TP 1203-P", dt: 20 }); }
     const kg = st().x.bros ? st().x.bros.measKg : Math.round(sc.patient.weightKg);
+    if (ICX()) { await say(`Dextrose 10 percent, ${5 * kg} milliliters IV`, { why: `D10 0.5 g/kg = 5 mL/kg × ${kg} kg = ${5 * kg} mL`, ref: "ICEMA #14160 / #11010", dt: 15 }); tick(45); await say("Partner, check a blood sugar", { why: "Recheck the blood glucose after dextrose", ref: "ICEMA #14160", dt: 4 }); await C.waitPartner(60); return true; }
     const dose = () => say(`Dextrose 10 percent, ${kg} milliliters IV`, { why: `D10 1 mL/kg × ${kg} kg = ${kg} mL, dose ${(st().count.d10 || 0) + 1} of 5`, ref: R, dt: 15 });
     const recheck = async after => { tick(45); await say("Partner, check a blood sugar", { why: `Recheck the blood glucose after dose ${after}`, ref: R, dt: 4 }); await C.waitPartner(60); };
     while ((st().count.d10 || 0) < 3) await dose();
@@ -16127,7 +16914,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
         const keys = (posKeys(c).includes("t:ncok") ? ["t:ncok", ...posKeys(c).filter(k => !/^t:(nrb|nc|ncok)$/.test(k))] : posKeys(c)).filter(k => !LATE.test(k) && !k.startsWith("lh:") && ok4(k) && ((tried[k] || 0) < 2 || ((tried[k] || 0) < 4 && lastTry[k] != null && nDone > lastTry[k])));
         let k = keys.find(k => k === "t:pace" || k === "t:cardiovert" || C.sayFor(k, c.label));
         if (!k) continue;
-        if (inCode && /^t:(epi|amio|defib)/.test(k)) continue; // arrest epinephrine / amiodarone / shocks run on the code clock
+        if (inCode && /^t:(epi|amio|defib|lidocaine)/.test(k)) continue; // arrest epinephrine / amiodarone / shocks run on the code clock
         if (k === "t:vector" && ((st().x.code && st().x.code.shockLog.length) || 0) < 3) continue; // vector change only after 3 shocks
         if (tried[k]) { await C.waitPartner(60); if (!pending().includes(c) && !pending().some(x => x.label === c.label)) { did = true; break; } }
         if (/#\d+$/.test(k)) { const m = k.match(/^(.*)#(\d+)$/), base = m[1]; const last = (st().events[base] || []).slice(-1)[0]; const gap = (typeof DOSING !== "undefined" && DOSING.TABLE[base.slice(2)] && DOSING.TABLE[base.slice(2)].repeatMin || 3) * 60; if (last != null && st().t - last < gap) tick(gap - (st().t - last)); }
@@ -16135,6 +16922,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
         tried[k] = (tried[k] || 0) + 1; lastTry[k] = Object.keys(st().events).length;
         if (k === "t:pace") { await pace(c); did = true; break; }
         if (k === "t:cardiovert") { await cardiovert(c); did = true; break; }
+        if (k === "t:defib" && ICX() && !st().x.arrest) { await padsOn(); for (let i = 0; i < 3 && !(dv() && dv().convT != null); i++) { await say("Charge to 360", { why: c.label + " (360 J monophasic or biphasic equivalent, unsynchronized)", ref: "ICEMA #14040", anim: "defib", dt: 4 }); await say("Everyone clear", { why: "Call CLEAR before every shock", ref: "standard practice*", anim: "defib", dt: 1 }); await say("Shock", { why: "Polymorphic VT: immediate unsynchronized defibrillation", ref: "ICEMA #14040", anim: "defib", dt: 8 }); } did = true; break; }
         if ((IVMED.test(k) || (k === "t:diphen" && !sc.dystonic)) && !st().flags.iv && !st().flags.io) { if (!st().x.apIvSetup) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); } await doKey("t:iv", { why: "Vascular access before IV medications / fluids", ref: "MCG 1375", dt: 10 }); }
         if ((k === "t:iv" || k === "t:io") && !st().x.apIvSetup) { st().x.apIvSetup = 1; await say("Can you set up my IV and spike a bag?", { why: "EMT preps the line and spikes the bag; the medic starts the IV (ALS)", ref: "standard practice*", dt: 3 }); }
         if (/^t:removepatch/.test(k) && !has("a:exposed")) await say(C.sayFor("a:exposed") || "Expose the chest and check the back", { why: "Expose and look for medication patches (chest, back, arms, legs) before removing one", ref: "TP 1214 / MCG 1317.31", dt: 6 });
@@ -16159,13 +16947,13 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   await C.reassessIfChanged();
   // ---------- impression, destination, Base, transport ----------
   phase("dest");
-  if (sc.pi && sc.pi.correct) { S.setPI(sc.pi.correct); const nm = (typeof PROVIDER_IMPRESSIONS !== "undefined" && PROVIDER_IMPRESSIONS[sc.pi.correct] || [sc.pi.correct])[0]; H.push({ actor: "medic", kind: "pi", text: `Provider impression: ${nm} (${sc.pi.correct}).`, why: (sc.pi.clues && sc.pi.clues[sc.pi.correct]) || "Provider impression", ref: "Ref. 1200.2 PI list", anim: "talk", local: true }); }
+  if (sc.pi && sc.pi.correct) { S.setPI(sc.pi.correct); const nm = (typeof PROVIDER_IMPRESSIONS !== "undefined" && PROVIDER_IMPRESSIONS[sc.pi.correct] || [sc.pi.correct])[0]; H.push({ actor: "medic", kind: "pi", text: `Provider impression: ${nm} (${sc.pi.correct}).`, why: (sc.pi.clues && sc.pi.clues[sc.pi.correct]) || "Provider impression", ref: ICX() ? "standard practice* (provider impression list)" : "Ref. 1200.2 PI list", anim: "talk", local: true }); }
   const ed = S.expectedDest(), D = (PROTOCOLS.DESTINATIONS || []).find(d => d.id === ed.primary);
   const tt = S.expectedTraumaTriage();
   if (tt) for (const id of tt.primary) S.toggleTraumaTriage(id, true);
   const tri = tt ? tt.primary.map(id => ((PROTOCOLS.TRAUMA_TRIAGE || []).find(t => t.id === id) || { label: id }).label) : [];
   const r = S.selectDest(ed.primary, true);
-  H.push({ actor: "medic", kind: "dest", text: `Destination: ${D ? D.label : ed.primary}.${tri.length ? " Ref. 506 criteria: " + tri.join("; ") + "." : ""}`, why: ed.reason, ref: tt ? tt.explain : ed.ref, anim: "talk", local: true });
+  H.push({ actor: "medic", kind: "dest", text: `Destination: ${D ? D.label : ed.primary}.${tri.length ? (ICX() ? " ICEMA #9040 criteria: " : " Ref. 506 criteria: ") + tri.join("; ") + "." : ""}`, why: ed.reason, ref: tt ? tt.explain : ed.ref, anim: "talk", local: true });
   if (r) H.push({ actor: r.speaker, text: r.text });
   if ((inCl("t:base") || sc.baseOrder || (st().devs || []).some(d => /base/i.test(d.text))) && !has("a:radio")) { phase("base"); await baseReport(D); }
   phase("dest");
@@ -16202,7 +16990,24 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   function show(id) { $$(".screen").forEach(s => s.classList.toggle("active", s.id === id)); if (id === "sim") setTimeout(Monitor.resizeAll, 50); }
 
   // ---------------- menu ----------------
-  function protoOf(sc) { return sc.menuGroup || sc.protocol || sc.refs[0]; } // v2.15.0 menuGroup: psych + anxiety under TP 1209, MCIs under Ref. 519
+  function protoOf(sc) { if (typeof PSYS !== "undefined" && PSYS.icema()) return PSYS.groupOf(sc); return sc.menuGroup || sc.protocol || sc.refs[0]; } // v2.15.0 menuGroup: psych + anxiety under TP 1209, MCIs under Ref. 519; v2.16.0 ICEMA grouping
+  // v2.16.0 protocol system (LA County | ICEMA): one control on the home screen and in Settings, persisted in medicsim.settings.protocolSystem
+  const ICX = () => typeof PSYS !== "undefined" && PSYS.icema();
+  function sysTxt(h) { if (!ICX() || h == null) return h; return String(h).replace(/LA County Ref\. (?=ICEMA|standard practice|local policy|base hospital)/g, "").replace(/\bRef\. (?=ICEMA|standard practice|local policy|base hospital)/g, "")
+    .replace(/Trauma Triage Protocol \(Ref\. No\. 506\)/g, "Trauma Triage Criteria (ICEMA #9040)").replace(/\(Ref\. No\. 506\)|\(Ref\. 506\)/g, "(ICEMA #9040)").replace(/Ref\. 502–521/g, "ICEMA #9030")
+    .replace(/Code management \(TP 1210\)/g, "Code management (ICEMA #14050)").replace(/CODE MANAGEMENT \(TP 1210\)/g, "CODE MANAGEMENT (ICEMA #14050)").replace(/MEDICATION QUIZ \(MCG 1317\)/g, "MEDICATION CHECK (ICEMA #11010)")
+    .replace(/Education only\. Doses and steps are from the LA County EMS Agency Prehospital Care Manual as retrieved Oct 20, 2026; always use the current official protocols and medical direction\./, "Educational use only. ICEMA mode: doses from ICEMA Reference #11010 Medication - Standard Orders (effective 09/01/26) and the ICEMA Policy and Protocol Manual (October 1, 2026), retrieved Nov 2026; anything marked * or unverified is not taken from those documents. Always use the current official ICEMA protocols and base hospital direction."); }
+  function setSys(v) { settings.protocolSystem = v === "icema" ? "icema" : "la"; PSYS.set(settings.protocolSystem, { noPersist: true }); persistSettings(); sysUI(); if ($("#menu") && $("#menu").classList.contains("active")) buildMenu(); }
+  function sysUI() {
+    const ic = ICX();
+    document.querySelectorAll("[data-sys]").forEach(b => { const on = b.dataset.sys === (ic ? "icema" : "la"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+    if ($("#logoSys")) $("#logoSys").textContent = ic ? "ICEMA" : "LA";
+    if ($("#menuSub")) $("#menuSub").innerHTML = ic ? "Talk to your patient, assess, treat. Expected actions follow the <b>Inland Counties EMS Agency (ICEMA) Policy and Protocol Manual</b> (San Bernardino, Inyo and Mono counties; ICEMA Reference #14000 series treatment protocols, #11010 medications). Educational use only. Always follow your current protocols, your preceptor, and base hospital direction." : "Talk to your patient, assess, treat. Expected actions follow the <b>Los Angeles County EMS Agency Treatment Protocols (Ref. 1200 series)</b>. For education and practice only. Always follow your current protocols, your preceptor, and Base/medical direction.";
+    if ($("#menuFine")) $("#menuFine").textContent = ic ? "ICEMA protocol text and doses were pulled from icema.sbcounty.gov (Policy and Protocol Manual, October 1, 2026; Reference #11010 effective 09/01/26) in Nov 2026. Items not stated in those documents are marked * / unverified and are never graded as required. Verify against the current ICEMA manual before relying on it." : "Protocol text was pulled from dhs.lacounty.gov / file.lacounty.gov on Oct 20, 2026. Each scenario lists the Ref. No. and revision date it uses. Verify against the current Prehospital Care Manual before relying on it.";
+    if ($("#setMedQuizLbl")) $("#setMedQuizLbl").textContent = ic ? "Pre-administration medication check (ICEMA #11010 multiple-choice: dose, repeat time, max dose prior to base contact, contraindications)" : "Pre-administration medication check (MCG 1317 multiple-choice: dose, repeat time, max dose, contraindications)";
+    if ($("#piNote")) $("#piNote").textContent = ic ? "Provider impression list (the LA County Ref. 1200.3 impression codes are used for the impression step in both modes). Pick the single best primary impression for this patient." : "LA County Provider Impressions (Ref. 1200.3). Pick the single best primary impression for this patient.";
+    document.title = ic ? "MedicSim (ICEMA): Paramedic Patient Simulator" : "MedicSim LA: Paramedic Patient Simulator";
+  }
   function buildMenu() {
     const grid = $("#scenarioGrid"); grid.innerHTML = "";
     const groups = {};
@@ -16223,12 +17028,12 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       [...SCENARIOS].sort((a, b) => a.patient.age - b.patient.age || a.id.localeCompare(b.id)).forEach((sc, i) => cards.appendChild(card(sc, i)));
       grid.appendChild(sec);
     } else {
-      const note = document.createElement("p"); note.className = "fine"; note.textContent = "Calls are grouped by the LA County treatment protocol of the correct final provider impression (behavioral and anxiety calls share the TP 1209 group; multiple-casualty incidents are under Ref. 519). Within a group, several calls are deliberately ambiguous, so pick your impression from the findings. Use Blind mode or the overall Random call to remove the hint.";
+      const note = document.createElement("p"); note.className = "fine"; note.textContent = ICX() ? "ICEMA mode: the same calls, grouped by the ICEMA treatment protocol (Reference #) that matches the correct final provider impression (behavioral calls under #14110; multiple-casualty incidents under #8080). Grading, doses, Watch, destinations and debrief citations follow ICEMA. Use Blind mode or the overall Random call to remove the hint." : "Calls are grouped by the LA County treatment protocol of the correct final provider impression (behavioral and anxiety calls share the TP 1209 group; multiple-casualty incidents are under Ref. 519). Within a group, several calls are deliberately ambiguous, so pick your impression from the findings. Use Blind mode or the overall Random call to remove the hint.";
       grid.appendChild(note);
       Object.keys(groups).sort().forEach(ref => {
-        const p = PROTOCOLS[ref] || { title: ref };
+        const p = ICX() ? { title: PSYS.groupTitle(ref) } : PROTOCOLS[ref] || { title: ref };
         const sec = document.createElement("section"); sec.className = "proto-group";
-        sec.innerHTML = `<div class="pg-head"><h2>Ref. ${ref} · ${esc(p.title)} <small>(${groups[ref].length})</small></h2><button class="ghost sm" data-random="${ref}">🎲 Random ${ref}</button></div><div class="pg-cards"></div>`;
+        sec.innerHTML = `<div class="pg-head"><h2>${ICX() ? "ICEMA Reference #" + ref : "Ref. " + ref} · ${esc(p.title)} <small>(${groups[ref].length})</small></h2><button class="ghost sm" data-random="${ref}">🎲 Random ${ref}</button></div><div class="pg-cards"></div>`;
         const cards = sec.querySelector(".pg-cards");
         groups[ref].forEach((sc, i) => cards.appendChild(card(sc, i)));
         grid.appendChild(sec);
@@ -16248,7 +17053,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     skipSpeech();
     closeMedQuiz(); chatHistory = []; $("#transcript").innerHTML = ""; instrHist = []; instrOpen = false; instrSig = ""; codeWas = false; lhOpen = false; lhSig = ""; destOpen = false; destAutoShown = false; destTriageForce = false; destSig = ""; document.body.classList.remove("coding"); $("#instrCap").hidden = true; if ($("#destPanel")) $("#destPanel").hidden = true; if ($("#btnDest")) $("#btnDest").hidden = true; if ($("#destBtnLabel")) $("#destBtnLabel").textContent = "Destination"; $("#txStrip").innerHTML = "";
     $("#scTitle").textContent = sc.dispatchTitle;
-    $("#scRef").textContent = "LA County EMS · impression & protocol: your call";
+    $("#scRef").textContent = ICX() ? "ICEMA protocols · impression & protocol: your call" : "LA County EMS · impression & protocol: your call";
     $("#dispatch").innerHTML = `<b>DISPATCH:</b> ${esc(sc.dispatch)}<details><summary>Scene size-up</summary>${esc(sc.scene)}</details>`;
     $("#piBtnLabel").textContent = "Impression";
     show("sim");
@@ -16376,6 +17181,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   }
   function say(list) {
     list.forEach(m => {
+      if (ICX() && m && m.text && m.speaker !== "me" && m.speaker !== "patient") m = Object.assign({}, m, { text: PSYS.adaptText(m.text) }); // v2.16.0 ICEMA references in instructor / scene lines
       addMsg(m);
       if (m.speaker === "patient") chatHistory.push({ role: "assistant", content: m.text });
       if (m.speaker === "bystander") chatHistory.push({ role: "assistant", content: "BYSTANDER: " + m.text });
@@ -16438,7 +17244,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     let graded = null;
     activeQuizState = { quiz, text, tap, loggedMe, firstChoice, getGraded: () => graded };
     $("#mqTitle").textContent = `💊 ${quiz.name} — Medication Check`;
-    $("#mqSub").textContent = `LA County EMS Ref. ${quiz.ref} · Select the correct Dose, Repeat Interval, Max Dose Prior to Base Contact, and Contraindications before administering:`;
+    $("#mqSub").textContent = ICX() ? `${quiz.ref.replace(/^ICEMA #/, "ICEMA Reference #")} · Select the correct Dose, Repeat Interval, Max Dose Prior to Base Contact, and Contraindications before administering:` : `LA County EMS Ref. ${quiz.ref} · Select the correct Dose, Repeat Interval, Max Dose Prior to Base Contact, and Contraindications before administering:`;
     const LETTERS = ["A", "B", "C", "D"];
     $("#mqBody").innerHTML = quiz.questions.map((q, qi) => {
       if (q.autoPeds) firstChoice[q.id] = q.correctIndex;
@@ -16973,6 +17779,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
         }
       }
     }
+    if (ICX() && dPan && /Ref\. /.test(dPan.innerHTML)) dPan.innerHTML = sysTxt(dPan.innerHTML);
     // code panel (TP 1210): code timer, 2-min cycle, epi timer, shocks, CCF, drug log
     const cs = SIM.code && SIM.code(), cp = $("#codePanel");
     const showCode = !!(cs && (cs.active || (cs.roscT != null && !cs.roscRecT)));
@@ -17164,7 +17971,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
     const refs = [...new Set([...(sc.refs || []), ...((g && PROVIDER_IMPRESSIONS[g.p.correct]) ? [PROVIDER_IMPRESSIONS[g.p.correct][1].split("/")[0]] : [])])];
     $("#debriefBody").innerHTML = `
       <h1>${esc(sc.dispatchTitle)}</h1>
-      <p class="sub">${esc(sc.patient.name)}, ${sc.patient.ageText || sc.patient.age + " y/o"} ${sc.patient.sex === "M" ? "male" : "female"} · Duration ${fmtT(st.t)} · Protocols: ${refs.map(r => PROTOCOLS[r] ? `<a href="${PROTOCOLS[r].url}" target="_blank" rel="noopener">Ref. ${r} ${esc(PROTOCOLS[r].title)} (rev. ${PROTOCOLS[r].revised})</a>` : "Ref. " + r).join(" · ")}</p>
+      <p class="sub">${esc(sc.patient.name)}, ${sc.patient.ageText || sc.patient.age + " y/o"} ${sc.patient.sex === "M" ? "male" : "female"} · Duration ${fmtT(st.t)} · Protocols: ${ICX() ? PSYS.icemaRefs(sc).map(r => ICEMA.CARDS[r] ? `<a href="${ICEMA.CARDS[r].url || ICEMA.URL}" target="_blank" rel="noopener">ICEMA Reference #${r} ${esc(ICEMA.CARDS[r].title)}${ICEMA.CARDS[r].revised ? " (eff. " + esc(ICEMA.CARDS[r].revised) + ")" : ""}</a>` : "ICEMA Reference #" + r).join(" · ") : refs.map(r => PROTOCOLS[r] ? `<a href="${PROTOCOLS[r].url}" target="_blank" rel="noopener">Ref. ${r} ${esc(PROTOCOLS[r].title)} (rev. ${PROTOCOLS[r].revised})</a>` : "Ref. " + r).join(" · ")}</p>
       ${timedHtml}
       ${drill ? "" : `<div class="db-grid">
         <div class="db-box"><h3>Protocol checklist</h3><div class="score">${score}%</div><p class="fine">${done.length}/${req.length} expected actions${missedCrit.length ? ` · <b style="color:#ff8a95">${missedCrit.length} critical missed</b>` : ""}${g ? ` · impression ${g.ok ? "correct" : g.partial ? "partially correct" : "incorrect"}` : ""}</p>${ckHtml}</div>
@@ -17179,7 +17986,8 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       ${deviceBox(st)}
       <div class="db-box" style="margin-top:1em"><h3>Time-stamped log</h3><table class="log">${logHtml}</table></div>
       <p class="fine">Education only. Doses and steps are from the LA County EMS Agency Prehospital Care Manual as retrieved Oct 20, 2026; always use the current official protocols and medical direction.</p>`;
-    currentDebrief.text = debriefText(sc, st, checklist, g, score);
+    if (ICX()) $("#debriefBody").innerHTML = sysTxt($("#debriefBody").innerHTML);
+    currentDebrief.text = sysTxt(debriefText(sc, st, checklist, g, score));
   }
   function drillBox() {
     const d = DRILLS.primaryScore(SIM.flow());
@@ -17246,6 +18054,10 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   // ---------------- protocol card ----------------
   function openProto() {
     const sc = SIM.scenario; const reveal = SIM.state && SIM.state.ended;
+    if (ICX()) { // v2.16.0 ICEMA protocol cards
+      $("#protoBody").innerHTML = `<h2>ICEMA Treatment Protocols (quick reference)</h2><p class="fine">Inland Counties EMS Agency Policy and Protocol Manual (${esc(ICEMA.MANUAL.replace(/^ICEMA Policy and Protocol Manual \(|\)$/g, ""))}); medications: ICEMA Reference #11010 (effective ${ICEMA.MEDS_EFF}). Key points are paraphrased for study; the official PDF governs. During the call this shows every protocol, so it doesn't give away the scenario. Educational use only.</p>` +
+        Object.keys(ICEMA.CARDS).map(r => { const p = ICEMA.CARDS[r]; return `<details class="proto-sec"><summary><b>ICEMA Reference #${r} · ${esc(p.title)}</b>${p.revised ? ` <small>eff. ${esc(p.revised)}</small>` : ""}</summary><ul>${(p.keyPoints || []).map(k => `<li>${esc(k)}</li>`).join("")}</ul><a href="${p.url || ICEMA.URL}" target="_blank" rel="noopener">Official ICEMA manual ↗</a></details>`; }).join("");
+      $("#modalProto").classList.add("open"); return; }
     const refs = Object.keys(PROTOCOLS).filter(r => /^12/.test(r));
     $("#protoBody").innerHTML = `<h2>LA County Treatment Protocols (quick reference)</h2><p class="fine">During the call this shows every protocol, so it doesn't give away the scenario. Source PDFs: dhs.lacounty.gov / file.lacounty.gov, retrieved 2026-10-20.</p>` +
       refs.concat(["506", "1302", "1309", "1315", "1345", "1365"]).map(r => { const p = PROTOCOLS[r]; return `<details class="proto-sec"><summary><b>Ref. ${r} · ${esc(p.title)}</b> <small>rev. ${p.revised}</small></summary><ul>${p.keyPoints.map(k => `<li>${esc(k)}</li>`).join("")}</ul><a href="${p.url}" target="_blank" rel="noopener">Official PDF ↗</a></details>`; }).join("");
@@ -17255,6 +18067,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
 
   // ---------------- settings ----------------
   function loadSettingsUI() {
+    sysUI();
     $("#setVoice").checked = settings.voice; $("#setAutoSend").checked = settings.autoSend; $("#setHints").checked = settings.hints; if ($("#setMedQuiz")) $("#setMedQuiz").checked = settings.medQuiz !== false; $("#setRate").value = settings.rate;
     $("#setMicMode").value = settings.micMode; $("#setInstr").checked = settings.instr;
     $("#setSemantic").checked = settings.semantic;
@@ -17296,6 +18109,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
   // ---------------- wire up ----------------
   document.addEventListener("DOMContentLoaded", () => {
     SCENARIOS.forEach(sc => { sc.base = sc.base || sc.id; });
+    document.querySelectorAll("[data-sys]").forEach(b => { b.onclick = () => setSys(b.dataset.sys); }); sysUI(); // v2.16.0 LA County | ICEMA
     buildMenu(); initSpeech(); bindMic(); loadSettingsUI();
     $("#btnDrillNext").onclick = piDrill;
     $("#btnDlVosk").onclick = startVoskDownload; $("#btnDelVosk").onclick = async () => { await Speech.deleteModel(); refreshStatus(); };
@@ -17398,7 +18212,7 @@ AUTOPILOT.flows = { rest: async function (sc, S, say, H, C, o) {
       if (bTr && SIM.state && !SIM.state.ended) {
         const id = bTr.dataset.triage, T = (PROTOCOLS.TRAUMA_TRIAGE || []).find(x => x.id === id);
         const was = (SIM.state.x.triage || []).includes(id);
-        addMsg({ speaker: "me", text: (was ? "Remove Trauma Triage: " : "Trauma Triage (Ref. 506): ") + (T ? `[${T.code}] ${T.label}` : id), tap: true });
+        addMsg({ speaker: "me", text: (was ? "Remove Trauma Triage: " : ICX() ? "Trauma Triage (ICEMA #9040): " : "Trauma Triage (Ref. 506): ") + (T ? `[${T.code}] ${T.label}` : id), tap: true });
         const r = SIM.toggleTraumaTriage(id); if (r) say([r]);
         destSig = ""; render(); return;
       }
